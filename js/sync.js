@@ -399,31 +399,38 @@ window.APP = window.APP || {};
     if (localWinsUntilPush) return push();
     var id = slotOwner();
     if (id === 'local') return Promise.resolve(false);
+    var s = APP.auth.session();
+    if (!s || !s.vaultKeyB64) return Promise.resolve(false);
     set({ syncing: true });
-    return APP.gh.getFile('saves/' + id + '.json').then(function (existing) {
-      if (!existing) {
-        // 云端为空 = 这个账号的全新起点；本机旧记录已由 ensureSlot 完整留在独立槽里。
-        set({ syncing: false, offline: false, lastSyncAt: Date.now() });
-        return true;
-      }
-      var data = null;
-      try { data = JSON.parse(APP.gh.decode(existing.content)); } catch (e) { data = null; }
-      if (!data) { set({ syncing: false, offline: false }); return true; }
-      if (fork) {
-        // 分叉待决策：云端数据先收着，不 adopt、不 push，等用户自己选
-        fork.cloud = data;
-        fork.offline = false;
-        set({ syncing: false, offline: false, lastSyncAt: Date.now() });
-        showFork();
-        return true;
-      }
-      adopting = true;
-      var changed = false;
-      try { changed = APP.store.adoptExternal(data); } catch (e) { changed = false; }
-      adopting = false;
-      if (changed && APP.refresh) APP.refresh();
-      set({ syncing: false, offline: false, lastSyncAt: Date.now() });
-      return true;
+    var vaultKeyPromise = APP.cipher.importRaw(APP.cipher.bytesFromB64(s.vaultKeyB64));
+    return vaultKeyPromise.then(function (vaultKey) {
+      return APP.gh.getFile('saves/' + id + '.json').then(function (existing) {
+        if (!existing) {
+          // 云端为空 = 这个账号的全新起点；本机旧记录已由 ensureSlot 完整留在独立槽里。
+          set({ syncing: false, offline: false, lastSyncAt: Date.now() });
+          return true;
+        }
+        var env = null;
+        try { env = JSON.parse(APP.gh.decode(existing.content)); } catch (e) { env = null; }
+        if (!env || !env.iv || !env.ct) { set({ syncing: false, offline: false }); return true; }
+        return APP.cipher.open(env, vaultKey).then(function (data) {
+          if (fork) {
+            // 分叉待决策：云端数据先收着，不 adopt、不 push，等用户自己选
+            fork.cloud = data;
+            fork.offline = false;
+            set({ syncing: false, offline: false, lastSyncAt: Date.now() });
+            showFork();
+            return true;
+          }
+          adopting = true;
+          var changed = false;
+          try { changed = APP.store.adoptExternal(data); } catch (e) { changed = false; }
+          adopting = false;
+          if (changed && APP.refresh) APP.refresh();
+          set({ syncing: false, offline: false, lastSyncAt: Date.now() });
+          return true;
+        })['catch'](function () { set({ syncing: false, offline: false }); return true; });
+      });
     })['catch'](function () {
       set({ syncing: false, offline: true });
       if (fork) { fork.offline = true; showFork(); }
@@ -435,14 +442,20 @@ window.APP = window.APP || {};
     if (!canSync() || fork) return Promise.resolve(false);
     var id = slotOwner();
     if (id === 'local') return Promise.resolve(false);
+    var s = APP.auth.session();
+    if (!s || !s.vaultKeyB64) return Promise.resolve(false);
     set({ syncing: true });
-    var s = APP.store.get();
-    return APP.gh.getFile('saves/' + id + '.json').then(function (existing) {
-      var sha = existing ? existing.sha : null;
-      return APP.gh.putFile('saves/' + id + '.json', JSON.stringify(s), sha).then(function () {
-        localWinsUntilPush = false;
-        set({ syncing: false, offline: false, pending: 0, lastSyncAt: Date.now() });
-        return uploadPhotos()['then'](function () { return true; });
+    var sData = APP.store.get();
+    return APP.cipher.importRaw(APP.cipher.bytesFromB64(s.vaultKeyB64)).then(function (vaultKey) {
+      return APP.cipher.seal(sData, vaultKey);
+    }).then(function (env) {
+      return APP.gh.getFile('saves/' + id + '.json').then(function (existing) {
+        var sha = existing ? existing.sha : null;
+        return APP.gh.putFile('saves/' + id + '.json', JSON.stringify(env), sha).then(function () {
+          localWinsUntilPush = false;
+          set({ syncing: false, offline: false, pending: 0, lastSyncAt: Date.now() });
+          return uploadPhotos()['then'](function () { return true; });
+        });
       });
     })['catch'](function () {
       set({ syncing: false, offline: true });

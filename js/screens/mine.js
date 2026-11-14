@@ -357,7 +357,7 @@ window.APP = window.APP || {};
     if (!btn) return;
     var act = btn.getAttribute('data-act');
     if (act === 'reselect-char') { if (APP.onboarding && APP.onboarding.reselect) APP.onboarding.reselect(); return; }
-    if (APP.ghui && APP.ghui.handle(act)) { APP.refresh(); return; }
+    if (APP.ghui && APP.ghui.handle(act)) return;
     if (act === 'slot-import') {
       if (!APP.sync || !APP.sync.importSlot) return;
       APP.sync.importSlot(btn.getAttribute('data-slot') || 'local').then(function (r) {

@@ -62,6 +62,8 @@ window.APP = window.APP || {};
         '<li><span class="k">当前身份</span><span class="v">大人（可进后台与审核）</span></li>' +
       '</ul>' +
       '<p class="field__hint">换设备时用账号码 + 对应密码登录，就能看到同一份数据。</p>' +
+      '<p class="field__hint">数据在 GitHub 仓库里是加密保存的（仓库公开也读不到内容）。' +
+        '<b>请抄下账号码并牢记家长密码</b>：两者都丢失时无法恢复记录；小孩密码可随时在下方重置。</p>' +
     '</section>';
 
     html += '<section class="card">' +
@@ -739,7 +741,7 @@ window.APP = window.APP || {};
     var date = btn.getAttribute('data-date');
 
     // GitHub 同步设置卡（我的数据页 / 后台设置页共用）：gh-save / gh-test / gh-sync
-    if (APP.ghui && APP.ghui.handle(act)) { APP.refresh(); return; }
+    if (APP.ghui && APP.ghui.handle(act)) return;
 
     if (act === 'login') {
       var pin = (document.getElementById('pin') || {}).value || '';

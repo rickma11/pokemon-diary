@@ -21,7 +21,9 @@ tools/.deploy-auth.json
 # 已移除的后端、部署包、文档、参考、测试、备份、本地预览脚本、预览日志、开发工具
 server.js
 backups/
-deploy-package/
+deploy-package/*
+# 给 AI 的部署手册需随仓库发布，fork 用户才能照做
+!deploy-package/AI_DEPLOY_GUIDE.md
 docs/
 参考/
 tests/
@@ -33,4 +35,7 @@ preview.log
 一键部署.bat
 启动预览.bat
 启动预览.vbs
+
+# 但「更新推送.bat」是给仓库使用者迭代用的，需要随仓库发布
+!更新推送.bat
 
