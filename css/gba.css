@@ -1,0 +1,433 @@
+/* ==========================================================================
+   GBA 像素风主题（方案 C：轻量浅底）——挂在 app.css 之后，只做视觉皮肤
+   做法：页面底色暖米 + 卡片/弹窗统一「深棕双线对话框」，主按钮用宝可梦红。
+   回滚方式：删掉 index.html 里这一行的 <link> 即可。
+   A/B 方案（深绿窗 / 蓝宝石窗）后续需要时再叠加。
+   ========================================================================== */
+
+:root {
+  --bg: #EFE9DA;
+  --card: #FFF9E8;
+  --line: #C6B89B;
+  --line-soft: #DED2B8;
+  --line-strong: #4A3728;
+  --surface: #F7F0DF;
+  --text: #3D2B1F;
+  --muted: #7A6A55;
+  --ink: #D85A30;
+  --ink-strong: #B8452A;
+  --accent: #F2C14E;
+  --ok: #3E8E5A;
+  --danger: #C0392B;
+  --ring-off: #E3D8C0;
+}
+
+body {
+  background: #EFE9DA;
+  color: #3D2B1F;
+  letter-spacing: 0.01em;
+}
+
+/* 卡片 = GBA 对话框：外深棕描边 + 内浅色描边（双层描边是 GBA 窗口的标志） */
+.card {
+  background: #FFF9E8;
+  border: 2px solid #4A3728;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 2px #F3E3BE;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.card h2 {
+  color: #3D2B1F;
+  font-weight: 500;
+}
+
+.card p,
+.hint,
+.field,
+.field__hint,
+.list .k,
+.list .v,
+.task__wait,
+.week__dow,
+.week__col.is-empty .week__rate {
+  color: #6B6155;
+}
+
+/* 顶部标题栏：改成米色对话框条，不再是纯色蓝底 */
+.appbar {
+  background: #FFF9E8;
+  color: #3D2B1F;
+  border-bottom: 3px solid #4A3728;
+  box-shadow: inset 0 -2px 0 #F3E3BE;
+}
+
+.appbar h1 {
+  color: #3D2B1F;
+  letter-spacing: 0.02em;
+}
+
+.appbar p {
+  color: #7A6A55;
+}
+
+.appbar__parent {
+  border: 2px solid #4A3728;
+  border-radius: 8px;
+  background: #FFF9E8;
+  color: #3D2B1F;
+}
+
+.appbar__parent:active {
+  background: #F2E4C4;
+}
+
+/* 长按提示浮层也走同一套框 */
+.press-hint {
+  background: #FFF9E8;
+  color: #3D2B1F;
+  border: 2px solid #4A3728;
+  box-shadow: inset 0 0 0 2px #F3E3BE;
+}
+
+.press-hint__bar {
+  background: #E3D8C0;
+}
+
+.press-hint__bar i {
+  background: #D85A30;
+}
+
+/* 按钮：米色描边 + 红色主按钮 */
+.btn {
+  border: 2px solid #4A3728;
+  border-radius: 8px;
+  background: #FFF9E8;
+  color: #3D2B1F;
+  font-weight: 500;
+}
+
+.btn:active {
+  background: #F2E4C4;
+}
+
+.btn--primary {
+  background: #D85A30;
+  border-color: #4A3728;
+  color: #FFFFFF;
+}
+
+.btn--primary:active {
+  background: #B8452A;
+}
+
+.btn--sm {
+  border-radius: 7px;
+}
+
+/* 输入框 / 下拉 */
+.field input,
+.field select {
+  border: 2px solid #4A3728;
+  border-radius: 7px;
+  background: #FFFFFF;
+  color: #3D2B1F;
+}
+
+/* 列表分隔线暖色化 */
+.list li {
+  border-bottom: 1px solid #DED2B8;
+}
+
+.badge {
+  border: 1px solid #4A3728;
+  background: #F7F0DF;
+  color: #6B6155;
+}
+
+.badge--ok {
+  border-color: #3E8E5A;
+  background: #3E8E5A;
+  color: #FFFFFF;
+}
+
+.badge--danger {
+  border-color: #C0392B;
+  background: #C0392B;
+  color: #FFFFFF;
+}
+
+/* 任务卡 / 时段标题 / 柱状图 */
+.task {
+  border: 2px solid #4A3728;
+  border-radius: 10px;
+  background: #FFFDF6;
+}
+
+.task.is-done {
+  background: #F2E9D2;
+}
+
+.task.is-rejected {
+  border-color: #C0392B;
+}
+
+.task__done {
+  color: #3E8E5A;
+}
+
+.group-title {
+  color: #3D2B1F;
+  border-left: 4px solid #D85A30;
+}
+
+.week__track {
+  border: 2px solid #4A3728;
+  border-radius: 4px;
+  background: #F7F0DF;
+}
+
+.week__fill {
+  background: #D85A30;
+}
+
+/* 底部状态条 / 导航栏 */
+.statusbar {
+  background: #FFF9E8;
+  border-top: 3px solid #4A3728;
+}
+
+.statusbar__art {
+  border: 2px solid #4A3728;
+  border-radius: 8px;
+  background: #F7F0DF;
+}
+
+.statusbar__row,
+.statusbar__name,
+.statusbar__lv {
+  color: #3D2B1F;
+}
+
+.tabbar {
+  background: #FFF9E8;
+  border-top: 3px solid #4A3728;
+}
+
+.tab {
+  color: #7A6A55;
+}
+
+.tab.is-active {
+  color: #D85A30;
+}
+
+/* 空状态图标线 */
+.empty__icon svg {
+  color: #C6B89B;
+}
+
+/* 进度条 / 迷你条：GBA 那种粗块底座 */
+.bar,
+.bar--slim {
+  background: #F7F0DF;
+  border: 1px solid #4A3728;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+/* ===== 养成页：GBA 掌机外壳 + 一整块液晶屏（动画区与底部对话条同屏）===== */
+.gba-shell {
+  margin: 0 0 8px;
+  padding: 6px 6px 4px;
+  background: #DCD4C3;
+  border: 3px solid #4A3728;
+  border-radius: 16px 16px 22px 16px;
+  box-shadow: inset 0 0 0 2px #F3ECDD;
+}
+
+.gba-shell__top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 2px 5px;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #6B6155;
+}
+
+.gba-shell__led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3E8E5A;
+  border: 1px solid #4A3728;
+}
+
+.gba-shell__foot {
+  display: none;
+  text-align: center;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: #8A8578;
+  margin-top: 4px;
+}
+
+/* 屏幕够高才显示机身下方标识字，保证常见手机一屏放得下 */
+@media (min-height: 880px) {
+  .gba-shell__foot { display: block; }
+}
+
+.gba-screen {
+  position: relative;
+  background: #EDF3DC;
+  border: 3px solid #4A3728;
+  border-radius: 6px;
+  padding: 6px;
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.85);
+}
+
+/* 屏幕左上角「更换」按钮：掌机按键质感（立体描边 + 按下下沉）；V5.1 恢复为换主力入口 */
+.gba-swap-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: #3D2B1F;
+  background: linear-gradient(#FFFDF5, #F0DCAE);
+  border: 2px solid #4A3728;
+  border-radius: 999px;
+  box-shadow: 0 2px 0 #4A3728, inset 0 1px 0 rgba(255, 255, 255, .9);
+  cursor: pointer;
+}
+.gba-swap-btn__ball { width: 16px; height: 16px; display: block; flex: none; }
+.gba-swap-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #4A3728, inset 0 1px 0 rgba(255, 255, 255, .9);
+  background: linear-gradient(#F5E7C4, #E8D3A6);
+}
+
+/* 屏幕右上角「设置」按钮：与 更换 同一套掌机按键质感，仅位置换到右上角 */
+.gba-set-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: #3D2B1F;
+  background: linear-gradient(#FFFDF5, #F0DCAE);
+  border: 2px solid #4A3728;
+  border-radius: 999px;
+  box-shadow: 0 2px 0 #4A3728, inset 0 1px 0 rgba(255, 255, 255, .9);
+  cursor: pointer;
+}
+.gba-set-btn__gear { width: 16px; height: 16px; display: block; flex: none; }
+.gba-set-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 #4A3728, inset 0 1px 0 rgba(255, 255, 255, .9);
+  background: linear-gradient(#F5E7C4, #E8D3A6);
+}
+
+/*  stage 不再是独立卡片，作为屏幕内容区：留足 padding，动画不再被屏幕边缘裁切。
+    高度在原来基础上放大约 130%（宝可梦尺寸不变），让跳跃/下沉等动作始终留在框内 */
+.care-stage {
+  position: relative;
+  min-height: 0;
+  height: clamp(172px, 25vh, 260px);
+  padding: 12px 8px 6px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.care-creature-wrap {
+  width: clamp(126px, 34vw, 176px);
+  height: clamp(126px, 34vw, 176px);
+}
+
+.care-creature {
+  width: clamp(112px, 30vw, 160px);
+  height: clamp(112px, 30vw, 160px);
+}
+
+/* 挂件全部收进屏幕内，避免负值定位被裁；右上角的星星/汗珠右移，避开「设置」按钮 */
+.care-stars { top: 6px; right: 76px; }
+.care-rain { top: 36px; left: 10px; font-size: 26px; } /* 下移，避开左上角「更换」按钮 */
+.care-sweat { top: 20px; right: 76px; }
+.care-note { right: 4px; bottom: 4px; font-size: 20px; }
+
+.care-dlg {
+  margin: 0;
+}
+
+
+/* 单屏优先：按钮一行四个 + 卡片内边距收紧 */
+.care-card { padding: 9px; margin-bottom: 7px; }
+.care-btns { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.care-btn { min-height: 46px; padding: 0 6px; font-size: 13px; }
+
+/* 小屏再压一档，保证仍是一屏 */
+@media (max-height: 820px) {
+  .gba-shell { padding: 5px 5px 3px; margin-bottom: 6px; }
+  .gba-shell__top { margin-bottom: 3px; }
+  .gba-screen { padding: 4px; }
+  .care-stage { height: clamp(146px, 21vh, 221px); padding-top: 10px; }
+  .care-bar__track, .bar, .bar--slim { height: 6px; }
+  .care-creature-wrap { width: clamp(104px, 28vw, 150px); height: clamp(104px, 28vw, 150px); }
+  .care-creature { width: clamp(92px, 25vw, 132px); height: clamp(92px, 25vw, 132px); }
+}
+
+/* 家长后台导航按钮 / 进化演出框也统一成同一套框线 */
+.pnav__btn {
+  border: 2px solid #4A3728;
+  border-radius: 8px;
+  background: #FFF9E8;
+  color: #3D2B1F;
+}
+
+.pnav__btn.is-on,
+.pnav__btn:active {
+  background: #F2E4C4;
+}
+
+.evo__box {
+  background: #FFF9E8;
+  border: 2px solid #4A3728;
+  box-shadow: inset 0 0 0 2px #F3E3BE;
+}
+
+.evo__stage {
+  background: #FFFDF6;
+}
+
+.evo__dialog {
+  background: #FFF9E8;
+  border-color: #4A3728;
+  box-shadow: inset 0 0 0 2px #F3E3BE, inset 0 0 0 4px #4A3728;
+}
+
+/* 弹窗：统一文案色（结构已在 app.css 里是 GBA 框了，这里补一致性） */
+.ui-overlay__bg {
+  background: rgba(61, 43, 31, 0.45);
+}
+
+.ui-modal__title,
+.mem-body h3,
+.mem-body p {
+  color: #3D2B1F;
+}

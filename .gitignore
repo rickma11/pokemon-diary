@@ -1,0 +1,36 @@
+# 运行时数据（仓库持久化的账号/存档/照片在 GitHub，本地 data/ 永不进发布包）
+data/
+
+# 依赖与临时产物
+node_modules/
+.tmp-deploy-probe/
+.tmp-gen/
+.tmp-local-data/
+*.tmp
+
+# 发布标记文件（工具生成）
+.wbapp_*.genie
+
+# 部署工具本地凭据（含 PAT，绝不进仓库）
+tools/.deploy-auth.json
+
+# 本地工作台产物（WorkBuddy 内部，不进站点仓库）
+.workbuddy/
+
+# 以下都不属于静态站点，禁止进仓库：
+# 已移除的后端、部署包、文档、参考、测试、备份、本地预览脚本、预览日志、开发工具
+server.js
+backups/
+deploy-package/
+docs/
+参考/
+tests/
+tools/
+*.bat
+*.vbs
+gym-preview.html
+preview.log
+一键部署.bat
+启动预览.bat
+启动预览.vbs
+

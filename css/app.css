@@ -1,0 +1,3698 @@
+:root {
+  /* 彩色主题（默认）：浅底 + 宝可梦蓝主色 + 皮卡丘黄强调 */
+  --bg: #f3f6fc;
+  --card: #ffffff;
+  --line: #d6dbe8;
+  --line-soft: #e6eaf3;
+  --line-strong: #aab4cd;
+  --surface: #eaeef8;
+  --text: #242733;
+  --muted: #666d80;
+  --ink: #3b4cca;          /* 主色：宝可梦蓝 */
+  --ink-strong: #2b389f;   /* 主色按压态 */
+  --accent: #ffcb05;       /* 强调：皮卡丘黄 */
+  --ok: #2e9e5b;           /* 通过 */
+  --danger: #d2453f;       /* 驳回 */
+  --ring-off: #dde3f0;     /* 环形图未完成块 */
+  --tap: 48px;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  padding-bottom: calc(140px + env(safe-area-inset-bottom));
+}
+
+/* 状态栏分档：mini 档高度约减半，none 档整条隐藏，底部留白跟着收 */
+body.sb-mini {
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+
+body.sb-none {
+  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+}
+
+/* ===== 墨水屏模式（自动检测 / 手动开启）：整体转灰阶、去阴影、边框加深 ===== */
+body.ink {
+  --bg: #f5f5f2;
+  --card: #ffffff;
+  --line: #8f8d86;
+  --line-soft: #d8d6cf;
+  --line-strong: #6f6e67;
+  --surface: #e9e7e0;
+  --text: #23231f;
+  --muted: #5f5e58;
+  --ink: #1f1f1d;
+  --ink-strong: #000000;
+  --accent: #e6e4dc;
+  --ok: #1f1f1d;
+  --danger: #1f1f1d;
+  --ring-off: #d2d0c8;
+}
+
+body.ink img {
+  filter: grayscale(1) contrast(1.05);
+}
+
+/* 墨水屏去阴影，减少残影与刷新负担 */
+body.ink * {
+  box-shadow: none !important;
+}
+
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.appbar__logo {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.appbar__logo svg {
+  width: 32px;
+  height: 32px;
+}
+
+.appbar__text {
+  min-width: 0;
+}
+
+/* 日期行：日期 + 实时时钟（北京时间）并排 */
+.appbar__date {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+#topClock {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
+/* 家长入口按钮（可见、低调） */
+.appbar__parent {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 6px 10px;
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  background: transparent;
+  color: #ffffff;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.appbar__parent svg {
+  width: 16px;
+  height: 16px;
+}
+
+.appbar__parent:active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* 长按进度提示浮层 */
+.press-hint {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--ink);
+  color: #ffffff;
+  border-radius: 12px;
+  font-size: 13px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.press-hint.is-on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.press-hint__bar {
+  display: block;
+  width: 120px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.press-hint__bar i {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: #ffffff;
+}
+
+.appbar h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.appbar p {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.screen {
+  padding: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.card + .card p {
+  margin-bottom: 4px;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+
+.list li:last-child {
+  border-bottom: 0;
+}
+
+.list .k {
+  color: var(--muted);
+}
+
+.list .v {
+  color: var(--text);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.btn--primary {
+  background: var(--ink);
+  color: #ffffff;
+}
+
+.btn--block {
+  display: flex;
+  width: 100%;
+}
+
+.btn:active {
+  background: var(--surface);
+}
+
+.btn--primary:active {
+  background: var(--ink-strong);
+}
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  background: #ffffff;
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab {
+  flex: 1;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.tab svg {
+  width: 24px;
+  height: 24px;
+}
+
+.tab.is-active {
+  color: var(--ink);
+}
+
+.tab.is-active svg {
+  stroke-width: 2.4;
+}
+
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+  padding: 12px;
+}
+
+.card__side {
+  float: right;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.bar {
+  height: 14px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.bar__fill {
+  height: 100%;
+  background: var(--ink);
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.task.is-done {
+  background: var(--surface);
+}
+
+.task__icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+}
+
+.task__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.task__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 截止列：固定宽度 + 垂直居中，所有卡片横向对齐；纵向在本行内上下居中。
+   80px 是按最长的「截止 21:30」实测留的量，nowrap 防止末位被裁 */
+.task__dl {
+  flex: 0 0 80px;
+  width: 80px;
+  align-self: center;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 3px 0;
+  background: var(--surface);
+}
+
+/* 无截止可展示（随时段且未填）时占位保持对齐 */
+.task__dl--none {
+  border-color: transparent;
+  background: none;
+}
+
+/* 已打钩/已通过的任务：标题划横线 */
+.task__title.is-line {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+/* ===== 已完成折叠区 ===== */
+.done-box {
+  margin-top: 14px;
+  border-top: 1px dashed var(--line-soft);
+  padding-top: 10px;
+}
+
+.done-box__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.done-box__arrow {
+  flex: 0 0 16px;
+  text-align: center;
+}
+
+.done-box__title {
+  font-weight: 600;
+}
+
+.done-box__count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.done-box.is-collapsed .done-box__list {
+  display: none;
+}
+
+.done-box__list .task {
+  background: var(--surface);
+}
+
+.task__title {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.task__meta {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.task__thumb {
+  margin-top: 8px;
+}
+
+.task__thumb img {
+  display: block;
+  max-width: 100%;
+  max-height: 180px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+}
+
+/* 操作列：固定宽度，保证「打钩 / 拍照提交 / 撤销」等不同文案的按钮右边界一致，
+   从而左侧截止标签在所有任务行里严格对齐（按钮宽度不随文案变化）。
+   90px = 4 个汉字 60px + 左右内边距 20px + 边框 2px，再留 8px 余量；nowrap 防换行 */
+.task__action {
+  flex: 0 0 90px;
+  width: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task__action .btn {
+  width: 100%;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.badge--fast {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #ffffff;
+}
+
+/* 审核结果徽标：彩色绿/红，墨水屏下变量收敛为深灰 */
+.badge--ok {
+  border-color: var(--ok);
+  background: var(--ok);
+  color: #ffffff;
+}
+
+.badge--danger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #ffffff;
+}
+
+/* V5：碎片奖励徽章（货币色，区别于绿/红状态徽标） */
+.badge--shard {
+  border-color: var(--ink, #3b4cca);
+  color: var(--ink, #3b4cca);
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+.badge--shard svg,
+.badge--shard .shard { width: 12px; height: 12px; flex: none; }
+
+/* V5：钱包条（碎片 / 精灵球 / 战斗券），内嵌于今日进度卡 */
+.wallet-strip {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.wallet-cell {
+  flex: 1;
+  text-align: center;
+  background: var(--surface, #eaeef8);
+  border-radius: 8px;
+  padding: 8px 4px;
+}
+.wallet-k { display: block; font-size: 12px; color: var(--muted, #666d80); }
+.wallet-v { display: block; font-size: 15px; font-weight: 500; color: var(--ink, #3b4cca); }
+
+.btn--sm {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.statusbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 19;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  bottom: calc(60px + env(safe-area-inset-bottom));
+  background: #ffffff;
+  border-top: 1px solid var(--line);
+}
+
+.tabbar {
+  box-shadow: 0 -1px 0 var(--line);
+}
+
+.statusbar__art {
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.statusbar__art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.statusbar__main {
+  flex: 1;
+  min-width: 0;
+}
+
+.statusbar__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.statusbar__name {
+  font-size: 15px;
+}
+
+.statusbar__lv {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.statusbar__exp {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.statusbar--mini {
+  padding: 4px 16px;
+  gap: 10px;
+}
+
+.statusbar--mini .statusbar__art {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+}
+
+.statusbar--mini .statusbar__name {
+  font-size: 14px;
+}
+
+.statusbar--mini .statusbar__lv {
+  font-size: 12px;
+}
+
+.bar--slim {
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 3px;
+}
+
+/* ===== 时段分组标题 ===== */
+.group-title {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  border-left: 3px solid var(--ink);
+  padding-left: 8px;
+}
+
+/* ===== 本周/每日完成率小柱图 ===== */
+.week {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.week__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.week__track {
+  width: 100%;
+  height: 72px;
+  display: flex;
+  align-items: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.week__fill {
+  width: 100%;
+  background: var(--ink);
+  min-height: 2px;
+}
+
+.week__rate {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.week__dow,
+.week__col.is-empty .week__rate {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.week__col.is-empty .week__track {
+  border-style: dashed;
+}
+
+/* ===== 空状态 ===== */
+.empty {
+  text-align: center;
+}
+
+.empty__icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.empty__icon svg {
+  width: 48px;
+  height: 48px;
+  color: var(--line);
+}
+
+.empty__title {
+  font-size: 16px !important;
+  color: var(--text) !important;
+}
+
+/* ===== 任务状态边框（彩色用红/绿语义，墨水屏下统一深灰 + 线型区分） ===== */
+.task.is-submitted {
+  border-style: dashed;
+}
+
+.task.is-rejected {
+  border-color: var(--danger);
+}
+
+.task.is-approved {
+  background: var(--surface);
+}
+
+.task__wait {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.task__done {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ok);
+}
+
+/* ===== 通用弹层（全屏照片预览 / 确认框） ===== */
+.ui-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 兜底：关闭弹层后即使 JS 漏了隐藏，空 overlay 也不能继续盖住屏幕吃掉点击 */
+.ui-overlay:empty {
+  display: none;
+}
+
+/* ===== A6 庆祝成就层：彩带 + 连击大字 ===== */
+.celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  overflow: hidden;
+}
+.confetti {
+  position: absolute;
+  top: -24px;
+  border-radius: 2px;
+  opacity: .95;
+  animation-name: confettiFall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(540deg); opacity: .9; }
+}
+.celebrate__label {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, .45);
+  background: linear-gradient(135deg, #ff6d3d, #e3350d);
+  padding: 14px 26px;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(227, 53, 13, .4);
+  animation: comboPop .4s ease-out;
+}
+.celebrate__label span {
+  display: block;
+  font-size: 18px;
+  margin-top: 4px;
+  color: #fff7e6;
+}
+@keyframes comboPop {
+  0%   { transform: translate(-50%, -50%) scale(.6); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.08); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+/* 墨水屏：完全不撒彩带、不响，省电防残影（信息已由静态反馈传达） */
+body.ink .celebrate { display: none; }
+
+.ui-overlay__bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 20, 18, 0.7);
+}
+
+.ui-overlay__img {
+  position: relative;
+  max-width: 92%;
+  max-height: 82%;
+}
+
+.ui-overlay__img img {
+  display: block;
+  max-width: 100%;
+  max-height: 82vh;
+  border: 2px solid #ffffff;
+  border-radius: 8px;
+}
+
+.ui-overlay__hint {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #ffffff;
+  font-size: 13px;
+}
+
+/* GBA 宝可梦对话框风：米色底 + 深棕双线描边，全站弹窗统一 */
+.ui-modal {
+  position: relative;
+  width: 80%;
+  max-width: 320px;
+  background: #FFF9E8;
+  border: 3px solid #4A3728;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 2px #F3E3BE;
+  padding: 16px;
+  color: #3D2B1F;
+}
+.ui-modal .ui-modal__title {
+  color: #3D2B1F;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+}
+.ui-modal__ball { width: 17px; height: 17px; flex: none; }
+/* 弹窗里的按钮一律居中（外层 .row 是 flex，之前缺 justify-content 导致靠左） */
+.ui-modal .row { display: flex; gap: 12px; margin-top: 12px; justify-content: center; }
+.ui-modal .ui-modal__msg { color: #3D2B1F; }
+/* 弹窗内的按钮也走 GBA：米色描边按钮 + 宝可梦红主按钮 */
+.ui-modal .btn {
+  background: #FFF9E8;
+  border: 2px solid #4A3728;
+  border-radius: 9px;
+  color: #3D2B1F;
+}
+.ui-modal .btn--primary {
+  background: #D85A30;
+  border-color: #4A3728;
+  color: #fff;
+}
+.ui-modal input {
+  background: #fff;
+  border: 2px solid #4A3728;
+  border-radius: 8px;
+  color: #3D2B1F;
+}
+/* 游戏弹窗（记忆翻牌悬浮在养成页上玩）：比普通弹窗宽一点，带右上角关闭 */
+.ui-modal--game { width: calc(100% - 20px); max-width: 440px; padding: 12px; }
+
+/* ===== 养成页「设置」弹窗：声音 / 庆祝动画 开关 ===== */
+.care-settings { width: 80%; max-width: 320px; }
+.care-settings .ui-modal__title { font-size: 18px; }
+.set-list { margin: 4px 0 6px; }
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 2px;
+  border-bottom: 1px solid #EADFC4;
+}
+.set-row:last-child { border-bottom: none; }
+.set-row__txt { min-width: 0; }
+.set-row__label { font-size: 15px; font-weight: 700; color: #3D2B1F; }
+.set-row__desc { font-size: 12px; line-height: 1.5; color: #8A8578; margin-top: 2px; }
+
+/* 开关：胶囊 + 圆点，on 态变绿并右移 */
+.toggle {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 27px;
+  padding: 0;
+  border: 2px solid #4A3728;
+  border-radius: 999px;
+  background: #C9C2B2;
+  cursor: pointer;
+  transition: background .18s ease;
+}
+.toggle__knob {
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #4A3728;
+  transform: translateY(-50%);
+  transition: left .18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .25);
+}
+.toggle.is-on { background: #3E8E5A; }
+.toggle.is-on .toggle__knob { left: 24px; }
+.toggle:active { filter: brightness(.96); }
+.ui-modal__x {
+  position: absolute; top: 6px; right: 8px; z-index: 3;
+  width: 32px; height: 32px; padding: 0; line-height: 1;
+  font-size: 20px; font-weight: 700;
+  background: #FFF9E8; border: 2px solid #4A3728;
+  border-radius: 8px; color: #3D2B1F; cursor: pointer;
+}
+.mem-body { padding-top: 2px; }
+
+.ui-modal__msg {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: var(--text);
+}
+
+/* ===== 家长后台 ===== */
+body.in-parent {
+  padding-bottom: 16px;
+}
+
+.pbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pbar__title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 左右两侧等宽：没有按钮时用占位撑开，保证标题真正居中 */
+.pbar__side {
+  flex: 0 0 84px;
+}
+
+.pbar .btn--sm {
+  flex: 0 0 auto;
+  min-width: 84px;
+}
+
+.pbar__title strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.pbar__title span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.pnav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pnav--wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pnav__btn {
+  min-height: var(--tap);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+}
+
+.pnav__btn--sm {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* 字段内嵌说明（紧跟该字段，如「完成方式」的解释） */
+.field__hint {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.field input,
+.field select {
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #ffffff;
+  color: var(--text);
+}
+
+.field--row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 勾选框：彩色下用主色着色，触控区不小于 44px */
+.field input[type="checkbox"] {
+  width: 28px;
+  height: 28px;
+  min-height: 44px;
+  padding: 8px;
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.wd-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wd {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.wd input {
+  width: 18px;
+  height: 18px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+/* ===== 我的数据：空状态文字（不用「—」，避免被看成「一」） ===== */
+.empty-note {
+  margin: 0;
+  padding: 14px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ===== 我的数据：分类完成率环形图（一块 = 一项安排，点亮 = 已完成） ===== */
+.ring-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: 18px 10px;
+  padding: 8px 0 2px;
+}
+
+.ring {
+  display: block;
+  width: 100%;
+  max-width: 104px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.ring__seg {
+  fill: none;
+  stroke: var(--ring-off);
+  stroke-width: 10;
+}
+
+.ring__seg.is-on {
+  stroke: var(--ok);
+}
+
+.ring__name {
+  font-size: 13px;
+  font-weight: 500;
+  fill: var(--muted);
+}
+
+.ring__val {
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+.ring-legend {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ===== 我的数据：近期流水（经验 / 碎片 双标签；折叠式，一天一行；点开看当天明细） ===== */
+.xp__day {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.xp__day:last-of-type {
+  border-bottom: 0;
+}
+
+.xp__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.xp__caret {
+  flex: 0 0 12px;
+  width: 12px;
+  height: 12px;
+  color: var(--muted);
+}
+
+.xp__date {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.xp__count {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.xp__day-sum {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.xp__items {
+  padding: 0 0 10px 20px;
+}
+
+.xp__item {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--muted);
+  border-top: 1px dashed var(--line-soft);
+}
+
+.xp__time {
+  flex: 0 0 42px;
+  color: var(--muted);
+}
+
+.xp__src {
+  flex: 1;
+  min-width: 0;
+}
+
+.xp__amt {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.xp__amt.is-minus {
+  color: var(--danger);
+}
+
+/* 近期流水：经验 / 碎片 双标签切换（复用卡片内联胶囊按钮风格） */
+.flow-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 2px 0 10px;
+}
+
+.flow-tab {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card-2, #f1f3f5);
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.flow-tab.is-on {
+  border-color: var(--ok, #2e8b57);
+  background: var(--ok-soft, #e8f5ee);
+  color: var(--ok, #2e8b57);
+  font-weight: 600;
+}
+
+.xp__day-sum.is-minus {
+  color: var(--danger);
+}
+
+/* 分页（每页 3 天） */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pager__info {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+}
+
+/* ===== 升级提示条（临时替换状态栏内容） ===== */
+.statusbar--notice {
+  justify-content: center;
+  background: #3b4cca;
+  border-top-color: #3b4cca;
+}
+
+body.ink .statusbar--notice {
+  background: #1f1f1d;
+  border-top-color: #1f1f1d;
+}
+
+.statusbar__notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+}
+
+.statusbar__notice-txt {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: #ffffff;
+}
+
+.statusbar__notice-ok {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* ===== 进化演出（GBA 风格：白卡 + 闪烁 + 底部对白框） ===== */
+.evo__box {
+  position: relative;
+  z-index: 1;
+  width: 88%;
+  max-width: 340px;
+  padding: 10px 10px 0;
+  background: #ffffff;
+  border-radius: 14px;
+  animation: evoIn 0.22s ease-out;
+}
+
+.evo__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 210px;
+  background: #ffffff;
+}
+
+.evo__img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+/* 闪烁：硬切换（steps），接近 GBA 的明暗闪，而不是平滑淡出 */
+.evo__img.is-blink {
+  animation: evoBlink 0.3s steps(1, end) infinite;
+}
+
+.evo__img.is-appear {
+  animation: evoAppear 0.45s ease-out;
+}
+
+.evo__dialog {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 96px;
+  margin: 0 2px 12px;
+  padding: 12px 14px 10px;
+  background: #ffffff;
+  border: 3px solid #46463f;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 4px #46463f;
+}
+
+.evo__text {
+  margin: 0;
+  font-family: "Courier New", "Noto Sans Mono", monospace;
+  font-size: 17px;
+  line-height: 1.5;
+  letter-spacing: 1px;
+  color: #23231f;
+  word-break: break-all;
+}
+
+.evo__btn {
+  align-self: flex-end;
+  min-width: 108px;
+}
+
+@keyframes evoBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.1; }
+}
+
+@keyframes evoAppear {
+  0% { opacity: 0; transform: scale(0.9); }
+  45% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes evoIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* 墨水屏：不做动画（避免闪黑与残影），改用「继续」按钮手动推进 */
+body.ink .evo__box,
+body.ink .evo__img.is-blink,
+body.ink .evo__img.is-appear {
+  animation: none;
+}
+
+body.ink .evo__dialog {
+  border-color: #23231f;
+}
+
+/* ===== 提示卡（满级 / 60 级 / 最终形态） ===== */
+.ui-modal--notice {
+  padding: 18px 16px 16px;
+  text-align: center;
+}
+
+.ui-modal__art img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+
+.ui-modal__title {
+  margin: 6px 0 8px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ui-modal--notice .ui-modal__msg {
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+/* ===== 宝可梦调试页（家长后台 · 测试用） ===== */
+.dbg__msg {
+  font-size: 14px;
+  line-height: 1.55;
+  border-left: 4px solid var(--line-strong);
+}
+
+.dbg__msg.is-ok {
+  border-left-color: var(--ok);
+  background: #f1faf4;
+}
+
+.dbg__msg.is-err {
+  border-left-color: var(--danger);
+  background: #fdf4f3;
+}
+
+.dbg__cur {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dbg__art {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.dbg__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dbg__line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.dbg__meta {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dbg__pre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.dbg__thumb {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.dbg__name {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.dbg__no {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dbg__hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dbg__hint--err {
+  color: var(--danger);
+}
+
+.dbg__danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* 调试页：四个功能两列网格，主力信息 + 四个入口尽量一屏可见 */
+.dbg__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+/* 羁绊修改格：三行输入 + 按钮，比其它格略宽 */
+.dbg__cell--bond { grid-column: 1 / -1; }
+
+.dbg__bondgrid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.dbg__bondrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 标签固定列宽不折行（次数修改卡 / 羁绊卡共用；容纳 6 字标签） */
+.dbg__bondrow > span {
+  flex: 0 0 88px;
+  white-space: nowrap;
+}
+
+.dbg__bondrow > span {
+  flex: 0 0 90px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dbg__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+}
+
+.dbg__cell-t {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dbg__in {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 15px;
+  font-family: inherit;
+  background: #ffffff;
+  color: var(--text);
+}
+
+/* 墨水屏：输入框与网格卡片走灰阶，避免彩底发虚 */
+body.ink .dbg__cell {
+  background: #f2f2f0;
+  border-color: #c9c9c4;
+}
+
+body.ink .dbg__in {
+  background: #ffffff;
+  border-color: #6f6f68;
+}
+
+/* 两列格子里的预览区压缩高度 */
+.dbg__cell .dbg__pre {
+  min-height: 20px;
+}
+
+.dbg__cell .dbg__thumb {
+  width: 32px;
+  height: 32px;
+}
+
+/* 格子里的按钮略矮（家长测试操作用，仍保持可点面积） */
+.dbg__cell .btn {
+  min-height: 36px;
+}
+
+/* 当前主力卡：紧凑一点，把空间让给两列功能格 */
+.dbg__curcard {
+  padding: 12px;
+}
+
+/* 顶部两栏：左=当前主力，右=用户数据速览（窄屏自动换行堆叠） */
+.dbg__top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dbg__top-main {
+  flex: 1.5 1 250px;
+  min-width: 240px;
+}
+
+.dbg__top-user {
+  flex: 1 1 190px;
+  min-width: 190px;
+}
+
+.dbg__top-user h2 {
+  margin-top: 0;
+}
+
+.dbg__userlist {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* 紧凑排版：行距收窄、数值不换行（避免「0 次·今日用完」折行难看） */
+.dbg__userlist li {
+  padding: 5px 0;
+  gap: 8px;
+}
+
+.dbg__userlist .v {
+  white-space: nowrap;
+}
+
+/* 「用户数据」标题旁的规则小按钮 */
+.dbg__user-t {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dbg__rules-btn {
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 2px 12px;
+  font-size: 12px;
+  min-height: 26px;
+}
+
+body.ink .dbg__rules-btn {
+  background: #f2f2f0;
+  border-color: #6f6f68;
+}
+
+@media (min-width: 560px) {
+  .dbg__top-user {
+    border-left: 1px dashed var(--line-soft);
+    padding-left: 12px;
+  }
+}
+
+body.ink .dbg__top-user {
+  border-left-color: #c9c9c4;
+}
+
+/* 调试页底部说明：小字号，省垂直空间 */
+.dbg__curcard + .dbg__grid + .hint {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* 墨水屏：提示卡改灰阶，避免浅色底发虚 */
+body.ink .dbg__msg.is-ok,
+body.ink .dbg__msg.is-err {
+  background: #f2f2f0;
+  border-left-color: #1f1f1d;
+}
+
+body.ink .dbg__hint--err {
+  color: #1f1f1d;
+  font-weight: 600;
+}
+
+body.ink .dbg__danger {
+  color: #1f1f1d;
+  border-color: #1f1f1d;
+  font-weight: 600;
+}
+
+/* 同步状态角标（T4）：只有接入账号体系后才由 js/sync.js 显示 */
+.sync-badge {
+  display: none;
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 1px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sync-badge.is-ok { color: #2f7a4d; border-color: #9ccfae; }
+.sync-badge.is-pending { color: #8a6d00; border-color: #d8b64a; }
+.sync-badge.is-offline { color: #a33; border-color: #d99; }
+.sync-badge.is-syncing { color: var(--muted); }
+
+body.ink .sync-badge,
+body.ink .sync-badge.is-ok,
+body.ink .sync-badge.is-pending,
+body.ink .sync-badge.is-offline {
+  color: #1f1f1d;
+  border-color: #1f1f1d;
+}
+
+/* ===== 养成页（Task 7a / 7b / 7c 背身双动画）===== */
+/* 一屏优先：养成页内的卡片统一收紧内边距 / 间距，常见手机 390×844 能整页放下 */
+.care-card { padding: 10px; margin-bottom: 6px; }
+.care-head__row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.care-head__name { font-size: 18px; font-weight: 600; }
+.care-head__lv { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+.care-head__berry {
+  flex: none; font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+  background: var(--bg-soft, #efeae0); color: #5b5145; white-space: nowrap;
+}
+/* 元气满满徽章与名字同行：胶囊收紧、可收缩省略，绝不撑破头卡 */
+.care-head__badge {
+  flex: 0 1 auto; min-width: 0; margin: 0; display: inline-flex; align-items: center;
+}
+.care-head__badge:empty { display: none; }
+.care-badge {
+  display: block; max-width: 152px; font-size: 11px; line-height: 1.35;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+  background: #f0ece3; color: #6b6155; border: 1px solid #ddd4c6;
+}
+.care-badge--ok { background: #fff6e0; color: #9a6b00; border-color: #f0d79a; font-weight: 600; }
+.care-badge--crown { background: #fff1cf; color: #8a5a00; border-color: #e6b94e; font-weight: 700; }
+
+/* —— 主力切换：头部入口按钮（名字 / 等级 / 按钮成一组靠左）—— */
+.care-head__id { display: flex; align-items: center; gap: 6px; min-width: 0; margin-right: auto; }
+.care-head__name {
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* （V5.1：care-head__switch「🔄 切换」按钮已删除，切换入口统一为 GBA 屏「更换」按钮） */
+
+/* —— 主力切换：宝可梦中心弹窗（渐进披露：网格只有头像+名字，选中后上方出详情） —— */
+.sw-head { display: flex; align-items: center; gap: 7px; }
+.sw-head .ui-modal__title { margin: 0; }
+/* 收录数量做成胶囊徽章，不再是一行淡灰小字 */
+.sw-count {
+  margin-left: auto; flex: none; font-size: 12px; font-weight: 700; color: #3D2B1F;
+  padding: 3px 10px; border-radius: 999px; background: #F3E3BE;
+  border: 1.5px solid #4A3728; box-shadow: 0 1.5px 0 #4A3728;
+}
+.sw-count b { font-size: 14px; color: #C0441F; margin: 0 1px; }
+.sw-detail {
+  display: flex; gap: 12px; margin-top: 10px; padding: 10px;
+  border: 2px solid #4A3728; border-radius: 10px; background: #FFFDF5;
+}
+.sw-detail__art {
+  width: 92px; height: 92px; flex: none; border-radius: 8px; background: #F3E3BE;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.sw-detail__art img { max-width: 86%; max-height: 86%; object-fit: contain; }
+.sw-detail__info { flex: 1; min-width: 0; }
+.sw-detail__name { font-size: 15px; font-weight: 700; color: #3D2B1F; }
+.sw-detail__lv { font-size: 13px; font-weight: 400; color: #7A6A55; }
+.sw-detail__no { font-size: 11px; color: #7A6A55; margin-bottom: 6px; }
+/* 羁绊做成金色徽章条：星级放大 + 描边加粗，从附属小字变成主信息 */
+.sw-bond {
+  display: flex; align-items: center; gap: 6px; margin-top: 6px;
+  padding: 4px 8px; border-radius: 8px;
+  background: linear-gradient(#FFF6E0, #FFE7B0);
+  border: 1.5px solid #E8A33D; box-shadow: 0 1.5px 0 #C8873A;
+}
+.sw-bond__lb { font-size: 11px; font-weight: 700; color: #8A5A00; flex: none; }
+.sw-bond__stars {
+  font-size: 15px; line-height: 1; letter-spacing: 2px; color: #E8A33D;
+  text-shadow: 0 1px 0 #fff, 0 0 1px #B37A1E;
+}
+.sw-bond__v { margin-left: auto; font-size: 11px; font-weight: 700; color: #8A5A00; flex: none; }
+.sw-bar { display: flex; align-items: center; gap: 5px; margin-bottom: 4px; }
+.sw-bar__lb { font-size: 11px; color: #7A6A55; flex: none; }
+.sw-bar__track { flex: 1; height: 5px; border-radius: 3px; background: #E3D6B8; overflow: hidden; }
+.sw-bar__fill { height: 100%; border-radius: 3px; }
+.sw-bar__fill.is-food { background: #639922; }
+.sw-bar__fill.is-mood { background: #D4537E; }
+.sw-bar__fill.is-energy { background: #378ADD; }
+.sw-bar__v { font-size: 11px; color: #7A6A55; width: 22px; text-align: right; flex: none; }
+/* 切换弹窗比普通弹窗宽：4 列格子才够大，且稳定容纳 2 排 × 4 只 */
+.ui-modal--switch { width: calc(100% - 16px); max-width: 376px; }
+.sw-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 8px;
+  margin-top: 12px; max-height: 204px; overflow-y: auto;
+  padding: 2px 2px 8px;
+}
+/* 空位：宝可梦 PC 箱子的虚线格，保证宝可梦少时窗口也不缩成一小条 */
+.sw-cell--empty {
+  border-style: dashed; border-color: #D3C1A0; background: #FBF6E9;
+  pointer-events: none; opacity: .75;
+}
+.sw-cell--empty .sw-cell__name { color: #B4A483; }
+.sw-cell {
+  position: relative; padding: 6px 3px 12px; text-align: center; cursor: pointer;
+  border: 1.5px solid #C9B896; border-radius: 8px; background: #FFFDF5;
+}
+.sw-cell.is-sel { border: 2px solid #E8A33D; background: #FFF0CC; }
+.sw-cell__art { height: 46px; display: flex; align-items: center; justify-content: center; }
+.sw-cell__art img { max-height: 42px; max-width: 92%; object-fit: contain; }
+.sw-cell__name {
+  font-size: 11px; margin-top: 3px; color: #3D2B1F;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 角标悬挂在底边框上（照顾中 / 队），不遮挡宝可梦立绘 */
+.sw-cell__tag {
+  position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; padding: 0 5px; line-height: 1.5;
+  border-radius: 999px; white-space: nowrap;
+}
+.sw-hint { font-size: 12px; color: #7A6A55; margin: 10px 0 0; line-height: 1.6; }
+.ui-modal--switch .btn[disabled] { opacity: .5; }
+
+.care-stage {
+  position: relative;
+  height: clamp(136px, 18vh, 190px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--surface);
+}
+.care-creature-wrap {
+  position: relative;
+  width: clamp(118px, 32vw, 170px);
+  height: clamp(118px, 32vw, 170px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.care-creature {
+  width: clamp(104px, 28vw, 150px);
+  height: clamp(104px, 28vw, 150px);
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .18));
+}
+/* 常驻呼吸（正面 idle） */
+.care-stage.state-idle .care-creature-wrap { animation: careBreath 3s ease-in-out infinite; }
+/* 喂食：开心跳 + 星星（正面） */
+.care-stage.state-feed .care-creature-wrap { animation: careJump .5s ease-in-out 3; }
+.care-stage.state-feed .care-stars { opacity: 1; transform: scale(1); }
+/* 玩耍：持续快弹（正面） */
+.care-stage.state-play .care-creature-wrap { animation: careJump .42s ease-in-out infinite; }
+.care-stage.state-play .care-note { opacity: 1; }
+/* 抚摸①：正面左右摇摆 */
+.care-stage.state-tickle .care-creature-wrap { animation: careWiggle .18s ease-in-out 8; }
+/* 抚摸②：背身扭屁股（切换为 back GIF） */
+.care-stage.state-tickle-back .care-creature-wrap { animation: careTickleBack .4s ease-in-out 3; }
+/* 饥饿①：正面灰扑扑 + 下沉慢晃 + 流汗（仅彩色模式，墨水屏交给全局灰阶） */
+body:not(.ink) .care-stage.state-hungry .care-creature,
+body:not(.ink) .care-stage.state-hungry-back .care-creature {
+  filter: grayscale(1) brightness(.82) drop-shadow(0 3px 4px rgba(0, 0, 0, .25));
+}
+.care-stage.state-hungry .care-creature-wrap { animation: careSink 2.6s ease-in-out infinite; }
+.care-stage.state-hungry .care-sweat { opacity: 1; animation: careDrip 1.4s ease-in infinite; }
+/* 饥饿②：背身委屈（back GIF + 灰 + 下沉） */
+.care-stage.state-hungry-back .care-creature-wrap { animation: careSink 2.6s ease-in-out infinite; }
+.care-stage.state-hungry-back .care-sweat { opacity: 1; animation: careDrip 1.4s ease-in infinite; }
+/* 不开心：背身 + 垂头 + 乌云雨滴（back GIF） */
+body:not(.ink) .care-stage.state-unhappy .care-creature {
+  filter: grayscale(1) brightness(.92) drop-shadow(0 3px 4px rgba(0, 0, 0, .25));
+}
+.care-stage.state-unhappy .care-creature-wrap { animation: careSad 2.8s ease-in-out infinite; }
+.care-stage.state-unhappy .care-rain { opacity: 1; animation: careRain 2.2s ease-in-out infinite; }
+.care-stage.state-unhappy.shake .care-creature-wrap { animation: careShake .3s ease-in-out 2; }
+
+@keyframes careBreath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+@keyframes careJump { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-16px) scale(1.04); } }
+@keyframes careSink { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(9px) rotate(1.5deg); } }
+@keyframes careWiggle { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+@keyframes careTickleBack { 0%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-9px) rotate(-6deg); } 75% { transform: translateY(-9px) rotate(6deg); } }
+@keyframes careSad { 0%, 100% { transform: translateY(6px) rotate(-2deg); } 50% { transform: translateY(6px) rotate(2deg); } }
+@keyframes careShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes careDrip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(22px); opacity: 0; } }
+@keyframes careRain { 0%, 100% { transform: translateY(0); opacity: .9; } 50% { transform: translateY(5px); opacity: .6; } }
+@keyframes carePopfade { 0% { opacity: 0; transform: translateY(8px) scale(.85); } 12% { opacity: 1; transform: translateY(0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+
+/* —— 交换演出：GBA 屏内三段（收回 → 传送 → 放出）—— */
+.care-swap-ball {
+  position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px;
+  opacity: 0; pointer-events: none; z-index: 3;
+}
+.care-swap-ball svg { width: 100%; height: 100%; display: block; }
+.care-swap-ball.is-in { animation: swapBallFull 1.2s ease-in-out forwards; }
+.care-swap-ball.is-out { animation: swapBallOut .4s ease-in forwards; }
+.care-swap-flash {
+  position: absolute; left: 50%; top: 50%; width: 170px; height: 170px; margin: -85px 0 0 -85px;
+  border-radius: 50%; background: #fff; opacity: 0; pointer-events: none; z-index: 4;
+}
+.care-swap-flash.is-on { animation: swapFlash .55s ease-out forwards; }
+.care-stage.state-swap-out .care-creature-wrap { animation: swapShrink .8s ease-in forwards; }
+.care-stage.state-swap-warp .care-creature-wrap { opacity: 0; }
+.care-stage.state-swap-in .care-creature-wrap { animation: swapAppear .9s ease-out; }
+.care-stage.is-busy { pointer-events: none; }
+@keyframes swapShrink {
+  0% { opacity: 1; transform: scale(1); }
+  70% { opacity: .85; }
+  100% { opacity: 0; transform: scale(.25); }
+}
+@keyframes swapAppear {
+  0% { opacity: 0; transform: scale(.3); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes swapBallFull {
+  0%   { opacity: 0; transform: scale(.3); }
+  22%  { opacity: 1; transform: scale(1.12); }
+  34%  { opacity: 1; transform: scale(1) rotate(0deg); }
+  50%  { opacity: 1; transform: scale(1) rotate(-12deg); }
+  66%  { opacity: 1; transform: scale(1) rotate(12deg); }
+  82%  { opacity: 1; transform: scale(1) rotate(-8deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+@keyframes swapBallOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.7); } }
+@keyframes swapFlash {
+  0% { opacity: 0; transform: scale(.2); }
+  28% { opacity: .95; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.35); }
+}
+body.ink .care-swap-ball, body.ink .care-swap-flash { display: none; }
+
+/* 互动挂件 */
+.care-fx {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  font-size: 24px;
+}
+.care-stars { top: -14px; right: -6px; transform: scale(.4); }
+.care-sweat { top: 16px; right: 18px; }
+.care-note { right: 2px; bottom: 2px; font-size: 20px; }
+.care-rain { top: -6px; left: 8px; font-size: 26px; }
+/* 对话气泡 */
+.care-bubble {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 18px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.care-bubble.show { animation: carePopfade 1.6s ease forwards; }
+
+/* ===== GBA 风底部对话框：系统提示（果实不够 / 冷却 / 数值变化）=====
+   宝可梦自己的台词仍走头顶气泡，两类信息不混在一起。 */
+.care-dlg {
+  position: relative;
+  min-height: 48px;
+  margin: 0 0 6px;
+  padding: 6px 11px 11px;
+  background: #FFF9E8;
+  border: 3px solid #4A3728;
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 2px #F3E3BE;
+  color: #3D2B1F;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.care-dlg__name {
+  display: inline-block; flex: none;
+  font-size: 11px; font-weight: 700; color: #fff;
+  background: #8A8578; border: 2px solid #4A3728;
+  border-radius: 4px; padding: 0 7px; margin-right: 6px;
+}
+.care-dlg__name:empty { display: none; }
+.care-dlg__txt { word-break: break-word; }
+.care-dlg__caret {
+  position: absolute; right: 10px; bottom: 2px;
+  font-size: 11px; color: #4A3728; opacity: 0;
+}
+.care-dlg.is-on.is-done .care-dlg__caret { animation: dlgBlink 1s steps(1) infinite; }
+@keyframes dlgBlink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: .15; } }
+body.ink .care-dlg__caret { animation: none !important; }
+body.ink .care-dlg.is-on .care-dlg__caret { opacity: 1; }
+
+/* 状态条 */
+.care-bars { display: flex; gap: 7px; margin-top: 6px; }
+.care-bar {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 5px 7px;
+}
+.care-bar__lb { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 3px; }
+.care-bar__track { height: 9px; background: var(--surface); border-radius: 5px; overflow: hidden; }
+.care-bar__fill { height: 100%; background: var(--ink); border-radius: 5px; transition: width .4s; }
+.care-bar.is-low .care-bar__fill { background: var(--muted); }
+
+/* 按钮区 */
+.care-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+.care-btn { min-height: var(--tap); font-size: 15px; }
+
+/* ===== 羁绊卡片（Task 7f）· 一屏版：三项指标一行三列 ===== */
+.bond-card { padding: 10px; }
+/* 羁绊条：金色徽章（与切换弹窗 .sw-bond 同一套观感），星星放大描边 */
+.bond-head {
+  margin-bottom: 7px; padding: 4px 8px; border-radius: 9px;
+  background: linear-gradient(#FFF6E0, #FFE7B0);
+  border: 1.5px solid #E8A33D; box-shadow: 0 1.5px 0 #C8873A;
+  display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+}
+.bond-head__lb { font-size: 11px; font-weight: 700; color: #8A5A00; flex: none; }
+.bond-head__stars {
+  font-size: 15px; line-height: 1; letter-spacing: 1px; color: #E8A33D;
+  text-shadow: 0 1px 0 #fff, 0 0 1px #B37A1E;
+}
+.bond-head__v { font-size: 11px; font-weight: 700; color: #8A5A00; flex: none; }
+.bond-head__v b { color: #C0441F; font-size: 13px; }
+.bond-head__pct { margin-left: auto; font-size: 11px; font-weight: 700; color: #8A5A00; flex: none; }
+.bond-head__today {
+  flex: none; font-size: 10px; font-weight: 700; color: #2E6B45;
+  padding: 1px 7px; border-radius: 999px; background: #DFF3E4; border: 1.5px solid #4E9A6A;
+}
+.bond-rules {
+  flex: none; font-size: 11px; padding: 3px 8px; min-height: 26px;
+  border-radius: 999px; cursor: pointer; font-weight: 600;
+  background: #FFFDF5; color: #3D2B1F; border: 1.5px solid #4A3728;
+}
+.bond-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 6px; }
+.bond-metric {
+  background: var(--card); border: 1px solid var(--line-soft);
+  border-radius: 10px; padding: 4px 7px;
+}
+.bond-metric__lb {
+  font-size: 11px; color: var(--muted);
+  display: flex; justify-content: space-between; gap: 4px; margin-bottom: 3px;
+}
+.bond-total__lb { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; margin-bottom: 3px; }
+
+/* 墨水屏：关掉呼吸等动画，减少残影（GIF 仍是动图，全局灰阶已生效） */
+body.ink .care-creature-wrap { animation: none !important; }
+
+/* ===== 记忆翻牌（Task 7d / V4 Task 9）===== */
+.mem-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mem-top__t { font-size: 16px; font-weight: 600; }
+.mem-top__sub { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 400; }
+.mem-back { margin-right: auto; }
+.mem-steps { font-size: 13px; color: var(--muted); margin-left: auto; }
+.mem-steps b { color: var(--text, #1f1f1d); }
+/* v63 方案 A：剩余翻牌次数 HUD（次数 = 卡数 + 5，翻一张扣 1 次） */
+.mem-turns { margin-bottom: 10px; padding: 7px 11px; background: #FFF3CE; border: 2px solid #E0C98A; border-radius: 11px; }
+.mem-turns__row { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; font-weight: 800; color: #6b5a3c; }
+.mem-turns__row b { color: #A32D2D; font-size: 15px; }
+.mem-bonus { display: inline-block; margin-left: 4px; font-size: 11px; font-weight: 800; font-style: normal; color: #3B6D11; opacity: 0; transition: opacity .2s; }
+.mem-bonus.is-on { opacity: 1; }
+.mem-bar { height: 8px; border-radius: 5px; background: #EDE3CB; margin-top: 6px; overflow: hidden; }
+.mem-bar i { display: block; height: 100%; background: linear-gradient(90deg,#E8B93C,#D85A30); transition: width .2s ease; }
+
+/* 棋盘在悬浮弹窗里：内边距收紧，四列也能塞进 390 宽的手机 */
+.mem-board { display: grid; gap: 7px; padding: 6px 0 0; background: none; border: 0; }
+.mem-board[style*="--cols"] { grid-template-columns: repeat(var(--cols, 4), 1fr); }
+
+.mem-card { aspect-ratio: 1 / 1; perspective: 400px; }
+.mem-card__inner {
+  position: relative; width: 100%; height: 100%;
+  transition: transform .3s ease; transform-style: preserve-3d;
+}
+.mem-card.is-flipped .mem-card__inner,
+.mem-card.is-matched .mem-card__inner { transform: rotateY(180deg); }
+.mem-card__face {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: 10px; padding: 4px;
+  font-size: clamp(15px, 5vw, 24px); font-weight: 600;
+}
+.mem-card__back { background: var(--surface-2, #efeae0); color: var(--muted, #6b6155); border: 1px solid var(--line, #ddd4c6); }
+.mem-card__back svg { width: 46%; height: 46%; }
+.mem-card__front {
+  background: var(--surface, #fff); color: var(--text, #1f1f1d);
+  transform: rotateY(180deg); border: 1px solid var(--line, #ddd4c6);
+  padding: 2px; text-align: center;
+}
+/* 一对两面：汉字卡深棕大字 / 拼音卡橙色调 / 单词卡蓝色调 / 中文卡深棕 */
+.mem-front--zh { font-size: clamp(20px, 7vw, 34px); font-weight: 600; }
+.mem-front--py { font-size: clamp(13px, 4.6vw, 22px); color: #B4552D; }
+.mem-front--en { font-size: clamp(12px, 4.2vw, 20px); color: #185FA5; }
+.mem-front--cn { font-size: clamp(13px, 4.6vw, 22px); font-weight: 600; }
+.mem-card.is-matched { opacity: .4; }
+.mem-card.is-matched .mem-card__front { background: var(--surface-2, #efeae0); }
+
+/* 弹窗内的「今天已玩过」页 */
+.mem-done {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 28px 12px; text-align: center;
+}
+.mem-done__t { font-size: 17px; font-weight: 600; color: #3D2B1F; }
+.mem-done__s { font-size: 13px; color: var(--muted, #6b6155); }
+.mem-done .btn {
+  min-width: 120px; margin-top: 4px;
+  background: #FFF9E8; border: 2px solid #4A3728; border-radius: 9px; color: #3D2B1F;
+}
+.mem-done .btn--primary { background: #D85A30; color: #fff; }
+
+/* 第 7 轮：玩耍选择页重做——标题「玩耍」+ 规则胶囊 + 两张卡片式入口，
+   不再让一长串说明文字挤在一行里溢出，选项标题统一为「记忆翻牌-拼音 / -英语」。 */
+.mem-hero { margin-bottom: 10px; padding: 11px 13px; background: linear-gradient(#FFFDF5, #F7E9CB);
+  border: 2px solid #4A3728; border-radius: 14px; box-shadow: inset 0 0 0 2px rgba(255,255,255,.6); }
+.mem-hero__t { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 900; color: #3D2B1F; }
+.mem-hero__ico { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; height: 32px; border: 2px solid #4A3728; border-radius: 10px; background: #E8B93C; font-size: 17px; }
+/* v64：玩耍标题旁的「ⓘ 规则」按钮 */
+.mem-rules-btn { margin-left: auto; flex: none; font-size: 11px; font-weight: 800; padding: 3px 9px;
+  border: 1.5px solid #4A3728; border-radius: 999px; background: #FFFDF5; color: #3D2B1F; cursor: pointer; }
+/* v64：玩耍弹窗「内部」的规则浮层（盖在 memBody 上，不动全局 #uiOverlay） */
+.mem-rules { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; padding: 14px; }
+.mem-rules__bg { position: absolute; inset: 0; background: rgba(61,43,31,.45); border-radius: 12px; }
+.mem-rules__card { position: relative; width: 100%; max-width: 330px; padding: 13px;
+  background: #FFF9E8; border: 3px solid #4A3728; border-radius: 14px; box-shadow: inset 0 0 0 2px #F3E3BE; }
+.mem-rules__hd { display: flex; align-items: center; justify-content: space-between;
+  font-size: 16px; font-weight: 900; color: #3D2B1F; margin-bottom: 8px; }
+.mem-rules__x { width: 24px; height: 24px; line-height: 20px; text-align: center; cursor: pointer;
+  border: 1.5px solid #4A3728; border-radius: 7px; background: #FFFDF5; color: #3D2B1F; font-size: 16px; font-weight: 900; }
+.mem-rules__body { max-height: 52dvh; overflow: auto; }
+.mem-rules__li { font-size: 12px; line-height: 1.65; color: #5b4a30; margin-bottom: 7px; text-align: left; }
+.mem-rules__li b { color: #3D2B1F; }
+.mem-rules__tier { margin: 3px 0 0 12px; font-size: 11.5px; color: #6b5a3c; }
+.mem-rules__ok { margin-top: 8px; }
+.mem-hero__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.mem-hero__chips span { padding: 3px 9px; font-size: 11.5px; font-weight: 700; color: #5b4a30;
+  background: rgba(255,255,255,.88); border: 1.5px solid #D9C7A3; border-radius: 999px; white-space: nowrap; }
+.mem-choose-wrap { display: flex; flex-direction: column; gap: 10px; background: none; border: 0; box-shadow: none; padding: 0; }
+.mem-choose { display: flex; flex-direction: row; align-items: center; gap: 11px; width: 100%; margin: 0;
+  padding: 11px 12px; text-align: left; background: #FFF9E8; border: 2px solid #4A3728;
+  border-radius: 14px; box-shadow: 0 3px 0 rgba(74,55,40,.28); }
+.mem-choose:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(74,55,40,.28); }
+.mem-choose.is-done { opacity: .72; background: #F1EADA; }
+.mem-choose__ico { display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 42px; height: 42px; border: 2px solid #4A3728; border-radius: 12px;
+  background: #8EC5E8; color: #1d3b57; font-size: 14px; font-weight: 900; }
+.mem-choose__ico--pinyin { background: #F6D08A; color: #6b4a10; }
+.mem-choose__txt { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.mem-choose__t { font-size: 15px; font-weight: 900; color: #3D2B1F; }
+.mem-choose__s { font-size: 11.5px; font-weight: 600; color: #7A6A55; }
+.mem-choose__state { flex: none; font-size: 11.5px; font-weight: 900; color: #B4552D; white-space: nowrap; }
+.mem-choose__state.is-done { color: #5b5145; }
+
+/* 第 7 轮：结算页整块跨列居中，修掉「棋盘 4 列 grid 把结算内容挤成左侧竖条」 */
+.mem-board.is-win { display: flex; align-items: center; justify-content: center; min-height: 280px; }
+.mem-win {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  width: 100%; max-width: 320px; padding: 24px 14px; text-align: center;
+  background: #FFF9E8; border: 3px solid #4A3728; border-radius: 14px;
+  box-shadow: inset 0 0 0 2px #F3E3BE; color: #3D2B1F;
+}
+.mem-win__emoji { font-size: 34px; line-height: 1; }
+.mem-win h3 { margin: 0; font-size: 18px; color: #3D2B1F; white-space: nowrap; }
+.mem-win p { margin: 0; font-size: 13px; font-weight: 700; color: #7A5B33; white-space: normal; line-height: 1.5; }
+.mem-win__row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 4px; }
+.mem-win .btn { min-width: 112px; background: #FFF9E8; border: 2px solid #4A3728; border-radius: 9px; color: #3D2B1F; }
+.mem-win .btn--primary { background: #D85A30; color: #fff; }
+
+body.ink .mem-card__inner { transition: none; }
+body.ink .mem-card.is-flipped .mem-card__inner,
+body.ink .mem-card.is-matched .mem-card__inner { transform: none; }
+body.ink .mem-card__front { transform: none; }
+
+/* ===== 规则说明弹窗（养成页「怎么玩」）===== */
+.ui-modal--rules {
+  max-width: 420px;
+  width: 88%;
+  max-height: 78vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  text-align: left;
+}
+.rules-sec { margin: 10px 0 14px; }
+.rules-t { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.rules-li {
+  font-size: 13px; line-height: 1.7; color: var(--muted, #6b6155);
+  padding-left: 10px; text-indent: -10px;
+}
+.rules-li::before { content: '· '; }
+
+/* 小屏（高度 ≤820：360×780 / 375×667 这类）养成页再压一档，保证仍然一屏 */
+@media (max-height: 820px) {
+  .screen { padding: 10px 12px; }
+  .care-card { padding: 8px; margin-bottom: 5px; }
+  .care-stage { height: 172px; }
+  .care-creature-wrap { width: clamp(104px, 30vw, 150px); height: clamp(104px, 30vw, 150px); }
+  .care-creature { width: clamp(92px, 26vw, 132px); height: clamp(92px, 26vw, 132px); }
+  .care-dlg { min-height: 42px; margin-bottom: 5px; padding: 5px 10px 10px; }
+  .care-btn { min-height: 44px; font-size: 14px; }
+  .bond-metric { padding: 3px 6px; }
+  .ranch-yard:not(.ranch-yard--scene) { height: 239px; }
+}
+
+/* ===== 乐园 · 牧场养育场（Task 8 / Phase 1）===== */
+.ranch-head { padding: 10px 12px 12px; }
+.ranch-head__top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ranch-head__top .bond-rules { margin-left: auto; }
+.ranch-head__t { font-size: 17px; margin: 0; }
+
+/* 资源条：果实 / 球 / 伤药 / 外出次数 */
+.ranch-res { display: flex; gap: 6px; }
+.ranch-res__i {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-size: 12px; padding: 5px 2px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+.ranch-res__i b { font-size: 14px; font-variant-numeric: tabular-nums; }
+.ranch-res__i { cursor: pointer; transition: transform .12s ease, box-shadow .12s ease; }
+.ranch-res__i:active { transform: scale(.95); }
+.ranch-res__i:hover { box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.ranch-res__i--shard { color: var(--ink, #3b4cca); border-color: var(--ink, #3b4cca); }
+.res-pop { font-size: 14px; line-height: 1.7; color: var(--text); padding: 2px 2px 6px; }
+
+/* 牧场场景：GBA 外壳（.ranch-shell 复用养成页 .gba-shell 机身）+ 深棕描边液晶屏 */
+.ranch-shell { margin-bottom: 12px; }
+.ranch-yard {
+  position: relative; height: 273px; border-radius: 6px; overflow: hidden;
+  border: 3px solid #4A3728;
+  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.85);
+  /* 视觉参数兜底值；真正数值由 ranch.js 以内联 --var 注入（与确认稿一致） */
+  --pscale: 2.25; --gl-op: 0.12; --ol: 0; --gb: 1.20;
+}
+.ranch-yard__ground {
+  position: absolute; inset: 0; z-index: 0;
+  /* CSS 的 url() 相对「样式表文件」(css/app.css) 解析，故需 ../ 回到项目根 */
+  background-image: url('../assets/env/forest/ground.png');
+  background-repeat: repeat; background-size: 128px 128px; image-rendering: pixelated;
+  filter: brightness(var(--gb)) saturate(1.18);
+}
+.ranch-yard__props { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.ranch-prop {
+  position: absolute; background-repeat: no-repeat; image-rendering: pixelated;
+  filter: drop-shadow(0 2px 1px rgba(0,0,0,.25));
+}
+
+/* 宝可梦：统一大小、无标签、动作不区分主从 */
+.ranch-pm {
+  position: absolute; width: 96px; text-align: center; cursor: pointer; z-index: 4;
+  animation: ranchWander var(--w, 6s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.ranch-pm__glow {
+  position: absolute; left: 50%; bottom: -12px; width: 74px; height: 74px; border-radius: 50%;
+  transform: translateX(-50%) scale(var(--pscale)); z-index: 1; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,250,225,var(--gl-op)), rgba(255,250,225,0) 68%);
+}
+.ranch-pm__spr {
+  display: block; margin: 0 auto; position: relative; z-index: 3;
+  background-repeat: no-repeat; image-rendering: pixelated;
+  transform: scale(var(--pscale)); transform-origin: bottom center;
+  animation: pmloop var(--dur, 0.7s) steps(var(--fr, 4)) infinite;
+}
+.ranch-pm__spr.is-hungry { animation: none; opacity: .8; filter: grayscale(1) brightness(.85); }
+/* 饿了：停下不动，去色静止（无文字标签） */
+.ranch-pm.is-rest { animation: none; }
+
+@keyframes ranchWander { from { transform: translateX(-11px); } to { transform: translateX(11px); } }
+@keyframes pmloop { from { background-position-x: 0; } to { background-position-x: var(--dist); } }
+
+/* 劳动产出飘字：从宝可梦头顶冒出 → 上浮 → 消散（纯视觉，真实结算按天） */
+.ranch-float {
+  position: absolute; top: -10px; left: 58%; z-index: 6;
+  font-size: 15px; line-height: 1; pointer-events: none;
+  animation: ranchFloat 1.8s ease-out forwards;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .85);
+}
+@keyframes ranchFloat {
+  0%   { opacity: 0; transform: translate(-50%, 8px) scale(.5); }
+  18%  { opacity: 1; transform: translate(-50%, 0) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -44px) scale(1); }
+}
+
+/* 细状态条（饱食 / 心情） */
+.ranch-bar { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.ranch-bar + .ranch-bar { margin-top: 3px; }
+.ranch-bar__l { flex: none; width: 28px; }
+.ranch-bar__t { flex: 1; height: 6px; background: var(--ring-off); border-radius: 4px; overflow: hidden; }
+.ranch-bar__t i { display: block; height: 100%; background: var(--ok); }
+.ranch-bar__n { flex: none; width: 26px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 三个外出按钮 */
+.ranch-out-card__t { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.ranch-outs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ranch-out {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-height: 78px; padding: 8px 3px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--card); color: var(--text);
+}
+.ranch-out__i { font-size: 20px; line-height: 1.2; }
+.ranch-out__t { font-size: 13px; font-weight: 600; }
+.ranch-out__s { font-size: 10.5px; color: var(--muted); text-align: center; line-height: 1.35; }
+.ranch-out.is-off { opacity: .5; }
+
+/* 选人弹层 */
+.ui-modal--ranch { width: calc(100% - 24px); max-width: 380px; }
+.ranch-sheet__top { display: flex; gap: 10px; align-items: center; }
+.ranch-sheet__img {
+  flex: none; width: 64px; height: 64px; object-fit: contain;
+  background: var(--surface); border-radius: 12px;
+}
+.ranch-sheet__name { font-size: 15px; font-weight: 600; }
+.ranch-sheet__name b { color: #c99a06; }
+.ranch-sheet__sub { font-size: 12px; color: var(--muted); }
+.ranch-sheet__bars { margin: 10px 0 4px; }
+.ranch-sheet__grow-t { font-size: 12px; color: var(--muted); margin: 8px 0 2px; }
+.ranch-grow__row {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-size: 12.5px; padding: 3px 0; border-bottom: 1px dashed var(--line-soft);
+}
+.ranch-grow__row span { color: var(--muted); }
+.ranch-sheet__acts { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ranch-swap__list { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow: auto; }
+.ranch-swap {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px;
+  border: 1px solid var(--line-soft); background: var(--surface); font-size: 13px; color: var(--text);
+}
+.ranch-swap img { width: 36px; height: 36px; object-fit: contain; }
+.ranch-swap span { flex: 1; text-align: left; }
+.ranch-swap em { font-style: normal; font-size: 12px; color: var(--ink); }
+
+/* ============ V5 优化：日程紧凑 + 连击阶梯 ============ */
+.card--sticky { position: sticky; top: calc(var(--appbar-h, 64px) + 4px); z-index: 6; background: var(--card, #fff); box-shadow: 0 4px 12px rgba(0,0,0,.06); }
+.schedule-progress { padding-top: 12px; padding-bottom: 12px; }
+.schedule-progress__streak { font-size: 12px; color: var(--text-2, #5F5E5A); }
+/* 累计打卡次数：加粗 + 橙色突出（2026-11-14） */
+.schedule-progress__streak .ck-hl { font-size: 15px; font-weight: 800; color: #e0542f; margin: 0 2px; }
+.schedule-progress__streak-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0 8px; }
+.shard-pill { flex: none; font-size: 12px; font-weight: 600; color: var(--ink, #3b4cca); background: #EEEDFE; border-radius: 999px; padding: 2px 9px; font-variant-numeric: tabular-nums; }
+.combo { border-top: 0.5px solid var(--line-soft, rgba(0,0,0,0.12)); padding-top: 8px; }
+.combo__t { font-size: 12px; font-weight: 500; color: var(--text-1, #2C2C2A); margin-bottom: 6px; }
+.combo__sub { font-size: 11px; font-weight: 400; color: var(--text-3, #888780); margin-left: 4px; }
+.combo__row { display: flex; gap: 5px; }
+.combo__node { flex: 1; text-align: center; border-radius: 8px; padding: 5px 1px; background: var(--surface-2, #F1EFE8); color: #5F5E5A; border: 1.5px solid var(--line-strong, #B4B2A9); }
+.combo__node.is-reached { color: var(--ink, #3b4cca); border-color: var(--ink, #3b4cca); background: #fff; }
+.combo__node.is-got { color: #fff; border-color: var(--ink, #3b4cca); background: var(--ink, #3b4cca); }
+.combo__d { font-size: 12px; font-weight: 500; line-height: 1.2; }
+.combo__r { font-size: 10px; line-height: 1.2; margin-top: 2px; font-weight: 500; }
+.combo__hint { font-size: 11px; color: #1c2f8a; background: #E6F1FB; border-radius: 8px; padding: 6px 9px; margin-top: 6px; font-weight: 500; }
+.schedule-progress__checkin { font-size: 12px; font-weight: 600; margin: 7px 0 1px; }
+.schedule-progress__checkin.is-ok { color: #1f9d55; }
+.schedule-progress__checkin:not(.is-ok) { color: var(--text-3, #888780); }
+
+/* ============ V5 优化：乐园自由走动（无主从标记） ============ */
+.ranch-pm { transition: left 4.2s ease-in-out, bottom 4.2s ease-in-out; }
+
+/* ============ V5.1：乐园「我的队伍」条（置顶压缩版；chip 只显示体力，<50 变红 💤） ============ */
+.rk-team { padding: 9px 12px 8px; margin-bottom: 10px; }
+.rk-team__head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.rk-team__head h2 { font-size: 15px; font-weight: 700; margin: 0; flex: none; }
+.rk-team__n { font-size: 12px; color: var(--muted); font-weight: 600; flex: none; }
+.rk-team__tip { flex: 1; min-width: 0; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rk-team__row { display: flex; gap: 6px; }
+.rk-team__none { font-size: 12px; color: var(--muted); }
+/* 宝可梦中心按钮：掌机按键质感（胶囊 + 精灵球 + 立体描边），与养成页「更换」按钮同款 */
+.rk-team__pc {
+  flex: none; display: inline-flex; align-items: center; gap: 5px;
+  min-height: 30px; padding: 3px 12px 3px 9px;
+  font-size: 12px; font-weight: 700; letter-spacing: .02em; color: #3D2B1F;
+  background: linear-gradient(#FFFDF5, #F0DCAE);
+  border: 2px solid #4A3728; border-radius: 999px;
+  box-shadow: 0 2px 0 #4A3728, inset 0 1px 0 rgba(255, 255, 255, .9);
+  cursor: pointer;
+}
+.rk-team__pc:active { transform: translateY(2px); box-shadow: 0 0 0 #4A3728, inset 0 1px 0 rgba(255, 255, 255, .9); background: linear-gradient(#F5E7C4, #E8D3A6); }
+.rk-team__pc-ball { width: 15px; height: 15px; display: block; flex: none; }
+.rk-chip {
+  position: relative; flex: 0 1 84px; min-width: 0; display: flex; flex-direction: column; align-items: center;
+  gap: 1px; padding: 3px 3px 5px; border-radius: 8px;
+  border: 1.5px solid var(--line-soft, rgba(0,0,0,0.15)); background: var(--surface, #fff); cursor: pointer;
+}
+.rk-chip.is-rest { border-color: #C9B896; background: #F4F1E6; }
+.rk-chip__art { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.rk-chip__art img { max-width: 27px; max-height: 27px; object-fit: contain; }
+.rk-chip__name { font-size: 11px; color: var(--text-2, #5F5E5A); max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.rk-chip__stat { display: flex; align-items: center; gap: 3px; width: 100%; padding: 0 2px; }
+.rk-chip__stat i { font-style: normal; font-size: 9px; color: var(--muted); flex: none; }
+.rk-chip__stat em { flex: 1; height: 5px; border-radius: 3px; background: var(--surface-2, #F1EFE8); overflow: hidden; font-style: normal; }
+.rk-chip__stat em b { display: block; height: 100%; border-radius: 3px; background: #378ADD; }
+.rk-chip__stat u { text-decoration: none; font-size: 9px; color: var(--muted); flex: none; min-width: 14px; text-align: right; }
+.rk-chip__stat.is-low u { color: #C0392B; font-weight: 700; }
+.rk-chip__stat.is-low em b { background: #D9534F; }
+.rk-chip__tag {
+  position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+  font-size: 9px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+  background: #8A8776; color: #fff; white-space: nowrap;
+}
+.rk-chip__cd { font-variant-numeric: tabular-nums; font-weight: 700; }
+
+/* ============ V5.1：乐园休息中的宝可梦（原地 + 💤） ============ */
+.ranch-pm.is-rest { animation-play-state: paused; }
+/* zzz 放进精灵图层并贴住右上角：用 counter-scale 抵消精灵 2.25x 放大，
+   让它真正贴在宝可梦头顶右角、且字号保持可读（约 180% 原尺寸） */
+.ranch-pm__spr .ranch-pm__zzz {
+  position: absolute; top: -4px; right: -4px; z-index: 5;
+  font-size: 23px; line-height: 1; pointer-events: none; filter: none;
+  transform: scale(calc(1 / var(--pscale)));
+  transform-origin: top right;
+  text-shadow: 0 1px 0 rgba(255,255,255,.85);
+  animation: ranchZzz 2.2s ease-in-out infinite;
+}
+@keyframes ranchZzz {
+  0%, 100% { top: -4px; opacity: .9; }
+  50% { top: -10px; opacity: 1; }
+}
+body.ink .ranch-pm__spr .ranch-pm__zzz { animation: none; }
+
+/* ============ 乐园碰撞反应（两只劳动中的宝可梦撞到一起） ============ */
+/* 碰撞「!」气泡样式已移除：宝可梦改为选点阶段就拉开间距，行为上避免相撞 */
+
+/* ============ 2026-11-08 乐园新版场景：天空 + 围栏 + 大草地背景 ============ */
+.ranch-yard--scene {
+  height: auto;
+  aspect-ratio: 1920 / 1390;
+  isolation: isolate;                 /* 局部层叠上下文：装饰与宝可梦按前后深度互相遮挡 */
+  background: #7ec850;
+  --pscale: 1;
+  box-shadow: inset 0 0 14px rgba(255, 255, 255, .35);
+}
+.ranch-yard--scene .ranch-yard__ground {
+  background-image: url('../assets/env/ranch/bg.jpg');
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  background-position: center;
+  image-rendering: auto;
+  filter: none;
+}
+body.ink .ranch-yard--scene .ranch-yard__ground { filter: grayscale(1); }
+.ranch-yard--scene .ranch-yard__props { z-index: auto; }
+.ranch-yard--scene .ranch-prop {
+  display: block; transform: translateX(-50%); image-rendering: auto; will-change: transform;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .18));
+}
+.ranch-yard--scene .ranch-prop.is-picked { filter: saturate(.72) brightness(.94); }
+.ranch-yard--scene .ranch-prop.is-shake { animation: bushShake .5s ease; }
+body.ink .ranch-yard--scene .ranch-prop { filter: grayscale(1); }
+@keyframes bushShake {
+  0%, 100% { transform: translateX(-50%) rotate(0); }
+  25% { transform: translateX(-50%) rotate(-5deg); }
+  75% { transform: translateX(-50%) rotate(5deg); }
+}
+/* 新版连续游走：关掉旧的左右摇摆和 4.2s 过渡，坐标由 JS 每 40ms 更新 */
+.ranch-yard--scene .ranch-pm {
+  animation: none; transition: none; transform: translateX(-50%);
+}
+.ranch-yard--scene .ranch-pm__glow { width: 46px; height: 46px; }
+/* 拾取：果实从果丛/蘑菇飞向宝可梦，头顶 +1 */
+.ranch-yard--scene .berry-fly {
+  position: absolute; z-index: 900; font-size: 17px; line-height: 1; pointer-events: none;
+  animation: berryFly .95s ease-in-out forwards;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .8);
+}
+@keyframes berryFly {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(.6); }
+  16% { opacity: 1; transform: translate(-50%, -12px) scale(1.2); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, -60px)) scale(.85); }
+}
+.ranch-yard--scene .pm-gain {
+  position: absolute; top: -8px; left: 50%; z-index: 7; pointer-events: none;
+  color: #fff6cf; font-size: 13px; font-weight: 900; white-space: nowrap;
+  text-shadow: 0 1px 2px #6b4a1c, 0 0 6px rgba(255, 220, 120, .8);
+  animation: ranchFloat 1.8s ease-out forwards;
+}
+
+/* ============ V5：宝可梦中心合并队伍编辑（队角标 / 仓库虚线格） ============ */
+.sw-cell--box { border-style: dashed; border-color: #C9B896; background: #FBF6E9; }
+.sw-cell--box .sw-cell__name { color: #8A7A5A; }
+/* 角标悬挂在格子底边（不再压住宝可梦立绘）；grid 留 padding 给角标伸出 */
+.sw-cell__tag { background: #E8A33D; color: #fff; font-weight: 700; }
+.sw-cell__tag--team { background: var(--ink, #3b4cca); color: #fff; }
+
+/* ===== B1 兑换中心：钱包总览 / 兑换卡 / 步进器 / 批量档 / 轻提示 ===== */
+/* 钱包总览：三格一行 */
+.ex-wallet {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+}
+.ex-wallet__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  padding: 8px 4px;
+}
+.ex-wallet__cell i { font-style: normal; font-size: 18px; line-height: 1; }
+.ex-wallet__cell b { font-size: 20px; color: var(--text); line-height: 1.1; }
+.ex-wallet__cell span { font-size: 11px; color: var(--muted); }
+
+/* 兑换卡 */
+.ex-card { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.ex-card__head { display: flex; align-items: center; gap: 10px; }
+.ex-card__badge {
+  width: 44px; height: 44px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+.ex-card--battle .ex-card__badge { background: linear-gradient(135deg, #FFE3E0, #FFD1C9); }
+.ex-card--capture .ex-card__badge { background: linear-gradient(135deg, #E0F2E9, #CDEEDC); }
+.ex-card__title { flex: 1; min-width: 0; }
+.ex-card__title h2 { font-size: 17px; margin: 0; }
+.ex-card__title span { font-size: 12px; color: var(--muted); }
+.ex-card__rate {
+  flex: none;
+  font-size: 11px; font-weight: 700;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+/* 步进器 + 批量档 */
+.ex-card__body { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ex-step { display: flex; align-items: center; gap: 6px; }
+.ex-step__btn {
+  width: 36px; height: 36px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--text);
+  font-size: 18px; font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.ex-step__btn:disabled { opacity: .4; cursor: default; }
+.ex-step__num {
+  min-width: 44px; text-align: center;
+  font-size: 18px; font-weight: 700;
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 7px 6px;
+}
+.ex-tiers { display: flex; gap: 6px; }
+.ex-tier {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13px; font-weight: 700;
+  border-radius: 999px;
+  padding: 6px 13px;
+  cursor: pointer;
+}
+.ex-tier.is-on { background: var(--ink); border-color: var(--ink-strong); color: #fff; }
+.ex-card__go { margin-top: 2px; }
+.ex-card__go:disabled { opacity: .45; cursor: default; }
+.ex-gift { font-size: 12px; color: var(--muted); margin: 2px 2px 10px; line-height: 1.6; }
+
+/* 墨水屏：徽章渐变压平成灰阶，其余走变量自动适配 */
+body.ink .ex-card--battle .ex-card__badge,
+body.ink .ex-card--capture .ex-card__badge { background: var(--surface); }
+
+/* 轻提示 toast：兑换成功（绿）/失败（红），自动消失 */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+  z-index: 60;
+  max-width: calc(100% - 32px);
+  font-size: 13px; font-weight: 700;
+  border-radius: 999px;
+  padding: 9px 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .18);
+  animation: toast-in .22s ease-out;
+}
+.toast.is-ok { background: var(--ok); color: #fff; }
+.toast.is-bad { background: var(--danger); color: #fff; }
+.toast.is-out { opacity: 0; transition: opacity .3s ease-in; }
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ==========================================================================
+   图鉴页：概览 / 筛选 / 网格 / 详情弹层 / 一键回顶
+   彩色 + GBA 走主题变量；墨水屏统一黑白描边、不播声（playCry 内部处理）
+   ========================================================================== */
+.dex-page { position: relative; }
+
+/* 收集概览：复用日程页的 .card--sticky（top: calc(var(--appbar-h) + 4px)）保持置顶 */
+.dex-overview { z-index: 8; }
+.dex-overview h2 { margin-bottom: 6px; }
+.dex-sub { font-size: 11px; font-weight: 400; color: var(--muted); }
+.dex-ov__row { display: flex; align-items: center; gap: 8px; }
+.dex-ov__big { font-size: 26px; font-weight: 800; line-height: 1; color: var(--ink); }
+.dex-ov__unit { font-size: 12px; color: var(--muted); }
+.dex-ov__side { margin-left: auto; text-align: right; font-size: 11px; color: var(--muted); line-height: 1.6; }
+.dex-ov__bar { height: 7px; border-radius: 5px; background: var(--surface); overflow: hidden; margin: 8px 0 4px; }
+.dex-ov__bar i { display: block; height: 100%; background: var(--ink); border-radius: 5px; }
+.dex-ov__gens { font-size: 11px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* 筛选区：属性用右对齐下拉，取代横滑胶囊 */
+.dex-gens { display: flex; gap: 5px; margin-bottom: 9px; }
+.dex-gen {
+  flex: 1; border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  border-radius: 999px; padding: 7px 0; font-size: 12px; text-align: center; cursor: pointer;
+}
+.dex-gen.is-on { background: var(--ink); border-color: var(--ink-strong); color: #fff; font-weight: 700; }
+.dex-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.dex-chip {
+  border: 1px solid var(--line); background: var(--card); color: var(--muted);
+  border-radius: 999px; padding: 5px 10px; font-size: 11.5px; cursor: pointer; white-space: nowrap;
+}
+.dex-chip.is-on { background: var(--ink); border-color: var(--ink-strong); color: #fff; font-weight: 700; }
+.dex-filter__hint { font-size: 10.5px; color: var(--muted); margin: 9px 0 0; line-height: 1.45; }
+.dex-sel {
+  margin-left: auto; min-width: 96px;
+  border: 1px solid var(--line-strong); background: var(--card); color: var(--text);
+  border-radius: 999px; padding: 5px 22px 5px 10px; font-size: 11.5px; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+                    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 13px) 50%, calc(100% - 9px) 50%;
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+}
+.dex-sel:focus, .dex-search:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+.dex-search {
+  width: 100%; border: 1px solid var(--line); border-radius: 9px;
+  padding: 8px 10px; font-size: 12.5px; background: var(--card); color: var(--text);
+}
+.dex-sw { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); margin-top: 8px; cursor: pointer; }
+.dex-sw input { accent-color: var(--ink); }
+
+/* 3 列图鉴格 */
+.dex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dex-card {
+  position: relative; overflow: hidden; text-align: center; cursor: pointer;
+  background: var(--card); border: 1px solid var(--line-soft);
+  border-radius: 10px; padding: 6px 4px 8px;
+}
+.dex-card:hover, .dex-card:focus { border-color: var(--ink); }
+.dex-card.is-got { border-color: var(--line); }
+.dex-card__no {
+  position: absolute; left: 6px; top: 6px;
+  font: 700 10px/1 ui-monospace, Consolas, monospace; color: var(--muted);
+}
+.dex-card__st {
+  position: absolute; right: 5px; top: 5px; font-size: 9px; line-height: 1.4;
+  background: var(--ok); color: #fff; border-radius: 5px; padding: 1px 5px;
+}
+.dex-card__st.is-no { background: #B4BBC9; }
+.dex-card__st.is-seen { background: var(--accent); color: #3a2d00; }
+.dex-card.is-seen { border-color: var(--accent); border-style: dashed; }
+.dex-card__img { width: 80px; height: 80px; object-fit: contain; display: block; margin: 9px auto 2px; }
+.dex-card__img.is-sil { filter: grayscale(1) brightness(0); opacity: .24; }
+.dex-card__nm { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dex-card__nm.is-hide { color: var(--muted); letter-spacing: 1px; }
+.dex-tps { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin: 3px 0 2px; }
+.dex-tp { font-size: 9px; line-height: 1.5; color: #fff; border-radius: 4px; padding: 1px 5px; font-weight: 700; }
+.dex-tp--sm { font-size: 8px; padding: 0 4px; }
+.dex-card__dots { font-size: 9px; color: var(--muted); letter-spacing: 2px; }
+.dex-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); font-size: 12.5px; padding: 26px 10px; }
+
+/* 详情弹层与进化链 */
+.dex-mask {
+  position: fixed; inset: 0; z-index: 40; display: none;
+  align-items: center; justify-content: center; padding: 14px;
+  background: rgba(20, 26, 40, .55);
+}
+.dex-mask.is-on { display: flex; }
+.dex-modal.card {
+  width: 100%; max-width: 420px; max-height: 92vh; overflow-y: auto;
+  margin-bottom: 0; padding: 12px; position: relative;
+  border: 1px solid var(--line-strong); border-radius: 16px;
+}
+.dex-modal__x {
+  position: absolute; right: 10px; top: 9px; width: 26px; height: 26px;
+  border: 0; border-radius: 50%; background: var(--surface); color: var(--text);
+  font-size: 15px; cursor: pointer;
+}
+.dex-mhead { text-align: center; padding-top: 2px; }
+.dex-mhead__img { width: 140px; height: 140px; object-fit: contain; }
+.dex-mhead__img.is-sil { filter: grayscale(1) brightness(0); opacity: .24; }
+.dex-mhead h2 { font-size: 18px; margin: 2px 0 3px; }
+.dex-mhead__no, .dex-mstat { font-size: 11px; color: var(--muted); }
+.dex-forms { display: flex; align-items: flex-start; justify-content: center; gap: 2px; overflow-x: auto; padding: 10px 0 6px; }
+.dex-fnode { flex: 0 0 auto; text-align: center; cursor: pointer; min-width: 64px; }
+.dex-fnode__img { width: 48px; height: 48px; object-fit: contain; border: 2px solid transparent; border-radius: 8px; padding: 1px; }
+.dex-fnode__img.is-sil { filter: grayscale(1) brightness(0); opacity: .22; }
+.dex-fnode.is-on .dex-fnode__img { border-color: var(--ink); }
+.dex-fnode__zh { font-size: 9.5px; color: var(--muted); white-space: nowrap; line-height: 1.12; margin-top: 2px; }
+.dex-fnode__cond { display: inline-block; font-size: 9px; color: var(--text); background: var(--surface); border-radius: 4px; padding: 0 4px; margin-top: 1px; }
+/* 跨世代进化链：本时代形态高亮（皮卡丘黄描边），其它世代形态弱化并标注地区 */
+.dex-fnode.is-cur .dex-fnode__img { border-color: var(--ink); box-shadow: 0 0 0 2px var(--accent); }
+.dex-fnode.is-other { opacity: .58; }
+.dex-fnode__gen { display: inline-block; font-size: 8px; line-height: 1; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; margin-top: 2px; }
+.dex-arrow { align-self: center; color: var(--muted); font-size: 13px; margin-top: 12px; }
+.dex-mrow { display: flex; gap: 6px; margin-top: 8px; }
+.dex-mrow .btn { flex: 1; }
+.dex-hint { font-size: 11px; color: var(--muted); background: var(--surface); border-radius: 8px; padding: 7px 9px; margin: 8px 0 0; line-height: 1.7; }
+
+/* 右下角一键回顶：只在图鉴页且页面已下拉时出现 */
+.dex-top-btn {
+  position: fixed; right: 14px;
+  bottom: calc(112px + env(safe-area-inset-bottom));
+  z-index: 30;
+  border: 1px solid var(--line-strong); background: var(--card); color: var(--text);
+  border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 700;
+  cursor: pointer; box-shadow: 0 3px 12px rgba(30, 40, 70, .18);
+  opacity: 0; transform: translateY(8px); pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.dex-top-btn.is-on { opacity: 1; transform: none; pointer-events: auto; }
+
+/* 墨水屏：徽章改黑白描边、剪影保持纯黑、无过渡动画 */
+body.ink .dex-overview { box-shadow: none; border-color: var(--line-strong); }
+body.ink .dex-tp { background: #fff !important; color: #23231f !important; border: 1px solid #6f6e67; }
+body.ink .dex-card__st, body.ink .dex-card__st.is-no, body.ink .dex-card__st.is-seen { background: #fff; color: #23231f; border: 1px solid #6f6e67; }
+body.ink .dex-gen.is-on, body.ink .dex-chip.is-on { background: #1f1f1d; color: #fff; }
+body.ink .dex-card__img.is-sil,
+body.ink .dex-mhead__img.is-sil,
+body.ink .dex-fnode__img.is-sil { filter: grayscale(1) brightness(0); opacity: .3; }
+body.ink .dex-sel { background-image: none; padding-right: 10px; }
+body.ink .dex-top-btn { transition: none !important; }
+body.ink .dex-mask { background: rgba(255, 255, 255, .86); }
+
+/* ==========================================================================
+   B3 野外探险：像素场景 / 9 种草丛 / 精灵球 8 阶段动画 / 收服小游戏 / 设置
+   场景素材与乐园页同源：env/forest/ground.png 平铺 + atlas.png 切片 + animated/*.gif
+   ========================================================================== */
+.b3-page { position: relative; }
+
+/* 顶部三页签：sticky 置顶，不随页面滚动（与图鉴页 .card--sticky 同一套 --appbar-h） */
+.b3-tabs {
+  position: sticky; top: calc(var(--appbar-h, 64px) + 4px); z-index: 40;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+  padding: 8px; margin: 0 2px 10px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08);
+}
+.b3-tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  min-height: 66px; padding: 6px 2px; border: 1.5px solid var(--line); border-radius: 11px;
+  background: var(--surface); color: var(--text); cursor: pointer;
+}
+.b3-tab.is-on { border-color: #4A3728; background: linear-gradient(#FFFDF5, #F0DCAE); box-shadow: 0 2px 0 #4A3728; }
+.b3-tab__i { font-size: 18px; line-height: 1.1; }
+.b3-tab__t { font-size: 12px; font-weight: 800; }
+.b3-tab__s { font-size: 9.5px; color: var(--muted); white-space: nowrap; }
+.b3-tab.is-on .b3-tab__s { color: #7A6A55; }
+body.ink .b3-tab.is-on { background: #fff; }
+
+/* 三个专属场景常驻 DOM，只切显示 */
+.b3-pane { display: none; }
+.b3-pane.is-on { display: block; }
+.b3-scene--battle .b3-ground { filter: brightness(1.06) saturate(.9) sepia(.22) hue-rotate(-16deg); }
+.b3-scene--train .b3-ground { filter: brightness(1.12) saturate(1.05) hue-rotate(55deg); }
+.b3-arena { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 6px; }
+.b3-arena__pm { width: 76px; height: 62px; display: flex; align-items: flex-end; justify-content: center; }
+.b3-arena__pm img { max-width: 76px; max-height: 62px; image-rendering: pixelated; filter: drop-shadow(0 3px 2px rgba(0,0,0,.3)); }
+.b3-arena__vs { font-size: 14px; font-weight: 900; color: #fff; background: #D85A30; border: 2px solid #4A3728; border-radius: 999px; padding: 2px 7px; }
+.b3-arena__gear { font-size: 30px; }
+.b3-soon {
+  position: absolute; left: 50%; bottom: 13%; transform: translateX(-50%); z-index: 8;
+  width: 82%; max-width: 290px; text-align: center;
+  background: #FFF9E8; border: 3px solid #4A3728; border-radius: 12px;
+  box-shadow: inset 0 0 0 2px #F3E3BE, 0 8px 18px rgba(0,0,0,.3); padding: 8px 10px;
+}
+.b3-soon__t { font-size: 14px; font-weight: 900; color: #3b2d18; }
+.b3-soon__d { font-size: 10.5px; line-height: 1.5; color: #5b4a30; margin: 3px 0 6px; }
+.b3-soon__btn { border: 2px solid #4A3728; border-radius: 9px; background: #e8b93c; padding: 6px 16px; font-size: 12px; font-weight: 800; color: #3b2d18; cursor: pointer; }
+.b3-soon__btn:active { transform: translateY(2px); }
+
+/* ===== 道馆挑战（探险 tab 第三页签，v59）===== */
+.b3-gym { padding: 10px 0 24px; }
+.gym-top__row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+.gym-top h2 { margin: 0; font-size: 17px; }
+.gym-info { border: 2px solid #4A3728; background: #FFF3CE; color: #A32D2D; border-radius: 9px; padding: 4px 10px; font-size: 11.5px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.gym-stat { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 9px; font-size: 12.5px; }
+.gym-stat span { background: #FFF3CE; border: 1.5px solid #4A3728; border-radius: 8px; padding: 3px 9px; }
+.gym-stat b { color: #A32D2D; font-size: 14px; }
+.gym-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.gym-card { padding: 9px 12px; position: relative; overflow: hidden; }
+.gym-card.is-clear { border-color: #5C8A3C; }
+.gym-card__row { display: flex; align-items: center; gap: 10px; }
+/* v1.9 素材：属性色圆角方块图标（替代原 ① 序号） */
+.gym-ico { width: 42px; height: 42px; border-radius: 13px; flex: none; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; border: 2px solid #4A3728; box-shadow: inset 0 -3px 6px rgba(0,0,0,.18); }
+.gym-card__main { flex: 1; min-width: 0; }
+.gym-card__name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gym-card__name h3 { margin: 0; font-size: 14px; }
+/* B1：名字旁的深棕馆主铭牌 */
+.gym-leader { background: linear-gradient(180deg,#5C4A32,#42341F); color: #FFE9A8; border: 1.5px solid #2f2515; border-radius: 6px; padding: 1px 7px; font-size: 10.5px; font-weight: 900; white-space: nowrap; }
+.gym-card__sub { display: flex; align-items: center; gap: 7px; min-height: 22px; margin-top: 4px; }
+.gym-detail { border: 1.5px solid #4A3728; background: #fff; border-radius: 8px; padding: 1px 7px; font-size: 10px; font-weight: 800; color: #4A3728; cursor: pointer; white-space: nowrap; }
+.gym-clear { font-size: 10.5px; color: #2f5a1e; font-weight: 800; }
+/* v61：按钮与说明同一行，靠右 */
+.gym-card__sub .gym-btn { margin-left: auto; }
+.gym-btn { border: 2px solid #4A3728; border-radius: 9px; background: #FFF9E8; color: #3D2B1F; font-size: 11.5px; font-weight: 800; padding: 4px 12px; cursor: pointer; white-space: nowrap; }
+.gym-btn.is-master { background: #D85A30; color: #fff; font-size: 12px; font-weight: 900; padding: 4px 14px; box-shadow: 0 2px 0 rgba(74,55,40,.25); }
+.gym-btn.is-off, .gym-btn:disabled { background: #E6E0D4; color: #8a7a6a; border-color: #B6A98E; cursor: not-allowed; box-shadow: none; }
+/* 说明弹窗（道馆规则 / 奖励表格 / 心愿礼物说明共用） */
+.ui-modal--sheet { max-width: 410px; width: 88%; text-align: left; max-height: 82dvh; overflow: auto; }
+.ui-modal--sheet .ui-modal__title { justify-content: flex-start; }
+.gym-tbl { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-top: 8px; }
+.gym-tbl th, .gym-tbl td { border: 1.5px solid #D8C7A1; padding: 5px; text-align: center; white-space: nowrap; }
+.gym-tbl th { background: #FFF3CE; font-weight: 800; }
+.gym-note { font-size: 11.5px; color: #6b5a3c; line-height: 1.65; text-align: left; background: #FFF3CE; border-radius: 8px; padding: 8px 10px; margin-top: 10px; }
+.gym-state { display: inline-block; background: #D85A30; color: #fff; border-radius: 6px; padding: 2px 9px; font-size: 11px; font-weight: 900; margin-bottom: 7px; }
+.gym-rulelist { margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.8; color: #3D2B1F; text-align: left; }
+/* 兑换中心：心愿礼物 */
+.ex-card--wish { border-color: #B8860B; }
+/* 通用 .ex-card__body 是 flex（给券卡的步进器用），心愿卡要金额横排 + 输入框独占一行 */
+.ex-card--wish .ex-card__body { display: block; }
+.wish-title__row { display: flex; align-items: center; gap: 8px; }
+.ex-wish__info { border: 2px solid #4A3728; background: #FFF3CE; color: #A32D2D; border-radius: 9px; padding: 2px 8px; font-size: 10.5px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.ex-wish__tiers { display: flex; gap: 7px; flex-wrap: nowrap; justify-content: space-between; }
+.ex-wish__tier { flex: 1; border: 2px solid #4A3728; border-radius: 9px; background: #fff; color: #3D2B1F; padding: 8px 0; font-size: 13px; font-weight: 800; cursor: pointer; text-align: center; }
+.ex-wish__tier.is-on { background: #E8B93C; }
+.ex-wish__label { display: block; font-size: 12px; color: #6b5a3c; font-weight: 700; margin: 12px 0 5px; }
+.ex-wish__input { width: 100%; box-sizing: border-box; border: 2px solid #4A3728; border-radius: 9px; background: #fff; padding: 10px 12px; font-size: 13px; }
+.ex-wish__pending { background: #FFF3CE; border: 1.5px dashed #C9B58C; border-radius: 8px; padding: 6px 9px; font-size: 11.5px; margin-top: 7px; }
+/* ===== v59：顶部徽章入口 / 开放信息条 / 未开放卡 / 徽章收集册 ===== */
+.gym-badge-entry { margin-left: auto; border: 2px solid #4A3728; background: linear-gradient(180deg,#F6D97A,#E8B93C); color: #3b2d18; border-radius: 9px; padding: 3px 10px; font-size: 11.5px; font-weight: 900; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 0 rgba(74,55,40,.25); }
+.gym-badge-entry b { font-size: 13px; color: #A32D2D; }
+.gym-openbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 2px; padding: 7px 10px; border-radius: 9px; background: #FFF3CE; border: 1.5px solid #E0C98A; font-size: 11.5px; font-weight: 700; color: #6b5a3c; line-height: 1.6; }
+.gym-openbar b { color: #A32D2D; font-size: 13px; }
+/* v61 L2：今日休息整卡置灰 + 木质吊挂牌（挂牌完整不截断、挂绳接到上边框、不遮道馆名） */
+.gym-card.is-closed { background: #EDE7D9; filter: saturate(.3); }
+.gym-card.is-closed .gym-ico, .gym-card.is-closed .gym-btn { filter: grayscale(1); opacity: .55; }
+/* v62：闭馆时馆主铭牌与「说明」标签也一起置灰，整卡统一闭店态 */
+.gym-card.is-closed .gym-leader { filter: grayscale(1); opacity: .5; }
+.gym-card.is-closed .gym-detail { filter: grayscale(1); opacity: .6; }
+/* v63：挂牌整体放大到 140%、位置上提，挂绳改短桩（不横跨道馆名），两行文字拉开间距 */
+.gym-card.is-closed { min-height: 92px; padding-top: 4px; }
+.gym-board { position: absolute; bottom: 12px; left: 50%; margin-left: -32%; width: 64%; padding: 4px 6px; text-align: center; background: linear-gradient(180deg,#B08D57,#6E5330); border: 2px solid #3F2E18; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,.28), inset 0 0 0 2px rgba(255,230,170,.28); z-index: 2; pointer-events: none; }
+.gym-board b { display: block; color: #FFF6DA; font-size: 18px; font-weight: 900; letter-spacing: 4px; text-shadow: 0 1px 2px rgba(0,0,0,.5); line-height: 1.35; padding-left: 4px; }
+.gym-board i { display: block; color: #F3D99A; font-size: 9.5px; font-style: normal; letter-spacing: 1.5px; line-height: 1.2; margin-top: 3px; padding-left: 1.5px; }
+/* 两条短挂绳 + 钉头：只从牌顶向上延伸 14px，不再穿过道馆名 */
+.gym-board::before, .gym-board::after { content: ''; position: absolute; top: -13px; width: 2px; height: 14px; background: linear-gradient(180deg,#7a6a4f,#C9A227); border-radius: 1px; z-index: -1; }
+.gym-board::before { left: 22px; }
+.gym-board::after { right: 22px; }
+/* 徽章收集册：奶油浅底 + 木色边框（不用红底，避免徽章原色被染），2 行 4 列 */
+.gym-badge-case { border: 2.5px solid #C7A44C; border-radius: 12px; padding: 10px; background: linear-gradient(180deg,#FFFDF4,#F3E6C4); box-shadow: inset 0 0 0 3px #fff, 0 3px 10px rgba(120,90,40,.12); }
+.gym-badge-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.gym-badge { border-radius: 9px; padding: 6px 3px 7px; text-align: center; background: #fff; border: 1.5px solid #D8C7A1; min-width: 0; }
+.gym-badge.is-lit { background: #FFF3CE; border-color: #E8B93C; box-shadow: 0 0 9px rgba(232,185,60,.5); }
+.gym-badge__pic { height: 52px; display: flex; align-items: center; justify-content: center; }
+.gym-badge__pic img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.gym-badge.is-locked .gym-badge__pic img { filter: grayscale(1); opacity: .32; }
+.gym-badge__name { font-size: 10.5px; font-weight: 900; color: #4A3728; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gym-badge.is-locked .gym-badge__name { color: #9a8d78; }
+.gym-badge__leader { font-size: 9.5px; color: #A32D2D; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gym-badge.is-locked .gym-badge__leader { color: #a89b86; }
+/* 恒定两列（每两个一行）：窄屏压缩元素而不是退回单列 */
+@media(max-width:520px){
+  .gym-list { gap: 7px; }
+  .gym-card { padding: 8px 7px; }
+  .gym-card__row { gap: 6px; }
+  .gym-ico { width: 32px; height: 32px; border-radius: 10px; font-size: 16px; }
+  .gym-card__name { gap: 3px; }
+  .gym-card__name h3 { font-size: 11.5px; }
+  .gym-leader { font-size: 8.5px; padding: 1px 4px; }
+  .gym-card__sub { gap: 3px; margin-top: 3px; flex-wrap: wrap; }
+  .gym-detail { font-size: 9px; padding: 1px 5px; }
+  .gym-clear { font-size: 9px; }
+  .gym-btn { font-size: 9.5px; padding: 3px 6px; border-width: 1.5px; }
+  .gym-btn.is-master { font-size: 10px; padding: 3px 7px; }
+  .gym-board b { font-size: 15px; letter-spacing: 3px; }
+  .gym-board i { font-size: 8px; letter-spacing: 1px; }
+  .gym-card.is-closed { min-height: 89px; padding-top: 3px; }
+  .gym-board::before, .gym-board::after { height: 12px; top: -11px; }
+  .gym-board::before { left: 16px; }
+  .gym-board::after { right: 16px; }
+  .gym-stat { font-size: 11px; gap: 5px; }
+  .gym-stat span { padding: 2px 6px; }
+  .gym-stat b { font-size: 12px; }
+  .gym-openbar { font-size: 10.5px; gap: 4px 7px; padding: 6px 8px; }
+  .gym-badge-entry { font-size: 10px; padding: 2px 7px; }
+}
+@media(max-width:360px){
+  .gym-badge-grid { gap: 4px; }
+  .gym-badge__pic { height: 44px; }
+}
+
+/* 通用精灵球小图标：兑换页 / 探险页共用，纯 CSS、不占图片资源 */
+.pkball { display: inline-block; flex: none; position: relative; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #4A3728; background: linear-gradient(180deg,#E24B4A 0 47%,#4A3728 47% 53%,#fff 53% 100%); vertical-align: -3px; }
+.pkball::after { content: ''; position: absolute; left: 50%; top: 50%; width: 34%; height: 34%; transform: translate(-50%,-50%); border-radius: 50%; background: #fff; border: 1.5px solid #4A3728; }
+.pkball--lg { width: 26px; height: 26px; vertical-align: middle; border-width: 2px; }
+.pkball--lg::after { border-width: 2px; }
+body.ink .pkball { filter: grayscale(1); }
+
+/* 通用碎片图标：拼图块造型，兑换 / 乐园 / 日程 / 家长 / 流水 / 探险规则全站统一 */
+.shard {
+  display: inline-block; flex: none; width: 14px; height: 14px; vertical-align: -2px;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M4 4 H9 C9 1.5 10 1 12 1 C14 1 15 1.5 15 4 H20 V9 C17.5 9 17 10 17 12 C17 14 17.5 15 20 15 V20 H15 C15 22.5 14 23 12 23 C10 23 9 22.5 9 20 H4 V15 C6.5 15 7 14 7 12 C7 10 6.5 9 4 9 Z' fill='%235B8DEF' stroke='%232B4C9B' stroke-width='1.5' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.shard--sm { width: 12px; height: 12px; }
+.shard--lg { width: 20px; height: 20px; vertical-align: -4px; }
+body.ink .shard { filter: grayscale(1); }
+
+/* 场景左上角：精灵球 / 剩余次数 横向放在同一条水平线 */
+.b3-hud__i { font-size: 11px; font-weight: 700; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px 7px; color: var(--text); white-space: nowrap; }
+.b3-hud__i b { color: var(--ink); }
+.b3-corner { position: absolute; left: 7px; top: 7px; right: 112px; z-index: 12; display: flex; flex-direction: row; align-items: flex-start; flex-wrap: wrap; gap: 5px; }
+.b3-corner .b3-hud__i { font-size: 10.5px; padding: 3px 8px; background: rgba(255,249,232,.95); border: 1.5px solid #4A3728; color: #3b2d18; box-shadow: 0 2px 0 rgba(74,55,40,.35); }
+/* 与战斗页 HUD 数字统一：13px / #d24a3a / 金光；right + flex-wrap 防窄屏长徽章压住右上齿轮 */
+.b3-corner .b3-hud__i b { color: #d24a3a; font-size: 13px; font-weight: 900; text-shadow: 0 0 3px rgba(255,220,120,.9); }
+
+/* 场景中央「无法捕捉」提示：固定「向导」+ 黄衣少年半身像，轻量胶囊气泡；
+   不可捕捉时常驻、可捕捉时隐藏；pointer-events:none 不拦点击，0.28s 淡入。
+   第 6 轮：下移到 top:62% 的「躲藏点编号底 ~439 → 路标行顶 ~513」安全带，
+   并紧凑化（38px 头像 / 5px padding / 12px 字），宽屏与 420px 窄屏都不压三个编号。 */
+.b3-resthint { position: absolute; left: 50%; top: 62%; transform: translate(-50%,-50%); z-index: 14;
+  display: none; pointer-events: none; max-width: 86%; min-width: 250px; }
+.b3-resthint.is-on { display: flex; align-items: center; gap: 9px; padding: 5px 10px;
+  background: rgba(255,253,245,.97); border: 3px solid #3a2c1a; border-radius: 14px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.3); animation: b3HintIn .28s ease-out; }
+@keyframes b3HintIn { from { opacity: 0; transform: translate(-50%,-50%) scale(.9); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+.b3-resthint__face { width: 38px; height: 38px; border-radius: 50%; object-fit: cover;
+  object-position: top center; background: #eef4ff; border: 2px solid #3a2c1a; flex: none; }
+.b3-resthint__say { font-size: 12px; font-weight: 700; color: #2a2118; line-height: 1.35; }
+.b3-resthint__say b { color: #b5452e; }
+.b3-resthint__say em { font-style: normal; color: #d24a3a; font-size: 14px; font-weight: 900; }
+/* 捕捉演出中隐藏，避免盖住宝可梦 / 精灵球动画 */
+.b3-page.is-busy .b3-resthint { display: none; }
+
+/* GBA 掌机外壳 */
+.b3-shell { margin: 0 10px 10px; padding: 6px 6px 4px; background: #DCD4C3; border: 3px solid #4A3728; border-radius: 16px 16px 22px 16px; box-shadow: inset 0 0 0 2px #F3ECDD; }
+.b3-shell__top { display: flex; align-items: center; gap: 6px; margin: 0 2px 5px; font-size: 9px; letter-spacing: .12em; color: #6B6155; }
+.b3-shell__led { width: 7px; height: 7px; border-radius: 50%; background: #e0574f; box-shadow: 0 0 5px #e0574f; }
+.b3-scene { position: relative; height: 420px; border: 3px solid #4A3728; border-radius: 6px; overflow: hidden; background: #88a86a; box-shadow: inset 0 0 18px rgba(255,255,255,.85); }
+.b3-ground { position: absolute; inset: 0; z-index: 0; background-image: url('../assets/env/forest/ground.png'); background-repeat: repeat; background-size: 128px 128px; image-rendering: pixelated; filter: brightness(1.20) saturate(1.18); }
+.b3-prop { position: absolute; z-index: 1; background-image: url('../assets/env/forest/atlas.png'); background-repeat: no-repeat; image-rendering: pixelated; filter: drop-shadow(0 2px 1px rgba(0,0,0,.25)); pointer-events: none; }
+
+/* 捕捉场景：真实背景图 + 地形容徽 + 三个宝可梦躲藏点（透明精灵，随机摆放） */
+.b3-scbg { position: absolute; inset: 0; z-index: 0; background-color: #88a86a; background-position: center; background-size: cover; background-repeat: no-repeat; }
+/* 第 7 轮：地点徽章从顶部（会盖住「今日休息 N 天后…」长 HUD）移到场景底部正中，
+   夹在左右路标之间；bottom:2px 同时避开 top:70% 路标行底边与画面下沿。 */
+.b3-scloc { position: absolute; bottom: 2px; top: auto; left: 50%; transform: translateX(-50%); z-index: 13; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 800; color: #fff; background: rgba(28,44,24,.82); border: 1.5px solid rgba(255,255,255,.8); border-radius: 999px; padding: 5px 12px; box-shadow: 0 2px 6px rgba(0,0,0,.3); pointer-events: none; }
+.b3-scloc::before { content: '\1F4CD'; font-size: 11px; line-height: 1; }
+
+.b3-hide { position: absolute; width: 88px; height: 92px; z-index: 4; cursor: pointer; text-align: center; transform: translateX(-50%) scale(1.4); }
+.b3-hide:hover .b3-hide__inner { filter: drop-shadow(0 0 10px rgba(255,235,140,.95)); }
+.b3-hide:hover .b3-hide__label { background: #2f4a86; }
+.b3-hide.is-off { opacity: .5; pointer-events: none; }
+.b3-hide__halo { position: absolute; left: 50%; top: 14%; width: 84px; height: 72px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle, rgba(255,214,70,.9), rgba(255,214,70,0) 70%); opacity: .5; animation: b3HideGlow 1.6s ease-in-out infinite; pointer-events: none; }
+.b3-hide.is-active .b3-hide__halo { opacity: 1; animation: none; box-shadow: 0 0 0 3px rgba(255,228,120,.6); }
+.b3-hide__spark { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #fff6c9; box-shadow: 0 0 6px #ffe07a; opacity: 0; animation: b3Twinkle 1.8s ease-in-out infinite; pointer-events: none; }
+.b3-hide__spark--1 { left: 16%; top: 10%; animation-delay: -.2s; }
+.b3-hide__spark--2 { left: 80%; top: 22%; animation-delay: -.9s; }
+.b3-hide__spark--3 { left: 50%; top: 4%; animation-delay: -1.4s; }
+.b3-hide__inner { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); transform-origin: bottom center; animation: b3HideSway 3s ease-in-out infinite alternate; }
+.b3-hide[data-slot="2"] .b3-hide__inner { animation-duration: 2.4s; animation-delay: -.7s; }
+.b3-hide[data-slot="3"] .b3-hide__inner { animation-duration: 3.4s; animation-delay: -1.3s; }
+@keyframes b3HideSway { from { transform: translateX(-50%) rotate(-2.5deg) scaleY(.98); } to { transform: translateX(-50%) rotate(2.5deg) scaleY(1.03); } }
+@keyframes b3HideGlow { 0%,100% { opacity: .35; } 50% { opacity: .85; } }
+@keyframes b3Twinkle { 0%,100% { opacity: .1; transform: scale(.5); } 50% { opacity: 1; transform: scale(1.4); } }
+.b3-hide__img { display: block; width: 72px; height: auto; max-height: 78px; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.3)); image-rendering: pixelated; pointer-events: none; }
+/* 第 7 轮：编号框从「压在躲藏点图片上」下移到图片下方，不再遮挡展示 */
+.b3-hide__label { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 26px; line-height: 1; padding: 0 9px; font-size: 11px; font-weight: 800; color: #fff; background: rgba(28,44,24,.96); border: 2px solid #fff; border-radius: 999px; white-space: nowrap; }
+/* 第 6 轮：Unicode 带圈数字在不同字体下基线会漂，改用 CSS 自绘圆圈 + flex 双向居中 */
+.b3-hide__num { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px;
+  border: 2px solid #fff; border-radius: 50%; font-size: 11px; line-height: 1; font-weight: 800; color: #fff; }
+/* 第 7 轮：三个躲藏点已统一到 top:22%，编号框天然齐平，不再需要按 slot 单独补偿高差 */
+.b3-hide.is-still .b3-hide__inner { animation: none !important; }
+.b3-hide.is-rustle .b3-hide__inner { animation: b3HideRustle .16s linear 4; }
+@keyframes b3HideRustle { 0%,100% { transform: translateX(-50%) translateX(0) rotate(0); } 25% { transform: translateX(-50%) translateX(-7px) rotate(-9deg); } 75% { transform: translateX(-50%) translateX(7px) rotate(9deg); } }
+.b3-hide.is-active .b3-hide__inner { filter: drop-shadow(0 0 8px rgba(255,235,140,.95)); }
+body.ink .b3-scbg { filter: grayscale(1) contrast(1.04) brightness(.96); }
+body.ink .b3-hide__img { filter: grayscale(1) drop-shadow(0 3px 2px rgba(0,0,0,.3)); }
+
+/* 两个地面路标：投石问路（左） / 换草丛（右），同一水平线、一左一右 */
+.b3-signrow { position: absolute; left: 0; right: 0; top: 70%; z-index: 5; display: flex; justify-content: space-between; padding: 0 8px; pointer-events: none; }
+.b3-sign { position: relative; width: 96px; height: 90px; text-align: center; cursor: pointer; pointer-events: auto; }
+.b3-sign__spr { position: absolute; left: 50%; bottom: 12px; width: 54px; height: 92px; transform: translateX(-50%); filter: drop-shadow(0 4px 2px rgba(0,0,0,.3)); animation: b3SignBob 2.8s ease-in-out infinite alternate; }
+.b3-sign__spr svg, .b3-sign__img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+@keyframes b3SignBob { from { transform: translateX(-50%) translateY(0); } to { transform: translateX(-50%) translateY(-3px); } }
+.b3-sign--next:hover .b3-sign__spr { filter: drop-shadow(0 0 9px rgba(255,240,150,.95)) drop-shadow(0 4px 2px rgba(0,0,0,.3)); }
+body.ink .b3-sign__spr { filter: grayscale(1); }
+/* 石头：投石问路（点它＝随机挑一片草丛） */
+.b3-stone { cursor: pointer; }
+.b3-stone__spr { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%) scale(1.7); transform-origin: bottom center; background-image: url('../assets/env/forest/atlas.png'); background-repeat: no-repeat; image-rendering: pixelated; filter: drop-shadow(0 4px 2px rgba(0,0,0,.3)); animation: b3StoneBob 2.8s ease-in-out infinite alternate; }
+@keyframes b3StoneBob { from { transform: translateX(-50%) scale(1.7) translateY(0); } to { transform: translateX(-50%) scale(1.7) translateY(-3px); } }
+.b3-stone:hover .b3-stone__spr { filter: drop-shadow(0 0 9px rgba(255,240,150,.95)) drop-shadow(0 4px 2px rgba(0,0,0,.3)); }
+.b3-stone__label { position: absolute; left: 50%; bottom: -4px; transform: translateX(-50%); display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 23px; line-height: 1; padding: 0 12px; font-size: 11px; font-weight: 800; color: #3b2d18; background: #fff8d8; border: 2px solid #4A3728; border-radius: 999px; white-space: nowrap; }
+.b3-stone.is-off { opacity: .5; pointer-events: none; }
+
+/* 遇敌宝可梦：按可见内容归一到 120×82 框（场景加高后 ×1.2），消除素材留白造成的大小差异 */
+.b3-wild { position: absolute; left: 50%; bottom: 40%; transform: translateX(-50%); z-index: 7; display: none; text-align: center; width: 190px; max-width: 92%; }
+.b3-wild.is-on { display: block; }
+.b3-wild__pop { animation: b3WildPop .5s cubic-bezier(.2,1.5,.5,1); }
+@keyframes b3WildPop { 0% { transform: translateY(30px) scale(.4); opacity: 0; } 70% { transform: translateY(-8px) scale(1.08); } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+.b3-wild__frame { position: relative; width: 120px; height: 82px; margin: 0 auto; overflow: hidden; }
+.b3-wild__frame img { position: absolute; display: block; image-rendering: pixelated; filter: drop-shadow(0 4px 3px rgba(0,0,0,.3)); margin: 0; }
+.b3-wild__tag { display: inline-block; margin-top: 3px; font-size: 10.5px; font-weight: 800; color: #fff; background: rgba(38,54,30,.88); border: 1.5px solid rgba(255,255,255,.7); border-radius: 999px; padding: 3px 8px; line-height: 1.5; }
+.b3-tp { display: inline-block; font-size: 9px; font-weight: 800; color: #fff; border-radius: 999px; padding: 1px 6px; margin-left: 3px; vertical-align: 1px; }
+
+/* 精灵球：纯 CSS 上下半圆，可开盖 / 收光 / 闭合 / 摆动 */
+.b3-ball { position: absolute; left: 50%; bottom: 52%; transform: translate(-50%,0); z-index: 9; display: none; width: 44px; height: 44px; touch-action: none; }
+.b3-ball.is-on { display: block; }
+.b3-ball__top { position: absolute; left: 0; top: 0; width: 44px; height: 22px; box-sizing: border-box; background: #e3350d; border: 2px solid #242424; border-bottom: 0; border-radius: 22px 22px 0 0; transform-origin: bottom center; transition: transform .20s ease; z-index: 2; }
+.b3-ball__bot { position: absolute; left: 0; bottom: 0; width: 44px; height: 22px; box-sizing: border-box; background: #fff; border: 2px solid #242424; border-top: 3px solid #242424; border-radius: 0 0 22px 22px; z-index: 2; }
+.b3-ball__btn { position: absolute; left: 50%; top: 50%; width: 13px; height: 13px; transform: translate(-50%,-50%); border-radius: 50%; background: #fff; border: 2px solid #242424; z-index: 4; }
+.b3-ball__beam { position: absolute; left: 50%; bottom: 76%; width: 104px; height: 96px; transform: translateX(-50%); background: linear-gradient(180deg, rgba(255,240,150,.08), rgba(255,230,110,.95)); clip-path: polygon(0 0,100% 0,50% 100%); opacity: 0; pointer-events: none; transition: opacity .18s; z-index: 1; }
+.b3-ball__ring { position: absolute; left: 50%; top: 50%; width: 108px; height: 108px; transform: translate(-50%,-50%); border: 4px solid #fff; border-radius: 50%; z-index: 5; display: none; pointer-events: none; box-shadow: 0 0 0 3px rgba(255,210,70,.8),0 0 16px rgba(255,255,255,.95); }
+.b3-ball__glow { position: absolute; left: 50%; top: 50%; width: 110px; height: 110px; transform: translate(-50%,-50%); border-radius: 50%; background: radial-gradient(circle, rgba(255,214,60,.98), rgba(255,214,60,.5) 45%, rgba(255,214,60,0) 70%); opacity: 0; z-index: 0; pointer-events: none; transition: opacity .25s; }
+.b3-ball__ding { position: absolute; left: 50%; top: -36px; transform: translateX(-50%); width: 26px; height: 26px; background: #ffe15a; clip-path: polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%); opacity: 0; z-index: 6; filter: drop-shadow(0 0 6px #fff6a0); }
+.b3-ball.is-win .b3-ball__ding { opacity: 1; animation: b3DingPop .46s ease-out; }
+@keyframes b3DingPop { 0% { transform: translateX(-50%) scale(.2); opacity: 0; } 60% { transform: translateX(-50%) scale(1.35); opacity: 1; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }
+.b3-ball.is-open .b3-ball__top { transform: translateY(-21px) rotate(-30deg); }
+.b3-ball.is-open .b3-ball__beam { opacity: 1; }
+.b3-ball.is-ring .b3-ball__ring { display: block; animation: b3RingShrink 1.2s linear forwards; }
+@keyframes b3RingShrink { 0% { width: 108px; height: 108px; opacity: 1; } 70% { width: 52px; height: 52px; border-color: #ffe26a; } 88% { width: 44px; height: 44px; border-color: #8ce06a; box-shadow: 0 0 10px #8ce06a; } 100% { width: 34px; height: 34px; opacity: .1; } }
+.b3-ball.is-flash .b3-ball__btn { background: #fff6a8; box-shadow: 0 0 0 7px rgba(255,240,150,.9),0 0 16px #ffe07a; }
+.b3-ball.is-win .b3-ball__glow { opacity: 1; }
+.b3-ball.is-win { filter: drop-shadow(0 0 10px #ffd94a); }
+.b3-ball.is-fly { animation: b3BallFly .62s cubic-bezier(.32,.62,.52,1) forwards; }
+@keyframes b3BallFly { 0% { transform: translate(-50%,200px) scale(.5) rotate(-170deg); opacity: 0; } 16% { opacity: 1; } 58% { transform: translate(-50%,-36px) scale(1.06) rotate(-12deg); } 100% { transform: translate(-50%,0) scale(1) rotate(0); opacity: 1; } }
+.b3-ball.is-wobble { animation: b3BallWobble 3s ease-in-out forwards; }
+@keyframes b3BallWobble { 0%,100% { transform: translate(-50%,0) rotate(0); } 8% { transform: translate(-50%,0) rotate(-20deg); } 17% { transform: translate(-50%,0) rotate(20deg); } 26% { transform: translate(-50%,0) rotate(0); } 40% { transform: translate(-50%,0) rotate(-14deg); } 52% { transform: translate(-50%,0) rotate(14deg); } 64% { transform: translate(-50%,0) rotate(0); } 78% { transform: translate(-50%,0) rotate(-8deg); } 88% { transform: translate(-50%,0) rotate(8deg); } }
+.b3-wild.is-hit .b3-wild__pop { animation: b3HitSquash .30s ease-out; }
+@keyframes b3HitSquash { 0% { transform: scale(1); } 42% { transform: scale(1.24,.70) translateY(7px); } 100% { transform: scale(1); } }
+.b3-wild.is-suck .b3-wild__pop { animation: b3SuckIn .60s ease-in forwards; }
+@keyframes b3SuckIn { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(0,16px) scale(.05); opacity: 0; } }
+.b3-wild.is-escape .b3-wild__pop { animation: b3PopOut .76s ease-out forwards; }
+.b3-wild.is-escape { z-index: 11; } /* 弹出的宝可梦必须盖在球上面 */
+@keyframes b3PopOut { 0% { transform: translate(0,16px) scale(.05); opacity: 0; } 48% { transform: translate(0,-20px) scale(1.14); opacity: 1; } 100% { transform: translate(-76px,64px) scale(.8); opacity: 0; } }
+
+/* 收服小游戏 HUD（摆动 3 秒内出现） */
+.b3-game { position: absolute; left: 50%; bottom: 13%; transform: translateX(-50%); z-index: 14; display: none; width: 78%; max-width: 264px; text-align: center; background: rgba(28,44,24,.94); border: 2px solid #fff; border-radius: 12px; padding: 7px 9px; color: #fff; }
+.b3-game.is-on { display: block; }
+.b3-game__tip { font-size: 11px; font-weight: 800; margin-bottom: 5px; line-height: 1.4; }
+.b3-game__track { height: 9px; background: rgba(255,255,255,.22); border-radius: 999px; overflow: hidden; }
+.b3-game__fill { height: 100%; width: 0; background: linear-gradient(90deg,#ffd54a,#7ed957); border-radius: 999px; }
+.b3-game__zone { position: relative; height: 9px; background: rgba(255,255,255,.22); border-radius: 999px; overflow: hidden; }
+.b3-game__zone i { position: absolute; left: 62%; width: 23%; height: 100%; background: #7ed957; opacity: .85; }
+.b3-game__knob { position: absolute; top: -2px; left: 0; width: 5px; height: 13px; background: #fff; border-radius: 2px; }
+.b3-page.is-busy .b3-stone,
+.b3-page.is-busy .b3-sign--next { opacity: .4; pointer-events: none; }
+.b3-page.is-busy .b3-hide { pointer-events: none; }
+
+/* 右上角齿轮 + 设置窗口（养成页同款 toggle） */
+.b3-setgear { position: absolute; right: 7px; top: 7px; z-index: 30; width: 33px; height: 33px; padding: 0; border: 2px solid #4A3728; border-radius: 8px; background: #F7F0DC; color: #3D2B1F; cursor: pointer; box-shadow: inset 0 0 0 2px #EADFC4,0 2px 3px rgba(0,0,0,.3); display: flex; align-items: center; justify-content: center; }
+.b3-setgear:active { filter: brightness(.94); }
+.b3-setgear svg { width: 19px; height: 19px; fill: currentColor; }
+.b3-setmask { position: fixed; inset: 0; z-index: 100; display: none; background: rgba(24,28,20,.52); }
+.b3-setmask.is-on { display: block; }
+.b3-setdlg { position: relative; width: 84%; max-width: 326px; margin: 13vh auto 0; background: #FFF9E8; border: 3px solid #4A3728; border-radius: 14px; box-shadow: inset 0 0 0 2px #F3E3BE,0 12px 30px rgba(0,0,0,.4); padding: 15px; color: #3D2B1F; }
+.b3-setdlg h3 { margin: 0 0 6px; font-size: 16px; display: flex; align-items: center; gap: 7px; color: #3D2B1F; }
+.b3-gm-title { font-size: 12px; font-weight: 800; margin: 12px 0 6px; color: #3D2B1F; }
+.b3-gm-pick { display: flex; gap: 5px; flex-wrap: wrap; }
+.b3-gm-pick button { flex: 1 1 44%; border: 1px solid #C9B896; border-radius: 8px; background: #FBF6E9; padding: 6px 4px; font-size: 11px; font-weight: 700; color: #5B4A30; cursor: pointer; }
+.b3-gm-pick button.is-on { background: #3b4cca; border-color: #3b4cca; color: #fff; }
+.b3-setdlg__links { display: flex; gap: 8px; margin-top: 12px; }
+.b3-setdlg__links button { flex: 1; border: 2px solid #4A3728; border-radius: 9px; background: #FBF6E9; padding: 8px 4px; font-size: 12px; font-weight: 800; color: #3b2d18; cursor: pointer; }
+.b3-setdlg__links button:active { transform: translateY(2px); background: #F0E4C6; }
+.b3-setdlg__hint { font-size: 10.5px; line-height: 1.6; color: #8A8578; margin-top: 8px; }
+.b3-setdlg__done { display: block; width: 100%; margin-top: 12px; border: 2px solid #4A3728; border-radius: 9px; background: #e8b93c; padding: 9px; font-size: 13px; font-weight: 800; color: #3b2d18; cursor: pointer; }
+
+/* 像素对话框 */
+.b3-dialog { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 84%; max-width: 310px; z-index: 20; display: none; background: #F7F0DC; border: 3px solid #4A3728; border-radius: 8px; box-shadow: inset 0 0 0 2px #fff,0 10px 24px rgba(0,0,0,.35); padding: 14px; }
+.b3-dialog.is-on { display: block; animation: b3Pop .18s ease-out; }
+@keyframes b3Pop { from { opacity: 0; transform: translate(-50%,-46%) scale(.92); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+.b3-dialog h3 { margin: 0 0 6px; font-size: 14.5px; color: #3b2d18; }
+.b3-dialog p { margin: 0 0 12px; font-size: 11.5px; line-height: 1.65; color: #5b4a30; }
+.b3-dialog__row { display: flex; gap: 8px; }
+.b3-dbtn { flex: 1; border: 2px solid #4A3728; border-radius: 8px; padding: 8px 4px; font-size: 12px; font-weight: 800; cursor: pointer; background: #fff; color: #3b2d18; }
+.b3-dbtn--yes { background: #e8b93c; color: #3b2d18; }
+
+/* 底部说明 + 名单 / 规则抽屉 */
+.b3-drawer { position: fixed; left: 50%; bottom: 0; transform: translate(-50%,0); display: none; width: 100%; max-width: 420px; max-height: 72vh; overflow: auto; background: var(--card); border: 3px solid #4A3728; border-bottom: 0; border-radius: 16px 16px 0 0; z-index: 80; padding: 14px; }
+.b3-drawer.is-on { display: block; animation: b3DrawerUp .25s ease-out; }
+@keyframes b3DrawerUp { from { transform: translate(-50%,100%); } to { transform: translate(-50%,0); } }
+.b3-drawer h2 { font-size: 15px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+.b3-drawer__close { margin-left: auto; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--text); }
+.b3-dtabs { display: flex; gap: 6px; margin: 10px 0; }
+.b3-dtab { flex: 1; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 4px; font-size: 11px; font-weight: 700; cursor: pointer; color: var(--text); }
+.b3-dtab.is-on { background: var(--ink); color: #fff; border-color: var(--ink); }
+.b3-dgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.b3-li { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; padding: 4px 6px; min-width: 0; }
+.b3-li img { width: 36px; height: 36px; object-fit: contain; image-rendering: pixelated; flex: none; }
+.b3-li__t { min-width: 0; line-height: 1.3; }
+.b3-li__t b { display: block; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.b3-li__t span { display: flex; gap: 3px; align-items: center; margin-top: 2px; flex-wrap: wrap; }
+.b3-li__t i { font-size: 9px; color: var(--muted); font-style: normal; }
+.b3-dtext { font-size: 12px; line-height: 1.8; color: var(--text); }
+
+/* 墨水屏：关掉整套动画 / 过渡 / 声音（声音由 audio.js 门禁），徽章压平成黑白 */
+body.ink .b3-scene * { animation: none !important; transition: none !important; }
+body.ink .b3-tp { background: #fff !important; color: #111 !important; border: 1px solid #111; }
+body.ink .b3-ball__glow, body.ink .b3-ball__ding { display: none; }
+body.ink .b3-setmask { background: rgba(255,255,255,.86); }
+
+/* 新增「探险」后共 7 个 tab：收一点字号并保证「我的数据」不折行 */
+.tab { font-size: 12px; white-space: nowrap; }
+.tab span { white-space: nowrap; }
+
+/* ==========================================================================
+   B4 外出战斗 · GBA 战场（V2）
+   敌右上 / 我左下背影 / 椭圆台座 / 米黄深绿信息框（HP + 橙色体力，宽度减半）
+   底部左叙述右 2×2 指令；四招面板 / 出招小游戏 HUD / 攻击分镜 / 结算卡
+   ========================================================================== */
+.b4-scene { user-select: none; }
+.b4-sky { position: absolute; left: 0; right: 0; top: 0; height: 64%; z-index: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.5) 0 3px, rgba(255,255,255,0) 3px 7px), linear-gradient(#cfe9f5, #eef6e2); }
+.b4-floor { position: absolute; left: 0; right: 0; top: 64%; bottom: 0; z-index: 0;
+  background: linear-gradient(#d9e8bf, #b7cf97); }
+.b4-plat { position: absolute; z-index: 1; border-radius: 50%; background: rgba(255,255,255,.9);
+  border: 2px solid #a9bda2; box-shadow: 0 3px 0 rgba(90,110,80,.22); }
+.b4-plat--foe { left: 58%; top: 30%; width: 38%; height: 9%; }
+.b4-plat--mine { left: 4%; top: 61%; width: 47%; height: 13%; }
+.b4-idle .b4-plat--foe { opacity: .3; }
+.b4-pm { position: absolute; z-index: 3; image-rendering: pixelated; transform: translateX(-50%);
+  filter: drop-shadow(0 3px 1px rgba(0,0,0,.28)); }
+.b4-pm--foe { left: 77%; top: 12%; height: 112px; }
+.b4-pm--mine { left: 27%; top: 39%; height: 120px; }
+.b4-pm.is-hide { display: none; }
+
+/* 出场动画：敌我从两侧入场（统一口径，ink 模式由 body.ink 全局禁动画） */
+.b4-pm.is-in--foe { animation: b4PmInFoe .55s ease-out; }
+.b4-pm.is-in--mine { animation: b4PmInMine .55s ease-out; }
+@keyframes b4PmInFoe {
+  0% { opacity: 0; transform: translateX(-50%) translateX(46px); }
+  100% { opacity: 1; transform: translateX(-50%); }
+}
+@keyframes b4PmInMine {
+  0% { opacity: 0; transform: translateX(-50%) translateY(20px) scale(.72); }
+  55% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.07); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+/* 信息框：米黄底 + 深绿描边；宽度减半，无性别 / 无「对手」小字 / 无右下角三角 */
+.b4-ib { position: absolute; width: 26%; box-sizing: border-box; z-index: 4;
+  background: #F7F0DC; border: 3px solid #3F5B34; border-radius: 9px; padding: 4px 6px 5px;
+  box-shadow: 3px 3px 0 rgba(63,91,52,.32); font-size: 11px; line-height: 1.3; color: #2b2a20;
+  transition: opacity .2s; }
+.b4-ib--foe { left: 3%; top: 5%; }
+/* 我方信息框移到右下最底部：与对手框成对角，不再压在对手宝可梦正下方 */
+.b4-ib--mine { right: 3%; top: auto; bottom: 28%; }
+.b4-ib.is-hide { opacity: 0; pointer-events: none; }
+.b4-ib__row { display: flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.b4-ib__nm { font-weight: 900; font-size: 11px; letter-spacing: .02em; text-shadow: 1px 1px 0 #fff; }
+.b4-ib__lv { margin-left: auto; font-size: 10px; font-weight: 900; }
+.b4-ib__line { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+.b4-ib__line > span { font-size: 8px; font-weight: 900; color: #b26b00; letter-spacing: -.04em; flex: none; }
+.b4-bar { flex: 1; height: 8px; background: #DED8C4; border: 1px solid #3F5B34; border-radius: 999px; overflow: hidden; }
+.b4-bar i { display: block; height: 100%; background: #4CAF50; transition: width .35s ease; }
+.b4-bar--hp.is-mid i { background: #FFC107; }
+.b4-bar--hp.is-low i { background: #E53935; }
+.b4-bar--st { height: 6px; border-color: #B8862B; }
+.b4-bar--st i { background: #E8A33D; }
+.b4-ib__num { text-align: right; font-size: 9px; font-weight: 900; margin-top: 1px; white-space: nowrap; }
+.b4-ib__num--st { color: #a06a12; }
+
+/* 底部：左深蓝叙述 / 右 2×2 指令（第四格为不可点信息格） */
+.b4-bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 26%; display: flex;
+  border-top: 3px solid #4A3728; z-index: 6; }
+.b4-say { width: 52%; box-sizing: border-box; background: #173B52; color: #fff; padding: 9px 11px;
+  font-size: 13px; font-weight: 800; line-height: 1.55; text-shadow: 1px 1px 0 rgba(0,0,0,.45);
+  border-right: 3px solid #4A3728; overflow: hidden; }
+.b4-say:not(.is-done)::after { content: ""; display: inline-block; width: 7px; height: 12px;
+  margin-left: 3px; background: #fff; animation: b4Blink .8s steps(1) infinite; vertical-align: -2px; }
+@keyframes b4Blink { 50% { opacity: 0; } }
+.b4-menu { width: 48%; box-sizing: border-box; background: #fffaf0; border: 3px solid #5b4b8a;
+  border-radius: 0 8px 0 0; margin: -3px -3px -3px 0; display: grid;
+  grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; padding: 5px; gap: 2px; }
+.b4-menu.is-single { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+/* 主菜单 2×2 宫格：四个指令完整显示，不裁切 */
+.b4-menu.is-grid { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.b4-menu.is-grid .b4-cell { justify-content: center; text-align: center; font-size: 14px; letter-spacing: 1px; }
+.b4-menu.is-list .b4-cell { font-size: 12px; line-height: 1.3; text-align: left; }
+.b4-menu.is-list .b4-cell small { display: block; font-size: 10px; color: #7a6a55; font-weight: 700; }
+.b4-cell { border: 0; background: transparent; font-family: inherit; font-size: 14px; font-weight: 900;
+  color: #2b2a20; cursor: pointer; display: flex; align-items: center; justify-content: flex-start;
+  padding: 4px 7px; text-align: left; border-radius: 5px; min-width: 0; }
+.b4-cell:hover:not(:disabled) { background: #efe6ff; }
+.b4-cell:active:not(:disabled) { transform: translateY(1px); }
+.b4-cell.is-off, .b4-cell:disabled { opacity: .45; background: #EDE8DA; color: #A8A093; cursor: not-allowed; }
+.b4-cell--info { background: #E7E1D0; color: #8A8578; font-size: 10.5px; text-align: center;
+  line-height: 1.35; justify-content: center; flex-direction: column; }
+.b4-cur { color: #d24a3a; margin-right: 3px; font-size: 13px; }
+/* 招式悬浮面板：场景变暗 + 居中大面板，四招一行一个完整展示（不滚动） */
+.b4-mvp-dim { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background: rgba(0,0,0,.45); z-index: 9; display: none; }
+.b4-mvp { position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%); z-index: 10;
+  width: min(90%, 400px); box-sizing: border-box; background: #fffaf0; border: 3px solid #5b4b8a;
+  border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+.b4-mvp__hd { display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 13px; font-weight: 900; color: #2b2a20; padding: 1px 2px 4px; border-bottom: 2px solid #e4d9f2; }
+.b4-mvp__hd small { font-size: 11px; color: #7a6a55; font-weight: 800; }
+.b4-mvp__row { display: flex; align-items: center; gap: 6px; border: 1px solid #d8cbe8; border-radius: 7px;
+  background: #fff; padding: 6px 8px; cursor: pointer; font-family: inherit; text-align: left; min-width: 0; }
+.b4-mvp__row:hover:not(:disabled) { background: #efe6ff; }
+.b4-mvp__row:active:not(:disabled) { transform: translateY(1px); }
+.b4-mvp__row:disabled, .b4-mvp__row.is-off { opacity: .5; background: #EDE8DA; color: #A8A093; cursor: not-allowed; }
+.b4-mvp__nm { font-size: 13.5px; font-weight: 900; color: #2b2a20; white-space: nowrap; flex: 0 0 auto; }
+.b4-mvp__row.is-off .b4-mvp__nm { color: #A8A093; }
+.b4-mvp__meta { font-size: 10.5px; color: #7a6a55; font-weight: 700; margin-left: auto; text-align: right;
+  line-height: 1.35; min-width: 0; }
+.b4-mvp__meta em { font-style: normal; color: #c0392b; font-weight: 900; }
+.b4-mvp__back { border: 1px solid #b9a9d8; border-radius: 7px; background: #F7F0DC; font-family: inherit;
+  font-size: 12px; font-weight: 800; color: #5b4b8a; cursor: pointer; padding: 5px; }
+body.ink .b4-mvp { background: #fff; border-color: #111; box-shadow: none; }
+body.ink .b4-mvp__row { border-color: #999; }
+body.ink .b4-mvp__hd { border-bottom-color: #bbb; }
+.b4-mv__tp { display: inline-block; font-size: 9px; color: #fff; border-radius: 999px; padding: 0 5px; font-style: normal;
+  text-shadow: 0 1px 1px rgba(0,0,0,.9), 1px 0 1px rgba(0,0,0,.9), -1px 0 1px rgba(0,0,0,.9); }
+.b4-mv__sig { font-style: normal; font-size: 8.5px; background: #e8b93c; color: #3b2d18; border-radius: 4px; padding: 0 3px; }
+
+/* 出招小游戏 HUD：贴在底栏右侧（替换招式面板），不遮住战场上的宝可梦与信息框 */
+.b4-mini { position: absolute; right: 0; bottom: 0; width: 48%; height: 26%; z-index: 9;
+  display: none; box-sizing: border-box; background: #1C2C18;
+  border: 2px solid #fff; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0;
+  padding: 5px 8px; color: #fff; text-align: center; box-shadow: 0 -2px 10px rgba(0,0,0,.3); }
+.b4-mini.is-on { display: block; } /* 不淡入：实色盖住下层招式面板，避免透字 */
+.b4-mini__tip { font-size: 11px; font-weight: 800; margin-bottom: 4px; line-height: 1.3; }
+.b4-mini__track { position: relative; height: 14px; background: rgba(255,255,255,.22);
+  border-radius: 999px; overflow: hidden; }
+.b4-mini__zone { display: none; position: absolute; left: 62%; width: 23%; height: 100%; background: #7ED957; opacity: .85; }
+.b4-mini__fill { display: none; position: absolute; left: 0; top: 0; height: 100%; width: 0;
+  background: linear-gradient(90deg, #ffd54a, #7ed957); border-radius: 999px; }
+.b4-mini__knob { display: none; position: absolute; top: -2px; left: 0; width: 5px; height: 16px;
+  background: #fff; border-radius: 2px; box-shadow: 0 0 6px #fff; }
+.b4-mini__ring { display: none; position: absolute; left: 50%; top: 50%; width: 20px; height: 20px;
+  margin: -10px 0 0 -10px; border: 3px solid #fff; border-radius: 50%; }
+.b4-mini--hold .b4-mini__zone, .b4-mini--hold .b4-mini__knob { display: block; }
+.b4-mini--tap .b4-mini__fill { display: block; }
+.b4-mini--timing .b4-mini__track { height: 24px; overflow: visible; background: rgba(255,255,255,.12); }
+.b4-mini--timing .b4-mini__ring { display: block; animation: b4Ring 1.2s linear forwards; }
+@keyframes b4Ring { 0% { transform: scale(2.2); border-color: #fff; } 70% { transform: scale(1); border-color: #ffe26a; } 100% { transform: scale(.7); border-color: #8ce06a; } }
+/* 自动出招提示：整块面板可点，不点也会自动出招 */
+.b4-mini { cursor: pointer; touch-action: none; }
+.b4-mini__auto { margin-top: 3px; font-size: 9px; font-weight: 700; opacity: .8; }
+
+/* 中央开始 / 结算卡 */
+.b4-center { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%); z-index: 10;
+  display: none; width: 78%; box-sizing: border-box; background: #fffaf0; border: 3px solid #4A3728;
+  border-radius: 12px; box-shadow: 0 6px 0 rgba(74,55,40,.3); padding: 12px; text-align: center; }
+.b4-center.is-on { display: block; animation: b4Pop .18s ease-out; }
+@keyframes b4Pop { from { opacity: 0; transform: translate(-50%,-46%) scale(.92); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+.b4-center h3 { margin: 0 0 5px; font-size: 14px; color: #3b2d18; }
+.b4-center p { margin: 0 0 9px; font-size: 10.5px; color: #6b5638; line-height: 1.6; }
+.b4-center__row { display: flex; gap: 8px; justify-content: center; }
+.b4-btn { flex: 1; max-width: 120px; border: 2px solid #4A3728; border-radius: 9px; background: #fff;
+  padding: 6px 4px; font-family: inherit; font-size: 11.5px; font-weight: 900; color: #3b2d18; cursor: pointer; }
+.b4-btn--yes { background: #e8b93c; }
+
+/* 攻击特效 / 浮动伤害 / 分镜 */
+.b4-fx { position: absolute; inset: 0; pointer-events: none; z-index: 8; }
+.b4-orb { position: absolute; left: 24%; top: 48%; width: 22px; height: 22px; border-radius: 50%;
+  box-shadow: 0 0 14px currentColor; animation: b4OrbFly .45s ease-in forwards; }
+.b4-orb--bolt { border-radius: 4px; }
+.b4-orb--flame { border-radius: 50% 50% 50% 0; }
+.b4-orb--wave { box-shadow: 0 0 0 4px rgba(255,255,255,.4); }
+.b4-orb--leaf { border-radius: 0 50% 0 50%; }
+.b4-orb--back { left: 74%; top: 24%; animation-name: b4OrbFlyBack; }
+@keyframes b4OrbFly { to { left: 74%; top: 24%; opacity: .2; transform: scale(1.8); } }
+@keyframes b4OrbFlyBack { to { left: 24%; top: 48%; opacity: .2; transform: scale(1.8); } }
+.b4-float { position: absolute; font-size: 20px; font-weight: 900; color: #fff;
+  text-shadow: 2px 2px 0 #b33, -1px -1px 0 #b33, 1px -1px 0 #b33, -1px 1px 0 #b33;
+  animation: b4Float .9s ease-out forwards; }
+.b4-float--foe { left: 70%; top: 24%; }
+.b4-float--mine { left: 22%; top: 48%; }
+.b4-float.is-cap { color: #ffe15a; font-size: 24px; }
+.b4-float.is-heal, .b4-float.is-st { color: #7ed957; text-shadow: 1px 1px 0 #2b5b22, -1px -1px 0 #2b5b22; }
+@keyframes b4Float { 0% { opacity: 0; transform: translateY(6px) scale(.7); } 25% { opacity: 1; transform: translateY(-4px) scale(1.15); } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+.b4-scene.atk-mine .b4-pm--mine { animation: b4Lunge .45s ease-out; }
+.b4-scene.atk-foe .b4-pm--foe { animation: b4LungeFoe .45s ease-out; }
+@keyframes b4Lunge { 50% { transform: translateX(-50%) translate(14px,-12px) scale(1.08); } }
+@keyframes b4LungeFoe { 50% { transform: translateX(-50%) translate(-14px,10px) scale(1.08); } }
+.b4-scene.hit-foe .b4-pm--foe, .b4-scene.hit-mine .b4-pm--mine { animation: b4Hurt .18s steps(2) 3; }
+@keyframes b4Hurt { 50% { opacity: .15; filter: brightness(3); } }
+.b4-scene.is-shake { animation: b4Shake .12s linear 2; }
+@keyframes b4Shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.b4-scene.faint-foe .b4-pm--foe { animation: b4Faint .7s ease-in forwards; }
+@keyframes b4Faint { to { transform: translateX(-50%) translateY(70px); opacity: 0; } }
+.b4-scene.is-run .b4-pm--mine { opacity: .25; transform: translateX(-50%) translateX(-60px); }
+.b4-scene.is-lose .b4-pm--mine { filter: grayscale(1); opacity: .5; transform: translateX(-50%) translateY(24px); }
+.b4-scene.is-levelup .b4-say { width: 100%; border-right: 0; background: #3b7fc4;
+  box-shadow: inset 0 0 0 3px #e8534f; font-size: 13.5px; }
+
+/* 墨水屏：不逐字、不闪烁、无粒子、HP / 体力瞬时到值，信息框转黑白 */
+body.ink .b4-scene * { animation: none !important; transition: none !important; }
+body.ink .b4-ib { background: #fff; border-color: #111; color: #111; box-shadow: none; }
+body.ink .b4-bar { border-color: #111; }
+body.ink .b4-bar--hp i, body.ink .b4-bar--st i { background: #111 !important; }
+body.ink .b4-say { background: #fff; color: #111; text-shadow: none; }
+body.ink .b4-menu, body.ink .b4-center { background: #fff; border-color: #111; }
+body.ink .b4-cell, body.ink .b4-center h3, body.ink .b4-center p { color: #111; }
+body.ink .b4-fx, body.ink .b4-float, body.ink .b4-mini { display: none !important; }
+body.ink .b4-say::after { display: none; }
+
+/* ===== V6 战斗开场：野外 NPC 邀战 → 入场动画 ===== */
+.b4-scene { position: relative; }
+.b4-intro { position: absolute; inset: 0; z-index: 30; overflow: hidden; background: #6f8f5b; font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif; }
+/* P0 野外场景：战斗舞台骨架直接隐藏。
+   以前只靠 .b4-intro__bg 一张 3–5MB 大图盖住它，换场景时图没加载好就会露出
+   条纹天空 / 椭圆台座 / 皮卡丘 / 信息框（用户实拍复现），现在与图片加载状态彻底解耦。 */
+.b4-scene.is-intro > .b4-sky,
+.b4-scene.is-intro > .b4-floor,
+.b4-scene.is-intro > .b4-plat,
+.b4-scene.is-intro > .b4-pm,
+.b4-scene.is-intro > .b4-ib,
+.b4-scene.is-intro > .b4-fx,
+.b4-scene.is-intro > .b4-mini,
+.b4-scene.is-intro > .b4-center,
+.b4-scene.is-intro > .b4-bottom { display: none !important; }
+.b4-intro__bg { position: absolute; inset: 0; background-size: cover; background-position: center; background-repeat: no-repeat; box-shadow: inset 0 0 90px rgba(0,0,0,.35); }
+.b4-intro__bg:after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(0,0,0,.20)); }
+.b4-intro__npc { position: absolute; right: 6%; bottom: 0; width: 34%; height: 62%; border: 0; background: none; padding: 0; cursor: pointer; }
+.b4-intro__npc img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; filter: drop-shadow(0 6px 6px rgba(0,0,0,.25)); animation: b4Bob 1.6s ease-in-out infinite; }
+.b4-intro__bubble { position: absolute; right: 10%; top: 28%; background: #fffbe9; border: 2px solid #3a2c1a; border-radius: 10px; padding: 5px 10px; font-size: 13px; font-weight: 700; color: #3a2c1a; animation: b4Bob 1.6s ease-in-out infinite; pointer-events: none; }
+@keyframes b4Bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.b4-intro__dlg { position: absolute; left: 50%; top: 50%; width: 86%; max-width: 360px; display: none; background: #fffdf5; border: 3px solid #3a2c1a; border-radius: 14px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.35); align-items: center; gap: 12px; transform: translate(-50%,-50%); }
+.b4-intro.is-p1 .b4-intro__dlg { display: flex; animation: b4Pop .25s ease-out; }
+.b4-intro__portrait { width: 92px; height: 116px; object-fit: contain; object-position: bottom; flex: 0 0 auto; background: linear-gradient(180deg,#eef4ff,#dbe6f5); border-radius: 8px; }
+.b4-intro__say { font-size: 13px; color: #2a2118; line-height: 1.5; }
+.b4-intro__say b { color: #b5452e; }
+.b4-intro__row { display: flex; gap: 8px; margin-top: 10px; justify-content: flex-end; }
+.b4-intro__stage { position: absolute; inset: 0; display: none; }
+.b4-intro.is-p2 .b4-intro__stage { display: block; }
+/* P2 期间隐藏 P0 的 NPC / 气泡 / HUD，避免出现两个 NPC 重叠 */
+.b4-intro.is-p2 .b4-intro__npc,
+.b4-intro.is-p2 .b4-intro__bubble,
+.b4-intro.is-p2 .b4-intro__hud { display: none; }
+/* ===== P2 入场跑道（对齐预览：黑幕拉开→双方冲入→抛球→宝可梦亮相→VS→自动进对战）===== */
+.b4-runway { position: absolute; inset: 0; overflow: hidden; background: #000; }
+.b4-runway__half { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; }
+.b4-runway__half--top { top: 0; background: #F2D64B; }
+.b4-runway__half--bot { bottom: 0; background: #6FC3E8; }
+.b4-runway__half:after { content: ''; position: absolute; left: -10%; right: -10%; top: 26%; height: 3px;
+  background: rgba(255,255,255,.85); box-shadow: 0 26px 0 rgba(255,255,255,.85),
+  100px 52px 0 rgba(255,255,255,.7), 220px 52px 0 rgba(255,255,255,.7), -60px 52px 0 rgba(255,255,255,.7); }
+.b4-runway__rail { position: absolute; left: 0; right: 0; top: calc(50% - 7px); height: 14px; z-index: 3;
+  background: #C9D2D8; border-top: 3px solid #8E9AA4; border-bottom: 3px solid #8E9AA4; }
+/* 对阵牌：名字 / 等级 / 属性，纯信息不可点 */
+.b4-entry { position: absolute; top: calc(50% - 17px); z-index: 4; display: flex; align-items: center; gap: 5px;
+  min-width: 122px; background: #173B52; color: #fff; border: 2px solid #fff; border-radius: 6px;
+  padding: 3px 7px; font: 900 10px/1.3 "Courier New", monospace;
+  box-shadow: 0 2px 0 rgba(0,0,0,.35); white-space: nowrap; }
+.b4-entry--mine { left: 4%; }
+.b4-entry--foe { right: 4%; }
+.b4-entry b { font-size: 11px; }
+.b4-entry span { font-size: 9px; opacity: .88; }
+.b4-entry em { font-style: normal; background: #E8B93C; color: #3B2D18; border-radius: 999px; padding: 0 5px; font-size: 9px; margin-left: auto; }
+.b4-curtain { position: absolute; left: 0; right: 0; height: 50%; background: #000; z-index: 8; }
+.b4-curtain--t { top: 0; }
+.b4-curtain--b { bottom: 0; }
+.b4-intro.is-p2 .b4-curtain--t { animation: b4CurtT .3s ease-out forwards; }
+.b4-intro.is-p2 .b4-curtain--b { animation: b4CurtB .3s ease-out forwards; }
+@keyframes b4CurtT { to { transform: translateY(-100%); } }
+@keyframes b4CurtB { to { transform: translateY(100%); } }
+.b4-tr { position: absolute; width: 112px; height: 180px; z-index: 5; opacity: 0; }
+.b4-tr img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* 对手站上半黄区、我方站下半蓝区；双方脚都贴中线灰栏、不越界到对方半场 */
+.b4-tr--foe { right: -110px; bottom: calc(50% + 7px); transform: scaleX(-1); }
+.b4-tr--foe img { filter: saturate(.72) brightness(.9); }
+.b4-tr--mine { left: -110px; top: calc(50% + 7px); }
+.b4-intro.is-p2 .b4-tr--foe { animation: b4TrR 1.06s .18s ease-out forwards; }
+.b4-intro.is-p2 .b4-tr--mine { animation: b4TrL 1.06s .18s ease-out forwards; }
+@keyframes b4TrR { 0% { right: -100px; opacity: 0; } 34% { right: 16%; opacity: 1; } 78% { right: 16%; opacity: 1; } 100% { right: 16%; opacity: 0; } }
+@keyframes b4TrL { 0% { left: -100px; opacity: 0; } 34% { left: 14%; opacity: 1; } 78% { left: 14%; opacity: 1; } 100% { left: 14%; opacity: 0; } }
+.b4-ball { position: absolute; width: 20px; height: 20px; border-radius: 50%; z-index: 6; opacity: 0;
+  background: radial-gradient(circle at 50% 50%, #fff 0 3px, #E53935 0 9px, #fff 9px 10px, #333 10px 11px, #fff 11px 100%);
+  border: 2px solid #333; }
+.b4-ball--a { right: 36%; top: 31%; --bx: -52px; --by: 52px; }
+.b4-ball--b { left: 34%; bottom: 28%; --bx: 52px; --by: -52px; }
+.b4-intro.is-p2 .b4-ball { animation: b4BallFly .5s .55s ease-out forwards; }
+@keyframes b4BallFly { 0% { opacity: 1; transform: translate(0,0) scale(1); }
+  78% { opacity: 1; transform: translate(var(--bx,40px), var(--by,40px)) scale(2.4); }
+  100% { opacity: 0; transform: translate(var(--bx,40px), var(--by,40px)) scale(2.8); } }
+.b4-pmrez { position: absolute; z-index: 6; opacity: 0; image-rendering: pixelated; filter: drop-shadow(0 4px 3px rgba(0,0,0,.35)); }
+.b4-pmrez--foe { width: 96px; right: 14%; top: 8%; }
+.b4-pmrez--mine { width: 104px; left: 12%; bottom: 8%; }
+.b4-intro.is-p2 .b4-pmrez { animation: b4Rez .34s 1.02s ease-out forwards; }
+@keyframes b4Rez { from { opacity: 0; transform: scale(.35); } to { opacity: 1; transform: scale(1); } }
+.b4-vs { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%) scale(.4); z-index: 12;
+  font: 900 22px/1 "Courier New", monospace; color: #fff; background: #B22D22;
+  border: 3px solid #fff; border-radius: 8px; padding: 5px 10px;
+  box-shadow: 0 3px 0 rgba(74,55,40,.5); opacity: 0; }
+.b4-intro.is-p2 .b4-vs { animation: b4Vs .4s 1.18s ease-out forwards; }
+@keyframes b4Vs { 0% { opacity: 0; transform: translate(-50%,-50%) scale(.4); } 60% { opacity: 1; transform: translate(-50%,-50%) scale(1.22); } 100% { opacity: 1; transform: translate(-50%,-50%) scale(1); } }
+/* 选角面板打开时定格：隐藏对手，我方训练师原地站住，球 / 宝可梦 / VS 暂隐 */
+.b4-intro.is-pick .b4-tr--foe { display: none; }
+.b4-intro.is-pick .b4-tr--mine { animation: none; left: 6%; top: auto; bottom: 6%; opacity: 1; transform: none; }
+.b4-intro.is-pick .b4-pmrez, .b4-intro.is-pick .b4-vs, .b4-intro.is-pick .b4-ball { animation: none; opacity: 0; }
+.b4-intro.is-pick .b4-curtain--t, .b4-intro.is-pick .b4-curtain--b { animation-play-state: paused; }
+.b4-intro.is-pick .b4-intro__cap { background: rgba(0,0,0,.45); }
+.b4-intro__gear { position: absolute; right: 8px; top: 8px; z-index: 5; background: #fffdf5; border: 2px solid #3a2c1a; border-radius: 8px; padding: 3px 9px; font-size: 12px; font-weight: 800; color: #3a2c1a; cursor: pointer; }
+.b4-intro__gear--top { display: block; }
+.b4-intro.is-p2 .b4-intro__gear--top { display: none; }
+/* 「下个场景」复用外出捕捉同款木质像素路标（sign_next.png）与标签样式：左下角，点击换 NPC + 场景 */
+.b4-intro__next { position: absolute; left: 2.5%; bottom: 4%; z-index: 5; width: 96px; height: 90px;
+  border: 0; background: none; padding: 0; cursor: pointer; text-align: center; font-family: inherit; }
+.b4-intro__next:hover .b3-sign__spr { filter: drop-shadow(0 0 9px rgba(255,240,150,.95)) drop-shadow(0 4px 2px rgba(0,0,0,.3)); }
+.b4-intro__next:active { transform: translateY(2px); }
+.b4-intro.is-p1 .b4-intro__next, .b4-intro.is-p2 .b4-intro__next, .b4-intro.is-pick .b4-intro__next { display: none; }
+/* 战斗记录面板：场景正下方，默认折叠，最近 5 天（分页保留，标题不标注条数） */
+.b4-log { margin: 10px 12px 4px; border: 2px solid #4A3728; border-radius: 8px; background: #FDF8EA; overflow: hidden; }
+.b4-log__hd { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: #173B52;
+  color: #fff; font-family: inherit; font-size: 13px; font-weight: 800; padding: 7px 12px; cursor: pointer; text-align: left; }
+.b4-log__hd small { color: #B5D4F4; font-size: 11px; font-weight: 700; flex: 1; }
+.b4-log__arrow { display: inline-block; transition: transform .15s; font-size: 12px; }
+.b4-log.is-open .b4-log__arrow { transform: rotate(90deg); }
+.b4-log__body { display: none; }
+.b4-log.is-open .b4-log__body { display: block; }
+.b4-log__row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid #E4DCC6; }
+.b4-log__row:nth-child(even) { background: #FBF4E2; }
+.b4-log__tm { flex: 0 0 78px; color: #8A8578; font-size: 11px; font-weight: 700; }
+.b4-log__foe { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 800; color: #2b2a20;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.b4-log__foe small { font-weight: 400; color: #8A8578; }
+.b4-log__bd { flex: 0 0 34px; text-align: center; border-radius: 6px; font-size: 11px; font-weight: 800; padding: 1px 0; }
+.b4-log__bd--win { background: #EAF3DE; color: #3B6D11; border: 1.5px solid #97C459; }
+.b4-log__bd--lose { background: #FCEBEB; color: #A32D2D; border: 1.5px solid #F09595; }
+.b4-log__bd--run { background: #F1EFE8; color: #5F5E5A; border: 1.5px solid #B4B2A9; }
+/* 奖励固定宽双列：碎片数量一列、说明一列，胜负两种行各自对齐 */
+.b4-log__rw { flex: 0 0 116px; display: grid; grid-template-columns: 42px 1fr; align-items: center;
+  gap: 4px; text-align: left; font-size: 11px; color: #854F0B; font-weight: 800; }
+.b4-log__rw-sh { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.b4-log__rw-ex { white-space: nowrap; }
+.b4-log__ft { display: flex; align-items: center; justify-content: center; gap: 14px;
+  background: #F4EDDA; border-top: 2px solid #4A3728; padding: 5px 0; }
+.b4-log__pg { border: 0; background: none; font-family: inherit; font-size: 12px; font-weight: 800;
+  color: #5b4b8a; cursor: pointer; padding: 1px 6px; }
+.b4-log__pg:disabled { color: #B4B2A9; cursor: default; }
+.b4-log__pgn { font-size: 12px; font-weight: 800; color: #2b2a20; }
+.b4-log__empty { padding: 14px; text-align: center; color: #8A8578; font-size: 12px; font-weight: 700; }
+.b4-intro__hud { position: absolute; left: 8px; top: 8px; right: 112px; z-index: 4; display: flex; align-items: flex-start; flex-wrap: wrap; gap: 6px; background: none; border: 0; padding: 0; font-size: 10.5px; font-weight: 700; box-shadow: none; }
+.b4-intro__hud span { background: rgba(255,249,232,.95); border: 1.5px solid #4A3728; border-radius: 999px; padding: 3px 8px; color: #3b2d18; white-space: nowrap; box-shadow: 0 2px 0 rgba(74,55,40,.35); }
+.b4-intro__hud b { color: #d24a3a; font-size: 13px; text-shadow: 0 0 3px rgba(255,220,120,.9); }
+.b4-intro__meta { font-size: 11px; opacity: .78; margin-top: 3px; }
+.b4-btn[disabled] { opacity: .45; cursor: not-allowed; filter: grayscale(.4); }
+.b4-intro__cap { position: absolute; left: 8px; bottom: 8px; font-size: 12px; color: #fff; text-shadow: 0 1px 3px #000; background: rgba(0,0,0,.35); padding: 3px 8px; border-radius: 6px; z-index: 4; }
+.b4-intro__picker { position: absolute; inset: 0; display: none; z-index: 6; align-items: center; justify-content: center; gap: 16px; padding: 18px; background: rgba(0,0,0,.28); }
+.b4-intro.is-pick .b4-intro__picker { display: flex; }
+.b4-intro__pickhero { flex: 0 0 auto; width: 40%; max-width: 230px; height: 84%; }
+.b4-intro__pickhero img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; filter: drop-shadow(0 6px 6px rgba(0,0,0,.25)); }
+.b4-intro.is-p2 .b4-intro__pickhero { display: none; }
+.b4-intro__pickpanel { flex: 0 0 auto; width: 50%; max-width: 300px; background: #fffdf5; border: 3px solid #3a2c1a; border-radius: 12px; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+.b4-intro__picker h4 { margin: 0 0 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; color: #3a2c1a; }
+.b4-intro__picker h4 button { font-size: 12px; padding: 2px 8px; border: 2px solid #3a2c1a; border-radius: 6px; background: #3a2c1a; color: #fff; cursor: pointer; }
+.b4-intro__grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; }
+.b4-intro__it { border: 2px solid #d8cdb6; background: #fff; border-radius: 8px; padding: 4px; cursor: pointer; text-align: center; }
+.b4-intro__it.is-on { border-color: #b5452e; box-shadow: 0 0 0 2px #b5452e inset; }
+.b4-intro__it img { width: 100%; height: 96px; object-fit: contain; object-position: bottom; }
+.b4-intro__it small { display: block; font-size: 11px; color: #3a2c1a; margin-top: 2px; }
+.b4-intro__flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.b4-intro.is-flash .b4-intro__flash { animation: b4Flash .48s ease-out forwards; }
+@keyframes b4Flash { 0% { opacity: 0; } 40% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes b4Pop { from { transform: translate(-50%,-50%) scale(.9); opacity: 0; } to { transform: translate(-50%,-50%) scale(1); opacity: 1; } }
+body.ink .b4-intro__npc img { animation: none; }
+
+
+/* ===== 训练（V6）===== */
+.tr-modal { max-width: 440px; }
+.tr-hero { padding: 11px 13px; margin-bottom: 10px; }
+.tr-hero__hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.tr-hero__t { font-size: 16px; font-weight: 700; color: #3D2B1F; }
+.tr-hero__s { font-size: 11.5px; color: #7A6A55; margin-top: 2px; }
+.tr-hero__count { font-size: 12px; font-weight: 700; color: #6b4a10; background: #F6D08A; border-radius: 12px; padding: 2px 9px; white-space: nowrap; }
+.tr-cost { margin-top: 9px; background: #FFF3D0; border: 1px solid #E0C477; border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.7; color: #5b4a30; }
+.tr-gate { margin-top: 7px; border-radius: 8px; padding: 6px 10px; font-size: 12px; }
+.tr-gate.is-ok { background: #E8F5E9; color: #2e6b3e; }
+.tr-gate.is-no { background: #FCEBEB; color: #A32D2D; }
+.tr-notice { margin-top: 7px; background: #E6F1FB; color: #185FA5; border-radius: 8px; padding: 7px 10px; font-size: 12px; }
+.tr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-bottom: 10px; }
+.tr-choose { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; background: #FFFDF6; border: 1px solid #4A3728; border-radius: 10px; padding: 10px; min-height: 104px; cursor: pointer; }
+.tr-choose:active { transform: translateY(2px); }
+.tr-choose.is-done { opacity: .6; background: #F1EADA; }
+.tr-choose__ico { width: 26px; height: 26px; border-radius: 7px; color: #fff; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.tr-choose__t { font-size: 14px; font-weight: 700; color: #3D2B1F; }
+.tr-choose__s { font-size: 11px; color: #7A6A55; line-height: 1.45; }
+.tr-choose__go { margin-top: auto; font-size: 11px; font-weight: 700; color: #B4552D; }
+.tr-rules { background: #FFFDF6; border: 1px solid #E0C477; border-radius: 8px; padding: 8px 10px; font-size: 12px; color: #5b4a30; line-height: 1.7; margin-bottom: 10px; }
+.tr-rules summary { cursor: pointer; font-weight: 700; }
+.tr-foot { margin-top: 4px; }
+.tr-hud { padding: 9px 11px; margin-bottom: 9px; }
+.tr-hud__row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; }
+.tr-hud__row--sub { margin-top: 7px; color: #7A6A55; font-size: 11px; }
+.tr-hud__row--head { position: relative; justify-content: center; }
+.tr-hud__row--head .tr-hud__clock { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+.tr-hud__name { font-weight: 700; font-size: 14px; color: #3D2B1F; }
+.tr-hud__clock { font-size: 15px; font-weight: 700; color: #B4552D; }
+.tr-hud__step { margin-top: 7px; font-size: 12px; font-weight: 700; color: #3D2B1F; }
+.tr-stepbar { height: 6px; background: #EFE7D2; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+.tr-stepbar i { display: block; height: 100%; background: #E24B4A; }
+.tr-stepbar i.is-urgent { background: #A32D2D; }
+.is-urgent { color: #A32D2D; font-weight: 700; }
+.tr-play { background: #E9F1DE; border: 1px solid #4A3728; border-radius: 9px; padding: 12px 10px; min-height: 168px; text-align: center; }
+.tr-quiz__tip { font-size: 12px; color: #6b6155; }
+.tr-quiz__expr { font-size: 26px; font-weight: 700; color: #3D2B1F; margin: 16px 0 18px; letter-spacing: 1px; }
+.tr-quiz__word { font-size: 26px; font-weight: 700; color: #3D2B1F; margin: 16px 0 18px; letter-spacing: 4px; }
+.tr-quiz__opts, .tr-rps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.tr-rps { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 24px; }
+.tr-opt { border: 1px solid #4A3728; background: #FFFDF6; border-radius: 7px; padding: 9px 0; font-size: 16px; font-weight: 700; color: #3D2B1F; cursor: pointer; }
+.tr-opt:active { transform: translateY(2px); background: #F0C64B; }
+.tr-ttt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 150px; margin: 12px auto 0; }
+.tr-cell { height: 46px; border: 1px solid #4A3728; background: #FFFDF6; border-radius: 5px; font-size: 22px; font-weight: 700; color: #3D2B1F; cursor: pointer; }
+.tr-cell.is-taken { cursor: default; background: #F1EADA; }
+.tr-feedback { min-height: 22px; text-align: center; font-size: 12px; color: #5b4a30; margin: 8px 0 2px; }
+.tr-result { padding: 14px; }
+.tr-result__tag { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 12px; margin-bottom: 8px; }
+.tr-result__tag.is-win { background: #FFF3D0; color: #854F0B; }
+.tr-result__tag.is-lose { background: #F1EFE8; color: #5F5E5A; }
+.tr-result__t { font-size: 16px; font-weight: 700; color: #3D2B1F; margin: 0 0 2px; }
+.tr-result__s { font-size: 12px; color: #7A6A55; margin: 0 0 10px; }
+.tr-result__li { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #E3D8C0; }
+.tr-result__li b { font-weight: 700; color: #A32D2D; }
+.tr-result__cost { margin-top: 9px; font-size: 11px; color: #7A6A55; line-height: 1.6; }
+.tr-result__btns { display: flex; gap: 8px; margin-top: 12px; }
+.tr-result__btns .btn { flex: 1; }
+
+/* ===== 训练 V7 · 答题反馈 / 手型 / 骰子 / 棋盘动画 / 结算徽章 ===== */
+.tr-opt:disabled { opacity: 1; cursor: default; }
+.tr-opt.is-right { background: #DFF3E0; border-color: #2E7D46; color: #1F6B38; box-shadow: inset 0 0 0 2px #2E7D46; }
+.tr-opt.is-wrong { background: #FBE0DE; border-color: #B8433D; color: #A32D2D; box-shadow: inset 0 0 0 2px #B8433D; }
+.tr-fb { margin: 12px auto 2px; padding: 9px 12px; border-radius: 9px; font-size: 15px; font-weight: 700; line-height: 1.5; animation: trFbIn .28s ease-out both; }
+.tr-fb.is-ok { background: #DFF3E0; border: 1px solid #79B788; color: #1F6B38; }
+.tr-fb.is-no { background: #FBE6E3; border: 1px solid #D79A93; color: #A32D2D; }
+@keyframes trFbIn { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+
+/* 剪刀石头布：手型选择 + 出拳对决 */
+.tr-rps { margin-top: 14px; gap: 9px; }
+.tr-hand { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 92px; padding: 8px 2px; background: #FFFDF6; border: 1px solid #4A3728; border-radius: 10px; cursor: pointer; }
+.tr-hand:active { transform: translateY(2px); background: #F0C64B; }
+.tr-hand__ico { font-size: 34px; line-height: 1.15; }
+.tr-hand__t { font-size: 12px; font-weight: 700; color: #3D2B1F; }
+.tr-duel { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 16px 0 4px; }
+.tr-duel__hand { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; font-size: 40px; line-height: 1.1; background: #FFFDF6; border: 1px solid #4A3728; border-radius: 10px; }
+.tr-duel__hand span { font-size: 11px; font-weight: 700; color: #5b4a30; }
+.tr-duel__hand.is-pop { animation: trShake .4s ease-in-out, trPop .45s .4s ease-out both; }
+.tr-duel__vs { font-size: 13px; font-weight: 700; color: #B4552D; }
+/* 获胜方：右上角 WIN 角标 + 卡片高亮 */
+.tr-duel__hand { position: relative; }
+.tr-duel__hand.is-win { border-color: #C0392B; background: #FFF3D0; box-shadow: inset 0 0 0 2px #E0B44A; }
+.tr-duel__win { position: absolute; top: -9px; right: -6px; display: inline-block; padding: 2px 7px; border-radius: 10px; background: #C0392B; border: 1px solid #4A3728; color: #fff; font-size: 10px; font-weight: 800; letter-spacing: 1px; line-height: 1.3; }
+@keyframes trShake { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-8px); } 50% { transform: translateY(3px); } 75% { transform: translateY(-6px); } }
+@keyframes trPop { from { transform: scale(.82); } 60% { transform: scale(1.08); } to { transform: scale(1); } }
+
+/* 井字棋：摇骰子 / 落子 / 旧子淡出 / 连线高亮 */
+.tr-dice { text-align: center; padding: 18px 4px 10px; }
+.tr-dice__box { font-size: 62px; line-height: 1.1; }
+.tr-dice__box.is-rolling { animation: trDiceRoll .3s linear infinite; }
+.tr-dice__box.is-stop { animation: trPop .4s ease-out both; }
+.tr-dice__t { margin-top: 10px; font-size: 16px; font-weight: 700; color: #3D2B1F; }
+.tr-dice__s { margin-top: 6px; font-size: 11.5px; color: #6b6155; }
+@keyframes trDiceRoll { 0% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } 100% { transform: rotate(-14deg); } }
+.tr-cell.is-new { animation: trCellIn .3s ease-out both; }
+.tr-cell.is-fade { animation: trCellOut .35s ease-in both; }
+.tr-cell.is-line { background: #F6D08A; border-color: #BA7517; animation: trLine 1.5s ease-in-out; }
+@keyframes trCellIn { from { transform: scale(.5); opacity: .3; } to { transform: scale(1); opacity: 1; } }
+@keyframes trCellOut { from { opacity: 1; } to { opacity: 0; transform: scale(.55); } }
+@keyframes trLine { 0%, 100% { box-shadow: inset 0 0 0 2px #E0A93B; } 50% { box-shadow: inset 0 0 0 3px #FFF0B8, 0 0 10px #E0A93B; } }
+
+/* 结算页：徽章 + 精简头部（不再三行重复） */
+.tr-result__hd { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.tr-result__hd .tr-result__t { margin-bottom: 2px; }
+.tr-result__hd .tr-result__s { margin: 0; }
+.tr-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border-radius: 50%; font-size: 18px; font-weight: 700; color: #fff; border: 2px solid rgba(255, 255, 255, .7); box-shadow: 0 2px 0 rgba(0, 0, 0, .12); }
+.tr-badge.is-perfect { background: #D19A20; }
+.tr-badge.is-good { background: #4E9A62; }
+.tr-badge.is-poor { background: #9A8A72; }
+
+
+/* ===== V8 · 英语难度选择 / 家长后台玩法与题库 ===== */
+.mem-levels { display: flex; flex-direction: column; gap: 10px; }
+.mem-level { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px;
+  border: 1px solid #6B4F2A; border-radius: 12px; background: #FFFDF7; }
+.mem-level.is-def { border: 2px solid #BA7517; background: #FAEEDA; }
+.mem-level__ico { flex: none; width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; }
+.mem-level__ico--easy { background: #EAF3DE; color: #3B6D11; }
+.mem-level__ico--normal { background: #E6F1FB; color: #185FA5; }
+.mem-level__ico--hard { background: #FAECE7; color: #993C1D; }
+.mem-level__txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mem-level__t { font-size: 15px; font-weight: 500; color: #3A2A18; }
+.mem-level__t em { font-size: 11px; font-style: normal; font-weight: 400; background: #BA7517;
+  color: #fff; border-radius: 6px; padding: 1px 5px; margin-left: 4px; }
+.mem-level__s { font-size: 12px; color: #7A6A55; }
+.mem-level__r { font-size: 12px; color: #3B6D11; }
+.mem-level__go { flex: none; font-size: 12px; color: #A6791F; }
+.mem-level__back { margin-top: 2px; }
+.mem-card__hint { display: block; font-size: 12px; line-height: 1; margin-top: 2px; }
+.pt-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin: 10px 0 12px; }
+.pt-item { display: flex; justify-content: space-between; gap: 8px; font-size: 13px;
+  border-bottom: 1px dashed #E3D9C6; padding: 4px 0; }
+.pt-item b { font-weight: 400; color: #888780; }
+.pt-item b.is-done { color: #3B6D11; }
+.pt-btns { flex-wrap: wrap; }
+
+/* ===== 首登引导 / 功能解锁（V2.0）===== */
+/* 底部导航：未解锁 tab */
+.tab { position: relative; }
+.tab.is-locked { color: #A79B87; opacity: .68; }
+.tab-lock {
+  position: absolute; top: 4px; right: calc(50% - 20px);
+  font-size: 10px; font-style: normal; line-height: 1;
+  background: #EFE4CF; color: #8A7458; border-radius: 8px; padding: 1px 3px;
+}
+/* 未解锁占位页 */
+.lock-card { text-align: center; padding: 34px 18px 28px; }
+.lock-card__icon { font-size: 42px; line-height: 1; margin-bottom: 12px; }
+.lock-card h2 { font-size: 18px; margin: 0 0 8px; }
+.lock-card p { font-size: 13px; color: var(--muted); margin: 0 0 18px; }
+.lock-card .row { justify-content: center; }
+/* 我的数据-账号：主角形象行 */
+.char-block {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 10px 0 12px; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+}
+.char-block__k { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.char-block__v { flex: 1; min-width: 0; font-size: 13px; color: var(--text); }
+.char-block__v b { font-weight: 700; }
+.lock-tip { font-style: normal; font-size: 11px; color: #A6791F; margin-left: 4px; white-space: nowrap; }
+.char-block .btn--sm { flex: none; }
+/* 探险页：未解锁页签 */
+.b3-tab.is-locked { opacity: .6; border-style: dashed; cursor: not-allowed; }
+.b3-tab.is-locked .b3-tab__i { filter: grayscale(1); }
+.b3-tab.is-locked .b3-tab__s { color: #A6791F; font-weight: 700; }
+body.ink .b3-tab.is-locked { opacity: .5; }
+body.ink .lock-tip { color: #7A6A55; }

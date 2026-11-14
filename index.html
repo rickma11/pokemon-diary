@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>宝可梦训练师成长日记</title>
+  <meta name="description" content="小学生日常打卡工具：作业、阅读、运动、家务、睡眠">
+  <meta name="theme-color" content="#2b2b28">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="成长日记">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icons/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/gba.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar__logo" id="appLogo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M8 12.5l2.8 2.8L16 9.5"></path>
+    </svg>
+  </div>
+  <div class="appbar__text">
+    <h1>宝可梦训练师成长日记</h1>
+    <div class="appbar__date">
+      <p id="todayLabel">—</p>
+      <span id="topClock" title="北京时间">--:--:--</span>
+      <span id="syncBadge" class="sync-badge" role="status" aria-live="polite"></span>
+    </div>
+  </div>
+  <button type="button" class="appbar__parent" id="parentEntry" aria-label="进入家长后台">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>
+    <span>家长</span>
+  </button>
+</header>
+
+<div class="press-hint" id="pressHint" role="status" aria-live="polite">
+  <span class="press-hint__txt">继续按住进入家长后台…</span>
+  <span class="press-hint__bar"><i id="pressBar"></i></span>
+</div>
+
+<main class="screen" id="screen"></main>
+
+<div class="statusbar" id="statusbar"></div>
+
+<nav class="tabbar" id="tabbar" role="tablist" aria-label="主导航"></nav>
+
+<script src="js/models.js"></script>
+<script src="js/data/dex.js"></script>
+<script src="js/data/evolution.js"></script>
+<script src="js/store.js"></script>
+<script src="js/github.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/photos.js"></script>
+<script src="js/statusbar.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/events.js"></script>
+<script src="js/data/words.js"></script>
+<script src="js/bank-import.js"></script>
+<script src="js/screens/schedule.js"></script>
+<script src="js/screens/parent.js"></script>
+<script src="js/screens/mine.js"></script>
+<script src="js/screens/login.js"></script>
+<script src="js/screens/care.js"></script>
+<script src="js/screens/memory.js"></script>
+<script src="js/screens/training.js"></script>
+<script src="assets/pmd-sliced/manifest.js"></script>
+<script src="js/screens/ranch.js"></script>
+<script src="js/screens/exchange.js"></script>
+<script src="js/screens/dex.js"></script>
+<script src="js/data/catch-pools.js"></script>
+<script src="js/data/battle-moves.js"></script>
+<script src="js/data/gym-data.js"></script>
+  <script src="js/screens/battle.js"></script>
+  <script src="js/screens/gym.js"></script>
+  <script src="js/screens/catch.js"></script>
+  <script src="js/unlock.js"></script>
+  <script src="js/onboarding.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "pokedex-checkin",
+  "version": "2.0.0",
+  "private": true,
+  "description": "宝可梦训练师成长日记：纯静态 H5 PWA（账号与存档同步到 GitHub 仓库，无后端服务器）",
+  "scripts": {
+    "start": "node tools/serve.js",
+    "serve": "node tools/serve.js"
+  }
+}
