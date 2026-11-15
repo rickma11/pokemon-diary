@@ -13,6 +13,7 @@ window.APP = window.APP || {};
   var pushTimer = null;
   var pullTimer = null;
   var started = false;
+  var firstPullDone = false; // 首次云端拉取是否结束（成功/失败都算）：新手引导的就绪门禁
   var adopting = false; // 云端数据落地期间不回推，避免「拉下来又推回去」的空转
   var status = { offline: false, pending: 0, lastSyncAt: 0, syncing: false, notice: '' };
 
@@ -481,12 +482,21 @@ window.APP = window.APP || {};
     schedulePush();
   }
 
+  // 首次拉取结束后打开新手引导门禁，并重渲染一次让 render() 重新判定。
+  // 失败也置位：离线时不能把用户永远卡在「等同步」而没有引导。
+  function markFirstPullDone() {
+    if (firstPullDone) return;
+    firstPullDone = true;
+    if (APP.refresh) APP.refresh();
+  }
+  function ready() { return firstPullDone; }
+
   function start() {
     if (fork && !canSync()) { fork.offline = true; showFork(); return; } // 离线也要让用户能选
     if (started || !canSync()) return;
     started = true;
     APP.store.onSave = onLocalSave;
-    pull()['then'](function () { uploadPhotos(); });
+    pull()['then'](function () { uploadPhotos(); markFirstPullDone(); });
     if (typeof setInterval === 'function') {
       if (pullTimer) clearInterval(pullTimer);
       pullTimer = setInterval(function () {
@@ -503,6 +513,7 @@ window.APP = window.APP || {};
 
   function stop() {
     started = false;
+    firstPullDone = false; // 换账号 / 重新登录后，等新账号自己的首次拉取完成再放行引导
     if (pullTimer) { clearInterval(pullTimer); pullTimer = null; }
     if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
   }
@@ -516,6 +527,7 @@ window.APP = window.APP || {};
   APP.sync = {
     start: start,
     stop: stop,
+    ready: ready,
     pull: pull,
     push: push,
     flushPush: flushPush,

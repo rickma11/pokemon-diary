@@ -37,7 +37,7 @@ window.APP = window.APP || {};
   // 首份存档用当前本机数据（或默认）加密写入 saves/{id}.json。
   function register(nickname, childPwd, parentPwd) {
     if (!needCfg()) {
-      return Promise.resolve({ ok: false, error: '请先在页面下方的「GitHub 同步」里填写仓库与访问令牌' });
+      return Promise.resolve({ ok: false, error: '请先在页面上方的「GitHub 同步」里填写仓库与访问令牌' });
     }
     if (!APP.cipher || !APP.cipher.available()) {
       return Promise.resolve({ ok: false, error: '当前环境不支持加密（请用 https 或 localhost 打开）' });
@@ -100,7 +100,7 @@ window.APP = window.APP || {};
   // 登录：读账号文件 → 用输入密码派生密钥尝试解开 parent / child 包裹，解开即角色 + 拿到存档主密钥
   function login(accountId, pwd) {
     if (!needCfg()) {
-      return Promise.resolve({ ok: false, error: '请先在页面下方的「GitHub 同步」里填写仓库与访问令牌' });
+      return Promise.resolve({ ok: false, error: '请先在页面上方的「GitHub 同步」里填写仓库与访问令牌' });
     }
     if (!APP.cipher || !APP.cipher.available()) {
       return Promise.resolve({ ok: false, error: '当前环境不支持加密（请用 https 或 localhost 打开）' });

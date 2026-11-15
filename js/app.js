@@ -251,11 +251,11 @@
       else statusbarEl.style.display = 'none';
       if (parentEntryEl) parentEntryEl.style.display = 'none';
       renderScreen('login');
-      // 首登引导对「未登录 / 已登录」的新用户都要出现，浮在登录页之上
-      if (!fork && APP.onboarding && APP.onboarding.maybeRun) APP.onboarding.maybeRun();
+      // 未登录时不跑新手引导：门禁在 onboarding.run() 统一判定。
+      // 否则浮层会盖住 GitHub 配置卡，且选择结果写进本地后会挡住云端真实存档。
       return;
     }
-    // 已登录且已接入服务器 → 启动同步（内部防重；本机模式不会启动）
+    // 已登录 → 启动同步（内部防重）；首次拉取结束后由 sync 触发一次 refresh 重判引导门禁
     if (APP.sync && APP.sync.start) APP.sync.start();
     // 首登引导：未引导过则弹出选择流程（内部防重）
     if (!fork && APP.onboarding && APP.onboarding.maybeRun) APP.onboarding.maybeRun();

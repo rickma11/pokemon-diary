@@ -1,16 +1,19 @@
 // 登录页（T3）：账号 + 单密码框分流登录；支持创建新账号
 // 交互原则：孩子端只有一个密码框，输小孩密码进前端、输大人密码进后台，不给「选角色」这一步。
-// 纯静态版强制登录（无账号即注册 / 登录），不再有「本机模式」；GitHub 仓库地址在「我的数据 → GitHub 同步」里填。
+// 纯静态版强制登录（无账号即注册 / 登录），不再有「本机模式」。
+// 首次顺序：① 本页填 GitHub 连接 → ② 注册 / 登录账号 → ③ 才进入新手引导（门禁在 onboarding.js）。
 window.APP = window.APP || {};
 
 (function (APP) {
   'use strict';
 
-  var view = 'login'; // login | register | server
+  var view = 'login'; // login | register
   var msg = null;     // { ok: bool, text: string }
   var busy = false;
   var bound = false;
   var lastEl = null;
+  var showSetup = false;   // 已配置时是否展开 GitHub 设置卡（默认折叠，缩短首屏）
+  var wasConfigured = null;// 上一帧的配置状态：用于「刚保存好连接」时滚到第二步
   var vals = { account: '', pwd: '', nickname: '', childPwd: '', parentPwd: '' };
 
   function esc(t) {
@@ -81,8 +84,17 @@ window.APP = window.APP || {};
         '</section>';
       return lead + setup + (view === 'register' ? registerHtml() : loginHtml());
     }
-    if (view === 'register') return setup + registerHtml();
-    return loginHtml() + setup;
+    // 已配置：账号表单置顶（第二步），设置卡默认折叠收在底部，缩短首屏。
+    var step2 = '<section class="card" id="step2"><h2>第二步：创建 / 登录家庭账号</h2>' +
+      '<p>仓库已连接。首次使用在注册成功后会进入新手引导，选择你的第一只宝可梦；已有账号登录后直接进入。</p>' +
+      '</section>';
+    var folded = showSetup
+      ? setup
+      : '<section class="card"><div class="row" style="flex-wrap:wrap;align-items:center">' +
+        '<span>GitHub 同步：已配置</span>' +
+        '<button type="button" class="btn btn--sm" data-act="gh-expand">修改连接设置</button>' +
+        '</div></section>';
+    return step2 + (view === 'register' ? registerHtml() : loginHtml()) + folded;
   }
 
   function repaint() {
@@ -92,6 +104,7 @@ window.APP = window.APP || {};
   function render(container) {
     lastEl = container;
     if (!vals.account && APP.auth) vals.account = APP.auth.lastAccount();
+    var configured = !!(APP.gh && APP.gh.hasConfig && APP.gh.hasConfig());
     container.innerHTML = html();
 
     if (!bound) {
@@ -99,6 +112,15 @@ window.APP = window.APP || {};
       container.addEventListener('input', onInput);
       bound = true;
     }
+    // 刚保存好连接的那一拍，把「第二步 / 账号表单」滚到可视区
+    if (wasConfigured === false && configured && typeof document !== 'undefined') {
+      var el = document.getElementById('step2');
+      if (el && el.scrollIntoView) {
+        try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        catch (e) { el.scrollIntoView(); }
+      }
+    }
+    wasConfigured = configured;
   }
 
   function onInput(e) {
@@ -116,6 +138,8 @@ window.APP = window.APP || {};
     while (btn && btn.getAttribute && !btn.getAttribute('data-act')) btn = btn.parentNode;
     if (!btn || !btn.getAttribute) return;
     var act = btn.getAttribute('data-act');
+
+    if (act === 'gh-expand') { showSetup = true; return repaint(); }
 
     // 首次使用的 GitHub 连接设置卡（gh-save / gh-test / gh-sync）与登录页共用事件委托。
     // 刷新由 ghui 内部按需触发：gh-test/gh-sync 不刷新，避免冲掉用户尚未保存的输入。

@@ -116,6 +116,15 @@ window.APP = window.APP || {};
     if (RUNNING) return;
     if (!APP.store || !APP.store.onboarding) return;
     if (APP.store.onboarding().onboarded) return;
+    // 纯静态强制登录版：引导必须晚于「GitHub 配置 → 注册/登录 → 首次云端拉取」。
+    // 否则未登录时选的宝可梦会写进本地并把 savedAt 抬新，挡住云端真实存档（串档 / 丢档），
+    // 浮层还会盖住登录页的 GitHub 连接卡片。四道闸缺一不可。
+    if (!APP.auth || !APP.auth.session) return;
+    var sess = APP.auth.session();
+    if (!sess || !sess.vaultKeyB64) return;
+    if (!APP.gh || !APP.gh.hasConfig || !APP.gh.hasConfig()) return;
+    if (APP.sync && APP.sync.forkPending && APP.sync.forkPending()) return;
+    if (APP.sync && APP.sync.ready && !APP.sync.ready()) return;
     if (isLegacySave()) {
       var seen = {}, claimed = {};
       if (APP.unlock && APP.unlock.evalState) {
