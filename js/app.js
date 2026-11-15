@@ -442,7 +442,19 @@
   if ('serviceWorker' in navigator &&
       (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('js/sw.js')['catch'](function () {});
+      var sw = navigator.serviceWorker;
+      // 旧版 SW 注册在 js/ 子目录：作用域只覆盖 js/，既缓存不到首页，
+      // 又会把没缓存的 JS 换成 HTML 壳。先注销它，再注册根目录版本。
+      sw.getRegistrations().then(function (regs) {
+        var jobs = [];
+        for (var i = 0; i < regs.length; i++) {
+          var a = regs[i].active || regs[i].waiting || regs[i].installing;
+          if (a && a.scriptURL.indexOf('/js/sw.js') >= 0) jobs.push(regs[i].unregister());
+        }
+        return Promise.all(jobs);
+      })['catch'](function () {}).then(function () {
+        return sw.register('sw.js', { scope: './' });
+      })['catch'](function () {});
     });
   }
 })();

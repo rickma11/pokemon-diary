@@ -26,16 +26,22 @@
 把**项目根目录**下的这些内容发布到仓库（其余忽略）：
 
 ```
-index.html
+index.html                       # 入口（构建产物，请勿直接编辑）
+index.src.html                   # 页面源模板，要改 HTML 就改这个
+build.js                         # 零依赖构建脚本，把全部 JS/CSS 内联进 index.html
+sw.js                            # 离线缓存，必须在站点根目录
 manifest.json
 .nojekyll        # 关键：防止 GitHub Pages 把 assets/ 里带下划线的文件当 Jekyll 处理而吞掉
 css/
 js/
 assets/
 README.md        # 部署规则 / 使用说明（给别人复制仓库用）
-更新推送.bat      # 一键推送后续改动（纯 ASCII 内容，避免中文命令行乱码）
+更新推送.bat      # 自动重建 + 一键推送后续改动（纯 ASCII 内容，避免中文命令行乱码）
 deploy-package/AI_DEPLOY_GUIDE.md  # 本文件，同样随仓库发布
 ```
+
+> **首页是单文件构建产物**：为了不让浏览器串行下载 34 个 JS + 2 个 CSS（国内访问 github.io 首屏要等 5–10 秒），`build.js` 会把它们全部内联进 `index.html`。以后改 `js/`、`css/` 或 `index.src.html` 后，运行 `node build.js` 重新生成；双击 `更新推送.bat` 会自动先跑这一步。**不要直接编辑 `index.html`**，下次构建会被覆盖。
+> `js/data/starter-art.js` 内联了首登引导用的 10 只宝可梦小图和中文名；`assets/tiny/*.webp` 是它们的源图，图鉴原图 `assets/pokemon/` 不受影响。
 
 **不要发布**（已在 `.gitignore` 中，发布操作员也应主动排除）：
 - `server.js`（旧云端后端，**已删除**，纯静态站点不再需要）

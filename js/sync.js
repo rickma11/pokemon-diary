@@ -1,16 +1,24 @@
 // 同步层（T4 / 纯静态 GitHub 版）
-// 职责：本地落盘 → 防抖 2 秒上传；启动 / 每 5 分钟 / 网络恢复 → 拉取云端；savedAt 最后写入者胜出；顶部角标。
+// 职责：本地落盘 → 静默 20 秒（最长 60 秒）合并上传；启动 / 每 5 分钟 / 网络恢复 → 拉取云端；
+//       savedAt 最后写入者胜出；顶部角标。
 // v2：不再有「本机模式」，也不再弹「用哪份记录继续」二选一 —— 本机旧记录只留独立槽，
 //     需要时由家长后台「导入本机旧记录」单向导入（云端为空才可用、导入前备份）。
+// v3：每次 PUT 都是一个 git commit，2 秒防抖会让 commit 历史暴涨，也容易撞 GitHub 写限流 / 多端 sha 冲突。
+//     改为「静默窗口 + 最长兜底 + 最小间隔 + 内容去重」：数据没变不写仓库，连续操作合并成一次上传。
 window.APP = window.APP || {};
 
 (function (APP) {
   'use strict';
 
-  var PUSH_DEBOUNCE = 2000;
+  var PUSH_IDLE = 20000;       // 静默 20 秒后才上传（连续操作合并成一次）
+  var PUSH_MAX_WAIT = 60000;   // 再密集的操作，最多 60 秒也必定落一次
+  var MIN_PUSH_GAP = 30000;    // 两次成功写入仓库之间至少隔 30 秒
   var PULL_INTERVAL = 5 * 60 * 1000;
 
   var pushTimer = null;
+  var firstDirtyAt = 0;        // 本轮首次待上传的时间，用于 60 秒兜底
+  var lastPushAt = 0;          // 上次成功写入仓库的时间
+  var lastFingerprint = '';    // 上次成功写入的数据指纹（内容没变就不写 commit）
   var pullTimer = null;
   var started = false;
   var firstPullDone = false; // 首次云端拉取是否结束（成功/失败都算）：新手引导的就绪门禁
@@ -240,6 +248,23 @@ window.APP = window.APP || {};
     return false;
   }
 
+  // 内容指纹：忽略 savedAt（每次 save 都会刷新它），只看真正的业务数据。
+  // 仅用于跳过无意义的写入；键顺序变化会误判成「变了」，最多多写一次 commit，绝不会漏写。
+  function fingerprint(s) {
+    var copy = {}, k;
+    for (k in s) {
+      if (Object.prototype.hasOwnProperty.call(s, k) && k !== 'savedAt') copy[k] = s[k];
+    }
+    var str;
+    try { str = JSON.stringify(copy); } catch (e) { return 'x' + Date.now(); }
+    var h = 2166136261;
+    for (var i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return str.length + ':' + h.toString(36);
+  }
+
   function canSync() {
     return !!(APP.auth && APP.auth.session() && APP.gh && APP.gh.config());
   }
@@ -389,6 +414,8 @@ window.APP = window.APP || {};
           var changed = false;
           try { changed = APP.store.adoptExternal(data); } catch (e) { changed = false; }
           adopting = false;
+          // 云端数据刚落地，记下它的指纹，别在下一次 onLocalSave 里又原样推回去
+          lastFingerprint = fingerprint(APP.store.get());
           if (changed && APP.refresh) APP.refresh();
           set({ syncing: false, offline: false, lastSyncAt: Date.now() });
           return true;
@@ -407,8 +434,14 @@ window.APP = window.APP || {};
     if (id === 'local') return Promise.resolve(false);
     var s = APP.auth.session();
     if (!s || !s.vaultKeyB64) return Promise.resolve(false);
-    set({ syncing: true });
     var sData = APP.store.get();
+    var fp = fingerprint(sData);
+    // 内容没变就不 PUT：省掉一个 commit，也避免无谓地 bump 仓库历史
+    if (fp === lastFingerprint) {
+      set({ syncing: false, offline: false, pending: 0, lastSyncAt: Date.now() });
+      return Promise.resolve(true);
+    }
+    set({ syncing: true });
     return APP.cipher.importRaw(APP.cipher.bytesFromB64(s.vaultKeyB64)).then(function (vaultKey) {
       return APP.cipher.seal(sData, vaultKey);
     }).then(function (env) {
@@ -416,7 +449,9 @@ window.APP = window.APP || {};
         var sha = existing ? existing.sha : null;
         return APP.gh.putFile('saves/' + id + '.json', JSON.stringify(env), sha).then(function () {
           localWinsUntilPush = false;
-          set({ syncing: false, offline: false, pending: 0, lastSyncAt: Date.now() });
+          lastFingerprint = fp;
+          lastPushAt = Date.now();
+          set({ syncing: false, offline: false, pending: 0, lastSyncAt: lastPushAt });
           return uploadPhotos()['then'](function () { return true; });
         });
       });
@@ -428,11 +463,19 @@ window.APP = window.APP || {};
 
   function schedulePush() {
     if (!canSync()) return;
+    var now = Date.now();
+    if (!firstDirtyAt) firstDirtyAt = now;
     if (pushTimer) clearTimeout(pushTimer);
+    // 静默窗口 + 最长 60 秒兜底：一直有操作也不会把上传无限推后
+    var wait = Math.min(PUSH_IDLE, Math.max(0, firstDirtyAt + PUSH_MAX_WAIT - now));
+    // 两次写入之间留最小间隔，避免密集操作撞 GitHub 写限流 / 多端 sha 冲突
+    var gap = lastPushAt + MIN_PUSH_GAP - now;
+    if (gap > wait) wait = gap;
     pushTimer = setTimeout(function () {
       pushTimer = null;
+      firstDirtyAt = 0;
       push();
-    }, PUSH_DEBOUNCE);
+    }, wait);
   }
 
   // 本地每次落盘（store.save）都会回调这里
@@ -469,6 +512,14 @@ window.APP = window.APP || {};
       window.addEventListener('online', function () {
         pull()['then'](function () { push(); });
       });
+      // 关页面时不等静默窗口，尽力把最后一次改动补传上去
+      window.addEventListener('pagehide', function () { flushPush(); });
+    }
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      // 手机切到后台（比关页面更常见）：立刻补传
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') flushPush();
+      });
     }
     renderBadge();
   }
@@ -478,11 +529,16 @@ window.APP = window.APP || {};
     firstPullDone = false; // 换账号 / 重新登录后，等新账号自己的首次拉取完成再放行引导
     if (pullTimer) { clearInterval(pullTimer); pullTimer = null; }
     if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+    firstDirtyAt = 0;
+    lastPushAt = 0;
+    lastFingerprint = ''; // 换账号必须清空，否则新账号的数据会被误判成「没变」
   }
 
-  // 立即推送（跳过防抖等待），供测试与「退出登录前先同步」使用
+  // 立即推送（跳过静默等待），供「存档同步」按钮、关键操作、切后台补传使用；
+  // 内容去重仍然生效：数据没变就只回报状态，不写 commit。
   function flushPush() {
     if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+    firstDirtyAt = 0;
     return push();
   }
 

@@ -260,16 +260,17 @@ window.APP = window.APP || {};
     var el = (typeof document !== 'undefined') ? document.getElementById('ghState') : null;
     if (el) el.textContent = '当前状态：' + statusText();
   }
-  // 规则说明按 sync.js 的真实实现写：防抖 2 秒上传 / 启动+每 5 分钟拉取 / online 补传 /
-  // savedAt 最后写入者胜出 / 每次 PUT 都是一次 commit / 照片只存本机 / 手动同步 = push + pull
+  // 规则说明按 sync.js 的真实实现写：静默 20 秒（最长 60 秒）合并上传 / 内容没变不写仓库 /
+  // 启动+每 5 分钟拉取 / online + 切后台补传 / savedAt 最后写入者胜出 / 手动同步 = push + pull
   function rulesHtml(open) {
     return '<details class="gh-rules"' + (open ? ' open' : '') + '>' +
-      '<summary>存档保存规则：改动 2 秒上传 · 每 5 分钟拉取 · 断网自动补传（点开看全部）</summary>' +
+      '<summary>存档保存规则：静默 20 秒上传 · 每 5 分钟拉取 · 断网自动补传（点开看全部）</summary>' +
       '<ul>' +
-        '<li>打卡或改动后 <b>2 秒</b>自动上传；打开页面自动拉取一次，之后每 <b>5 分钟</b>自动拉取一次。</li>' +
+        '<li>改动后静默 <b>20 秒</b>才上传，连续操作合并成一次，最多等 <b>60 秒</b>；切到后台或关页面立即补传。打开页面自动拉取一次，之后每 <b>5 分钟</b>拉取一次。</li>' +
+        '<li><b>内容没变化就不写仓库</b>，不产生多余的提交记录。</li>' +
+        '<li>一个账号只有「账号信息 + 加密存档」两个文件，都是覆盖写，<b>不会越存越多</b>；每次真正上传留一条提交记录，历史版本可回溯。</li>' +
         '<li>断网也能照常打卡，联网后自动补传。</li>' +
         '<li>多台设备同时改动，按「最后修改时间」取最新的一份。</li>' +
-        '<li>每次上传都会在 GitHub 仓库留下一条提交记录，历史版本可回溯。</li>' +
         '<li>作业照片只存这台设备，<b>不进仓库</b>（换设备看不到照片）。</li>' +
         '<li>点「存档同步」= 立刻上传 + 拉取一次，并回报结果。</li>' +
       '</ul></details>';

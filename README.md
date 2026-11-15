@@ -52,11 +52,13 @@ PAT 是浏览器直接读写 GitHub 仓库的凭据。它只保存在**你这台
 
 | 时机 | 行为 |
 |---|---|
-| 打卡 / 任何改动 | **2 秒**后自动上传（防抖，连续操作只传一次） |
+| 打卡 / 任何改动 | **静默 20 秒**后上传（连续操作合并成一次；最多等 60 秒；切到后台或关页面立即补传） |
+| 数据没变化 | **不写仓库**，不产生多余 commit |
 | 打开页面 | 自动拉取一次云端；之后**每 5 分钟**再自动拉取 |
 | 断网 | 照常打卡，联网后自动补传 |
 | 多设备同时改 | 按存档里的「最后修改时间」取最新一份 |
-| 每次上传 | 在 GitHub 仓库留下一条 commit，历史版本可回溯 |
+| 每次真正上传 | 留一条 commit 用于回溯 |
+| 文件会不会越存越多 | **不会**。一个账号永远只有 `accounts/xxx.json` + `saves/xxx.json` 两个文件，都是覆盖写；只有 commit 历史会增长，所以才做了节流和内容去重 |
 | 作业照片 | 只存这台设备，**不进仓库**（换设备看不到照片） |
 | 点「存档同步」 | 立刻上传 + 拉取一次，并回报结果 |
 
@@ -109,14 +111,21 @@ PAT 是浏览器直接读写 GitHub 仓库的凭据。它只保存在**你这台
 发布白名单（其余都被 `.gitignore` 排除）：
 
 ```
-index.html                          入口
+index.html                          入口（构建产物，请勿直接编辑）
+index.src.html                      页面源模板（要改 HTML 就改这个）
+build.js                            零依赖构建脚本：把全部 JS/CSS 内联进 index.html
+sw.js                               离线缓存（站点根目录，作用于整个子路径）
 manifest.json                       PWA 清单
 .nojekyll                           Pages 必需，勿删
 css/  js/  assets/                  样式、逻辑、图片音效
 README.md                           本文档
-更新推送.bat                        一键推送后续改动
+更新推送.bat                        自动重建 + 一键推送后续改动
 deploy-package/AI_DEPLOY_GUIDE.md   给 AI 助手看的部署手册
 ```
+
+> **为什么 `index.html` 是构建产物**：原来首页要串行下载 34 个 JS + 2 个 CSS，国内访问 github.io 时首屏要等 5–10 秒。现在 `build.js` 会把它们全部内联成一个 HTML，首屏只需要 1 个代码请求。
+> **以后改代码**：改 `js/`、`css/` 或 `index.src.html`，**不要直接改 `index.html`**（下次构建会被覆盖）。双击 `更新推送.bat` 会自动先跑一次构建，不用手动敲命令；也可以单独执行 `node build.js`。
+> 首次加载用到的 10 只宝可梦小图由 `js/data/starter-art.js` 内联提供，`assets/tiny/*.webp` 是它们的源图；图鉴用的 `assets/pokemon/` 原图不受影响。
 
 `js/` 里和账号 / 同步相关的几个文件：
 
@@ -124,7 +133,7 @@ deploy-package/AI_DEPLOY_GUIDE.md   给 AI 助手看的部署手册
 |---|---|
 | `js/github.js` | GitHub Contents API 封装 + `APP.cipher` 加密层 + 共享的同步设置卡 `APP.ghui` |
 | `js/auth.js` | 注册 / 登录 / 改密码 / 会话（强制登录） |
-| `js/sync.js` | 上传下载、防抖、5 分钟轮询、槽位隔离、家长后台单向导入本机旧记录 |
+| `js/sync.js` | 上传下载、静默节流与内容去重、5 分钟轮询、槽位隔离、家长后台单向导入本机旧记录 |
 | `js/screens/login.js` | 登录 / 注册页（含首次 GitHub 配置入口） |
 | `js/screens/mine.js` | 我的数据（含同步设置、存档槽位） |
 | `js/screens/parent.js` | 家长后台（含账号与密码设置） |
@@ -139,11 +148,13 @@ deploy-package/AI_DEPLOY_GUIDE.md   给 AI 助手看的部署手册
 
 ### 方式 1：双击 `更新推送.bat`（最省事）
 
-在项目根目录双击即可自动完成 `git add` → `commit` → **`git pull --rebase`** → `push`。也可以带一句说明：
+在项目根目录双击即可自动完成 **`node build.js` 重新生成 `index.html`** → `git add` → `commit` → **`git pull --rebase`** → `push`。也可以带一句说明：
 
 ```
 更新推送.bat "修复打卡重复计数"
 ```
+
+脚本会自己找 Node.js（PATH 或常见安装路径）；万一这台电脑没装 Node，会打印醒目提示并跳过重建，直接推送现有的 `index.html`——此时如果你刚改过 `js/`，请先装 Node.js，或让 AI 帮你重新生成一次，否则线上还是旧代码。
 
 > **为什么多了一步「同步远端」**：App 每次打卡会把加密存档直接写进同一个 GitHub 仓库，因此远端 `main` 上会不断出现 `sync: saves/...` 这样的运行时 commit。脚本会先把这些 commit 同步到本地再推送，否则 `git push` 会因「非快进」被拒绝。这些运行时 commit 只动 `accounts/` `saves/`，和代码文件不冲突。
 

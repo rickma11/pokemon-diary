@@ -62,9 +62,17 @@ window.APP = window.APP || {};
     return arr;
   }
 
+  // 名字优先用内置小表：不依赖别的脚本是否加载完（离线缓存曾把 JS 换成 HTML 壳，导致这里只显示 #编号）
   function starterInfo(s) {
-    var info = APP.evo && APP.evo.get ? APP.evo.get(s.d) : null;
-    return { d: s.d, t: s.t, name: info ? info.name : ('#' + s.d) };
+    var name = (APP.STARTER_NAMES && APP.STARTER_NAMES[s.d]) ||
+      (APP.evo && APP.evo.get ? (APP.evo.get(s.d) || {}).name : '') ||
+      ('#' + s.d);
+    return { d: s.d, t: s.t, name: name };
+  }
+  // 首登专用 128px 内联小图；常量表缺失时回退到图鉴原图，不至于开天窗
+  function starterArt(d) {
+    if (APP.STARTER_ART && APP.STARTER_ART[d]) return APP.STARTER_ART[d];
+    return 'assets/pokemon/' + pad(d) + '.png';
   }
 
   // 三个世代各抽 1 只御三家保证多样性；第 4 只有 80% 概率是皮卡丘，
@@ -176,7 +184,7 @@ window.APP = window.APP || {};
   function welcome() {
     var el = overlayEl();
     el.innerHTML = OB_MODAL({
-      art: 'assets/pokemon/025.png',
+      art: starterArt(25),
       title: '欢迎来到宝可梦世界！',
       msg: '每天认真完成任务，你的宝可梦伙伴就会升级、学新招式、进化！先从选择你的第一只宝可梦开始吧～',
       ok: '开始旅程 →'
@@ -196,7 +204,7 @@ window.APP = window.APP || {};
       var cards = four.map(function (p, i) {
         var cls = p.t === '草' ? 'b-grass' : p.t === '火' ? 'b-fire' : p.t === '水' ? 'b-water' : 'b-elec';
         return '<button type="button" class="ob-pet' + (i === sel ? ' is-sel' : '') + '" data-ob-pet="' + i + '">' +
-          '<img src="assets/pokemon/' + pad(p.d) + '.png" alt="">' +
+          '<img src="' + starterArt(p.d) + '" alt="">' +
           '<b>' + esc(p.name) + '</b>' +
           '<span class="ob-badge ' + cls + '">' + esc(p.t) + '</span>' +
           '</button>';
@@ -283,7 +291,7 @@ window.APP = window.APP || {};
   function finale() {
     var el = overlayEl();
     el.innerHTML = OB_MODAL({
-      art: 'assets/pokemon/025.png',
+      art: starterArt(25),
       title: '欢迎来到 宝可梦训练师成长日记',
       msg: '从今天起，每一次认真打卡都会变成伙伴成长的经验。先去「日程」完成今天的任务，照顾好你的宝可梦，新的冒险会一个接一个解锁～',
       ok: '进入日程 →'
