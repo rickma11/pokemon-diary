@@ -1,0 +1,135 @@
+# 交接卡：继续开发「宝可梦训练日记」
+
+> **这份文件是给「另一个窗口的 AI 助手」直接读的**：自包含、不含任何令牌或凭据，读完即可开工，不需要用户再补充或修改内容。
+>
+> - 最近更新：2026-11-15 16:45（对应线上 `d84ef845`）
+> - 本地主交接文档：`F:/宝可梦日常打卡工具/docs/项目交接与继续指南.md`（含敏感配置，`docs/` 被 `.gitignore` 排除、**不进公开仓库**；其他窗口读它可能被安全策略拦下，所以请优先读本文件）
+> - 部署说明：`deploy-package/AI_DEPLOY_GUIDE.md`；完整使用/安全说明：`README.md`
+
+---
+
+## 0. 一分钟现状（开工前必读）
+
+| 项目 | 值 |
+|---|---|
+| 项目路径 | `F:/宝可梦日常打卡工具`（Git Bash：`/f/宝可梦日常打卡工具`） |
+| 仓库 | `rickma11/pokemon-diary`（Public，分支 `main`） |
+| 线上地址 | https://rickma11.github.io/pokemon-diary/ |
+| 形态 | 纯静态单页 PWA，**无后端、无打包工具**；Node 只用于 `build.js` 和本地预览 |
+| 入口 | `index.html`（约 1.34 MB，**构建产物**，内联了全部 35 个 JS + 2 个 CSS） |
+| 源码 | `js/`、`css/`、`index.src.html`、`sw.js`、`manifest.json` |
+| 构建 | `node build.js`（`index.src.html` → `index.html`）；`更新推送.bat` 会自动调用 |
+| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v77'` |
+| 账号/存档 | 客户端 AES-GCM 加密后写进仓库 `accounts/` 与 `saves/`；App 运行时会往 `main` 写 `sync: saves/...` commit |
+| 当前线上 | 远端 `d84ef845`，Pages `built @ d84ef84577fb`，线上 200 / 1,341,249 字节 |
+| 当前本地 | `7862d2a`（与远端内容等价）；`accounts/` + `saves/` 共 4 个文件原样保留 |
+
+**一句话铁律**：线上页面只加载 `index.html`，源码文件不会被浏览器读取。**只改 `js/xxx.js` 就直接 push，线上一定不变**。
+
+---
+
+## 1. 发布顺序 —— 其他窗口的 AI 照这个顺序做
+
+以下是 2026-11-15 交付给用户、需要原样遵守的顺序：
+
+```text
+1. 只改 js/、css/、index.src.html，不要直接改 index.html（它是构建产物）
+2. node build.js           ← 最关键，线上加载的是内联了全部 JS/CSS 的 index.html
+3. sw.js 里 var CACHE = 'pokedex-checkin-vNN' 的 NN +1（漏了也有 ETag 兜底）
+4. git add -A && git commit -m "..."
+5. git pull --rebase origin main   ← App 会写 sync: saves/... commit，不同步会被拒
+6. git push origin main
+7. 查 pages/builds/latest 为 built 且 commit 一致；再确认线上 index.html 能搜到这次新代码
+```
+
+配套硬约束（同样必须遵守）：
+
+- **改前备份**：本次要改的重要文件先复制到 `backups/<日期-主题>/<file>.pre`。
+- **改后自检**：对改过的 `.js` 逐个 `node --check`，确保 0 语法错误；再跑一次本地预览/无头浏览器冒烟。
+- **存档保护**：`accounts/`、`saves/` 是用户加密存档，任何推送都不得覆盖或删除；推送后要确认文件数不变。
+- **凭据保护**：常规推送用已配置的 `origin` 凭据即可，**不要**把任何令牌值写进随仓库发布的文件、也不要输出到对话里。只有查 Pages 状态 / 远端文件内容时才需要额外凭据，届时向用户索取或使用 `gh`。
+- **本轮已加的兜底**：`sw.js` 会用 `no-store` 绕过 Pages 的 10 分钟 HTTP 缓存、比对 ETag，发现新版会通知页面自动刷新一次；所以推送完成后，让用户手机/电脑各打开一次站点即可，**不需要手动清缓存**。
+
+**最省事的等价做法**：双击项目根目录 `更新推送.bat`，它已串好「`node build.js` → `git add` → `commit` → `git pull --rebase` → `push`」。但第 1、3、7 步（不改产物、缓存版本 +1、上线核验）仍需自己做。
+
+### 可直接复制给其他窗口 AI 的指令
+
+```text
+你在维护「宝可梦训练日记」静态站点，项目在 F:/宝可梦日常打卡工具。
+先完整读 deploy-package/AI_继续开发交接卡.md，再按该文件「1. 发布顺序」执行。
+铁律：只改 js/、css/、index.src.html；改完必须 node build.js；推送前
+git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出任何令牌值。
+完成后告诉我：远端 commit、Pages 状态、线上 index.html 是否已含本次新代码。
+```
+
+---
+
+## 2. 推送后核验清单
+
+- [ ] 远端 `main` 最新 commit = 本次，且 `git status` 干净
+- [ ] `https://api.github.com/repos/rickma11/pokemon-diary/pages/builds/latest` 的 `status=built`、`commit` 与上一条一致
+- [ ] 线上 `index.html` 里能搜到这次新增的函数名 / 文案（源码里的新代码只有构建后才进得去）
+- [ ] `accounts/`、`saves/` 文件数与推送前一致
+- [ ] 手机 / 电脑各打开一次站点，确认自动切到新版、无运行时报错
+
+---
+
+## 3. 推送成功但页面还是旧的 —— 按顺序排查，不要反复推送
+
+1. **远端有没有新代码**：看 `commits/main`，再打开仓库里的 `index.html` 搜本次新特征。搜不到 = 漏跑 `node build.js`（最常见）。
+2. **Pages 构建完没有**：`pages/builds/latest` 要 `built` 且 commit 一致，推送后约 1 分钟。
+3. **缓存**：v77 起已自动切换；想立刻看可 `Ctrl+Shift+R` 硬刷新、手机清站点数据、桌面图标关掉再开。
+4. **数据层，不是缓存**：`APP.DEFAULT_TASKS` 只在新建存档 / 点「恢复默认任务」时写入。已有账号存档里的旧任务不会被代码改动覆盖；`store.migrate()` 只做一次性升级（任务与旧 5 项模板逐条一致才换成新版 8 项，用户自定义过则完全不动）。
+
+---
+
+## 4. 本次（2026-11-15 最后一轮）改动明细
+
+**背景**：另一个窗口推送 `d2ba9f7`（默认任务改版：作业改打钩、新增吃饭/家务、调运动与就寝时间、任务管理加规则说明）与 `27d31e5`（照料屏内工具条：更换/设置按钮移位、对话文案改写、SW v76）后，用户看 `#/parent` 仍是旧界面。
+
+**诊断结论：推送其实完全成功**，不是漏推。逐层核对：远端 `main` = `27d31e5`；Pages `built @ 27d31e58`；远端 `index.html` 1,347,354 字节且含全部新代码（`careTextShort`、`gba-screen__tools`、`t_lunch`、规则说明），旧的 `mode:'photo'` 已消失；`sw.js` = v76；线上 200 但 `Cache-Control: max-age=600`。根因是**离线缓存对首页「有缓存立即返回旧 HTML、后台拉新版」，后台请求又撞进 GitHub Pages 的 10 分钟 HTTP 缓存**，等于刷新也拿不到新版。
+
+修复 4 项：
+
+| # | 改动 | 文件 |
+|---|---|---|
+| 1 | SW v76→**v77** 发版自动切新版：后台请求 `no-store` 绕过 CDN 缓存、ETag 比对发现变化即通知页面自动刷新一次（同版本只刷一次）、`activate` 清旧缓存并强制重载已打开页面、注册加 `updateViaCache:'none'` | `sw.js`、`js/app.js` |
+| 2 | 骨架文案「首次加载资源会稍慢一点，请稍等」→「**内容准备中，请稍等**」（每次更新都会出现，不该说「首次」） | `index.src.html` → `index.html` |
+| 3 | 旧存档默认任务**一次性迁移**：`taskTemplateVersion` + `OLD_DEFAULT` 判据，任务与旧 5 项模板逐条一致时自动换成新版 8 项（作业打钩、运动 21:00、上床睡觉 22:00、新增吃饭/家务），打卡记录留在 `instances` 不丢；自定义过任务则绝不覆盖 | `js/models.js`、`js/store.js` |
+| 4 | README 新增「推送成功，但页面还是旧的？」4 步排查 + 「给另一个窗口 / AI 助手的发布清单」；`parent.js`「还原为内置 5 项」→ 8 项 | `README.md`、`js/screens/parent.js` |
+
+上线与验证：远端 `d84ef845`、Pages `built @ d84ef84577fb`、线上 200 / 1,341,249 字节；本地 `7862d2a`；全量 JS 语法 0 错、SW 五场景 + 迁移四场景模拟通过、真实 Chrome 二次导航 0 异常且 v77 缓存正常建立；备份在 `backups/20261115-sw-autorefresh/`。
+
+---
+
+## 5. 本会话更早的关键节点（倒序，理解架构用）
+
+| commit | 内容 |
+|---|---|
+| `deebef9` | 未连仓库时隐藏登录/注册入口并改为「验证通过才保存配置」；4 张主角形象立绘 1.10 MB → 28.6 KB WebP 内联；修复新设备丢弃云端存档（`adoptExternal` 强制采纳、保留云端时间戳）；关键步骤（选宠/首登/形象重选/捕捉/战斗结算/打卡/解锁）固定立即上传 + 上传串行化；首登后询问「添加到桌面」（Android 可真安装、iOS 只能给图文指引） |
+| `b573e19` | 35 个 JS + 2 个 CSS 内联进单个 `index.html`（首屏代码请求 37→1）；`index.src.html` + `build.js` 构建链路；10 只宝可梦小图 1.29 MB → 52.7 KB 内联、中文名内置；`sw.js` 移到根目录并修「把 HTML 当 JS 返回」；同步降频（静默 20 秒 / 最长 60 秒 / 最小间隔 30 秒 / 内容去重）；**补齐此前被 `data/` 规则误忽略、线上一直缺失的 7 个 `js/data/` 文件** |
+| `8613b26` | 34 个脚本改并行预取 + 骨架屏 + 离线缓存 900ms 回退；精灵球桌面图标与「宝可梦训练日记」名称；登录页 README 直达说明、示例账号改虚构；选宠去「固定」标签、新增「换一批」3 次、皮卡丘 80% 概率出现 |
+| 更早 | 纯静态化重构（去后端 `server.js`）、强制登录、客户端 AES-GCM 加密存档、GitHub Contents API 同步、首次流程门禁、登录/注册分页签、昵称/短码/完整账号码三段登录 |
+
+**架构备忘**：`window.APP` 全局命名空间；`location.hash` + `APP.screens[id].render()`；`localStorage` 存 `pokedex-checkin-v1` / `pokedex-checkin-gh` / `slot:*` / `vaultKeyB64`；`APP.gh`（Contents API）、`APP.cipher`（PBKDF2 包裹 + AES-GCM）、`APP.auth`（注册/登录/会话）、`APP.sync`（上传下载/节流/去重/关键上传）、`APP.onboarding`（首登门禁）、`APP.pwaInstall`（桌面引导）。照片只存本机 IndexedDB，不进仓库。
+
+---
+
+## 6. 不要做的事
+
+- 不要直接编辑 `index.html`（下次 `node build.js` 会被覆盖）。
+- 不要忘记 `sw.js` 缓存版本 +1；不要注册 `js/sw.js`（旧的子目录 SW 作用域管不到首页，已废弃）。
+- 不要把 `docs/`、`backups/`、`tools/`、任何凭据文件推到公开仓库（`.gitignore` 已排除，别手动 `git add -f`）。
+- 不要覆盖 `accounts/`、`saves/`，不要用强推改写远端运行时写档 commit。
+- 不要在公开仓库或对话里出现真实账号昵称 / 短码 / 令牌；示例一律用虚构信息。
+- 不要在页面里对 iOS Safari 承诺「自动生成桌面图标」——浏览器不允许，只能给「分享 → 添加到主屏幕」指引。
+
+---
+
+## 7. 已知限制 / 未解决
+
+1. **运行时账号与存档仍写在 `main`**：`更新推送.bat` 靠 `git pull --rebase` 兜住；根治需独立 `data` 分支或私有数据仓库，**用户未授权，不要擅自迁移**。
+2. 本地 HEAD 与远端曾出现内容等价但 sha 分叉，首次在用户电脑双击 `更新推送.bat` 会自动 rebase 对齐。
+3. 作业照片只存本机，换设备看不到（设计如此）。
+4. 若首次打开仍偏慢，可把 `assets/pmd-sliced/manifest.js`（约 280 KB 动作切片清单）拆成进乐园时才加载 —— 未实施，等用户实测反馈。
+5. 旧 App 预览 `wbapp_j2fuV7LZsuIdpqeODeu5PN` 仍是上一轮版本，待用户决定是否下线。

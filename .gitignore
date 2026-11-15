@@ -23,8 +23,9 @@ tools/.deploy-auth.json
 server.js
 backups/
 deploy-package/*
-# 给 AI 的部署手册需随仓库发布，fork 用户才能照做
+# 给 AI 的部署手册 + 继续开发交接卡需随仓库发布，fork 用户 / 其他窗口才能照做
 !deploy-package/AI_DEPLOY_GUIDE.md
+!deploy-package/AI_继续开发交接卡.md
 docs/
 参考/
 tests/

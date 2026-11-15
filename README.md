@@ -124,6 +124,7 @@ css/  js/  assets/                  样式、逻辑、图片音效
 README.md                           本文档
 更新推送.bat                        自动重建 + 一键推送后续改动
 deploy-package/AI_DEPLOY_GUIDE.md   给 AI 助手看的部署手册
+deploy-package/AI_继续开发交接卡.md  给其他窗口 AI 的继续开发交接卡（含发布顺序）
 ```
 
 > **为什么 `index.html` 是构建产物**：原来首页要串行下载 34 个 JS + 2 个 CSS，国内访问 github.io 时首屏要等 5–10 秒。现在 `build.js` 会把它们全部内联成一个 HTML，首屏只需要 1 个代码请求。
@@ -141,7 +142,7 @@ deploy-package/AI_DEPLOY_GUIDE.md   给 AI 助手看的部署手册
 | `js/screens/mine.js` | 我的数据（含同步设置、存档槽位） |
 | `js/screens/parent.js` | 家长后台（含账号与密码设置） |
 
-**不发布**：`server.js`（旧后端，已删除）、`data/`、`tools/`、`docs/`、`backups/`、`tests/`、`参考/`、`deploy-package/` 里除上述手册外的其他文件、本地预览脚本、任何含 PAT 的文件。
+**不发布**：`server.js`（旧后端，已删除）、`data/`、`tools/`、`docs/`、`backups/`、`tests/`、`参考/`、`deploy-package/` 里除上述两份文档外的其他文件、本地预览脚本、任何含 PAT 的文件。
 
 ---
 
@@ -195,6 +196,8 @@ git push origin main
 4. **已有账号的「默认任务」**：`APP.DEFAULT_TASKS` 只在新建存档 / 点「恢复默认任务」时写入，改代码不会直接改写已保存的任务。现在 `store.migrate()` 会做一次性升级：任务列表与旧版 5 项模板逐条一致时自动换成新版 8 项（打卡记录存在 `instances` 里，不会丢）；**用户自己增删改过任务则不覆盖**，需到 家长后台 → 任务管理 →「恢复默认任务」手动套用。
 
 ### 给「另一个窗口 / AI 助手」的发布清单
+
+> **后续窗口的 AI 请直接读 [`deploy-package/AI_继续开发交接卡.md`](deploy-package/AI_继续开发交接卡.md)**：自包含、不含凭据，含完整发布顺序、当前版本状态、本次改动明细与排错清单，读完即可开工，不需要用户补充。本地另有 `docs/项目交接与继续指南.md`（含敏感配置，不进公开仓库）。
 
 不管是谁改的代码，推送前逐条确认：
 
