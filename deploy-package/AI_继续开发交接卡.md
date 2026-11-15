@@ -313,3 +313,43 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 - SW 版本 `pokedex-checkin-v84` → **v85**（清掉手机里旧 PNG 缓存，图片路径也变了必须升）；
 - 重新 `node build.js` 生成 `index.html`；
 - 临时脚本 `tools/_probe_img.js`、`tools/_probe_alpha.js`、`tools/_webp_*.js`、`tools/_patch_webp_refs.js` 已全部删除（`tools/_src/` 是既有素材目录，别删）。
+
+## 17. 2026-11-15 立绘尺寸分级 + 全局兜底 + 选宠即下载（v87）
+
+### 17.1 这轮解决的是「宝可梦图片加载不出来」
+- **现象**：养成页舞台、状态栏头像、宝可梦中心卡片里的立绘全是空方块（露出容器背景色 `#F3E3BE`）。
+- **排查结论**：线上 WebP 文件 200 且本机 Chrome 能正常渲染 → **用户设备解不出 WebP**（个别手机浏览器/定制 WebView 不支持 WebP）。
+- **定案**：
+  - **小图（128px）一律用 PNG**（`assets/pokemon/sm/NNN.png`，调色板压缩后约 9KB/张）。PNG 是所有浏览器都认的老格式，多几 KB 换来任何设备都能出图。
+  - **大图（475px）继续用 WebP**（`assets/pokemon/NNN.webp`，约 23KB），只在养成页舞台、进化演出、图鉴详情头图用；加载失败自动退回同名 PNG（原图仍在仓库）。
+  - 小图 386 张共 3.4MB，生成脚本 `tools/make_sm_art.js`（依赖 WorkBuddy 内置 sharp；tools/ 不进仓库，属本地工具）。
+
+### 17.2 新增 `js/art.js`（所有立绘引用的唯一入口）
+| API | 用途 |
+|---|---|
+| `APP.art.sm(dex)` | 128px 小图 PNG（状态栏 / 图鉴网格 / 宝可梦中心 / 选宠页 / 家长后台 / 乐园小图） |
+| `APP.art.lg(dex)` | 475px 大图 WebP（养成页舞台 / 进化演出） |
+| `APP.art.warm(dex, withLarge, withGif)` | 预热某只宝可梦的素材到浏览器缓存 |
+| `APP.art.warmMain(dex)` | 小图 + 大图 + 养成页动图，一次备齐（用于主力） |
+| `APP.art.imgTag(dex, opts)` | 生成带兜底链的 `<img>` |
+
+- **三级兜底**：`js/art.js` 在 document 上用 capture 阶段监听 `error`：
+  1. 读 `data-fb`（`|` 分隔的候选地址列表），逐个试；
+  2. 仍失败则把 `.webp` 换成同名 `.png`；
+  3. 再失败打 `[art] 图片加载失败：` 日志。
+- **以后加图片一律走 `APP.art`**，不要再手写 `assets/pokemon/xxx.webp` 字符串。
+
+### 17.3 首支宝可梦「选时就加载」
+- `js/onboarding.js` 的选宠卡片改用真实小图（`assets/pokemon/sm/NNN.png`），**选的那一下就在下载**，不再等后面那轮后台预加载；
+- 点中某只 → 立刻 `APP.art.warm()`；点「下一步」确定 → `APP.art.warmMain()`（小图 + 大图 + 动图全备齐）；
+- 内联小图 `js/data/starter-art.js` 降级为最后兜底（`data-fb`），只在网络完全不通时用。
+- `js/preload.js` 队列顺序改为：**主力宝可梦 → 自己的立绘（小图先、大图后）→ 捕捉场景 → 战斗背景**。
+
+### 17.4 顺带确认的根因（另一个窗口在 c100486 里修的）
+- `build.js` 内联 CSS 后，`css/app.css` 里的 `url('../assets/…')` 会解析到站点根之外 → **全部 404**（森林地面、道具贴图、乐园背景全丢）。
+- 修法：内联时把 `url('../assets/` 统一改写成 `url('assets/`。**改 CSS 图片路径时别忘了这条**。
+
+### 17.5 发布要点
+- SW `v86 → v87`；
+- `node build.js` 重建（`index.html` 是产物，勿手改）；
+- 生成小图：`node tools/make_sm_art.js`（幂等，可重复跑）。

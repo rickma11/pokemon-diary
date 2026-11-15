@@ -15,7 +15,8 @@ window.APP = window.APP || {};
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
   function gifSrc(dex) { return 'assets/pokemon/animated/' + APP.pad3(dex) + '.gif'; }
-  function stillSrc(dex) { return 'assets/pokemon/' + APP.pad3(dex) + '.webp'; }
+  function stillSrc(dex) { return APP.art.sm(dex); }
+  function stillBig(dex) { return APP.art.lg(dex); }
   function nameOf(p) {
     if (p.nickname) return p.nickname;
     var info = APP.evo && APP.evo.get ? APP.evo.get(p.dexNo) : null;
@@ -565,7 +566,7 @@ window.APP = window.APP || {};
       '<div class="ranch-sheet">' +
         '<div class="ranch-sheet__top">' +
           '<img class="ranch-sheet__img" src="' + gifSrc(p.dexNo) + '" alt="" ' +
-            'onerror="this.onerror=null;this.src=\'' + stillSrc(p.dexNo) + '\'">' +
+            'onerror="this.onerror=null;this.src=\'' + stillBig(p.dexNo) + '\'">' +
           '<div class="ranch-sheet__meta">' +
             '<div class="ranch-sheet__name">' + esc(nameOf(p)) + (isCare ? ' <b>主力中</b>' : '') + '</div>' +
             '<div class="ranch-sheet__sub">' +

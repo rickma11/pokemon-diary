@@ -11,7 +11,8 @@ window.APP = window.APP || {};
 
   function frontSrc(dex) { return 'assets/pokemon/animated/' + pads(dex) + '.gif'; }
   function backSrc(dex) { return 'assets/pokemon/animated/back/' + pads(dex) + '.gif'; }
-  function stillSrc(dex) { return 'assets/pokemon/' + pads(dex) + '.webp'; } // 兜底：官方静态立绘一定存在
+  function stillSrc(dex) { return APP.art.sm(dex); }  // 卡片 / 格子里的 128px 小图
+  function stillBig(dex) { return APP.art.lg(dex); }  // 舞台上的 475px 大图
   function nameOf(p) {
     if (p.nickname) return p.nickname;
     var info = APP.evo && APP.evo.get ? APP.evo.get(p.dexNo) : null;
@@ -62,7 +63,7 @@ window.APP = window.APP || {};
   function fallbackStill() {
     if (!imgEl) return;
     imgEl.onerror = null;
-    imgEl.src = stillSrc(curDex);
+    imgEl.src = stillBig(curDex);
   }
   function showFront() {
     imgEl.onerror = fallbackStill;

@@ -69,10 +69,11 @@ window.APP = window.APP || {};
       ('#' + s.d);
     return { d: s.d, t: s.t, name: name };
   }
-  // 首登专用 128px 内联小图；常量表缺失时回退到图鉴原图，不至于开天窗
+  // 首登专用素材：直接用真实立绘（128px 小图），选宠的那一刻就在下载，
+  // 不再等后面那轮后台预加载；万一网络不给力，还有内联小图兜底。
   function starterArt(d) {
-    if (APP.STARTER_ART && APP.STARTER_ART[d]) return APP.STARTER_ART[d];
-    return 'assets/pokemon/' + pad(d) + '.webp';
+    var fb = (APP.STARTER_ART && APP.STARTER_ART[d]) || '';
+    return { src: 'assets/pokemon/sm/' + pad(d) + '.png', fallback: fb };
   }
   // 主角形象：选择格只有 64px，用 160px 内联小图；常量表缺失时回退到原始立绘
   function heroArt(base) {
@@ -119,7 +120,8 @@ window.APP = window.APP || {};
   function OB_MODAL(o) {
     return '<div class="ui-overlay__bg" data-close="1"></div>' +
       '<div class="ui-modal ob-modal">' +
-      (o.art ? '<div class="ob-art"><img src="' + o.art + '" alt=""></div>' : '') +
+      (o.art ? '<div class="ob-art"><img src="' + ((o.art && o.art.src) || o.art) + '"' +
+        (o.art && o.art.fallback ? ' data-fb="' + o.art.fallback + '"' : '') + ' alt=""></div>' : '') +
       (o.title ? '<h3 class="ui-modal__title">' + o.title + '</h3>' : '') +
       (o.sub ? '<p class="ob-sub">' + o.sub + '</p>' : '') +
       (o.msg ? '<p class="ui-modal__msg">' + o.msg + '</p>' : '') +
@@ -212,8 +214,9 @@ window.APP = window.APP || {};
     function paint() {
       var cards = four.map(function (p, i) {
         var cls = p.t === '草' ? 'b-grass' : p.t === '火' ? 'b-fire' : p.t === '水' ? 'b-water' : 'b-elec';
+        var art = starterArt(p.d);
         return '<button type="button" class="ob-pet' + (i === sel ? ' is-sel' : '') + '" data-ob-pet="' + i + '">' +
-          '<img src="' + starterArt(p.d) + '" alt="">' +
+          '<img src="' + art.src + '"' + (art.fallback ? ' data-fb="' + art.fallback + '"' : '') + ' alt="">' +
           '<b>' + esc(p.name) + '</b>' +
           '<span class="ob-badge ' + cls + '">' + esc(p.t) + '</span>' +
           '</button>';
@@ -243,12 +246,16 @@ window.APP = window.APP || {};
       var cp = findAttr(e.target, 'data-ob-pet');
       if (cp) {
         sel = parseInt(cp.val, 10);
+        // 点中哪只，立刻把这只的正式立绘抓进缓存——进了养成页不用等图，直接就有
+        if (APP.art && APP.art.warm) APP.art.warm(four[sel].d);
         var all = el.querySelectorAll('.ob-pet');
         for (var i = 0; i < all.length; i++) all[i].classList.remove('is-sel');
         cp.el.classList.add('is-sel'); return;
       }
       if (findAttr(e.target, 'data-ob-ok')) {
         var p = four[sel];
+        // 定了就是主力：小图 / 大图 / 养成页的动图一次备齐
+        if (APP.art && APP.art.warmMain) APP.art.warmMain(p.d);
         // 初始宝可梦「就地替换」默认的皮卡丘，而不是再加一只：选定后即为唯一初始伙伴，且不可重选
         if (p.d !== 25 && APP.store.setFirstPokemon) {
           var r = APP.store.setFirstPokemon(p.d);

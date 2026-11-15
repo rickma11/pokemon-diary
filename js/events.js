@@ -50,7 +50,7 @@ window.APP = window.APP || {};
   }
 
   function art(dexNo) {
-    return 'assets/pokemon/' + APP.pad3(dexNo) + '.webp';
+    return APP.art.lg(dexNo);
   }
 
   function sortEvents(list) {

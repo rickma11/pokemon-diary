@@ -214,7 +214,7 @@
         '<span class="dex-card__no">' + pad(f.id) + '</span>' +
         '<span class="dex-card__st' + stCls + '">' + stTxt + '</span>' +
         '<img class="dex-card__img' + (lit2 ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(f.id) + '.webp" alt="" loading="lazy">' +
+          '" src="' + APP.art.sm(f.id) + '" alt="" loading="lazy">' +
         '<div class="dex-card__nm' + (lit2 || S.showName ? '' : ' is-hide') + '">' + esc(nm) + '</div>' +
         '<div class="dex-tps">' + badges(f.types) + '</div>' +
         '<div class="dex-card__dots">' + dots + '</div></div>';
@@ -236,7 +236,7 @@
       chain += '<div class="' + cls +
         '" data-act="form" data-fi="' + i + '">' +
         '<img class="dex-fnode__img' + (own[x.id] || se[x.id] ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(x.id) + '.webp" alt="">' +
+          '" src="' + APP.art.sm(x.id) + '" alt="">' +
         '<div class="dex-fnode__zh">' + pad(x.id) + ' ' + x.zh + '</div>' +
         (!cur && crossGen && gx ? '<div class="dex-fnode__gen">' + genShort(gx) + '</div>' : '') +
         (x.cond ? '<div class="dex-fnode__cond">' + esc(x.cond) + '</div>' : '') + '</div>';
@@ -249,7 +249,7 @@
       '<button type="button" class="dex-modal__x" data-act="close" aria-label="关闭">×</button>' +
       '<div class="dex-mhead">' +
         '<img class="dex-mhead__img' + (litP ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(p.id) + '.webp" alt="">' +
+          '" src="' + APP.art.sm(p.id) + '" alt="">' +
         '<h2>' + esc(p.zh) + '</h2>' +
         '<div class="dex-mhead__no">No.' + pad(p.id) + '　' + esc(e.g) + '　' +
           (om ? '已拥有' : sm ? '已发现' : '未点亮') + '</div>' +

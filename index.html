@@ -4509,6 +4509,113 @@ window.APP = window.APP || {};
 
 ;
 
+/* ===== js/art.js ===== */
+window.APP = window.APP || {};
+
+(function (APP) {
+  'use strict';
+
+  // ===== 立绘资源管理 =====
+  //
+  // 一只宝可梦有两套尺寸：
+  //   大图 475px（assets/pokemon/NNN.webp）  —— 养成页舞台、进化演出这类要放大看的地方
+  //   小图 128px（assets/pokemon/sm/NNN.png） —— 状态栏头像、图鉴网格、宝可梦中心卡片、选宠页
+  //
+  // 为什么小图直接用 PNG 而不是 WebP：
+  //   小图 PNG 只有 6KB（做了调色板压缩），和 WebP 的 5KB 基本一样大，
+  //   但 PNG 是所有浏览器都认的老格式 —— 有个别手机浏览器解不出 WebP，
+  //   整页立绘就会变成一个个空框。状态栏、图鉴这类用量最大的地方，
+  //   宁可多 1KB，也要保证任何设备都出图。
+  //   大图（只有养成页舞台、进化演出用到）继续走 WebP，失败自动退回同名 PNG。
+  //
+  // 兜底链：显式 data-fb 列表 → 同名 .webp 换 .png → 放弃并留日志
+
+  function pad3(n) {
+    var s = String(n);
+    while (s.length < 3) s = '0' + s;
+    return s;
+  }
+
+  function lg(dex) { return 'assets/pokemon/' + pad3(dex) + '.webp'; }
+  function lgPng(dex) { return 'assets/pokemon/' + pad3(dex) + '.png'; }
+  function sm(dex) { return 'assets/pokemon/sm/' + pad3(dex) + '.png'; }
+  function smPng(dex) { return 'assets/pokemon/sm/' + pad3(dex) + '.png'; }
+
+  // ===== 全局兜底：任何 <img> 加载失败都自动往下退一级 =====
+  // data-fb 里可以放多条候选（用 | 分隔，按顺序试），试完再走扩展名兜底
+  function onImgError(e) {
+    var el = e.target;
+    if (!el || el.tagName !== 'IMG') return;
+    var fb = el.getAttribute('data-fb');
+    if (fb) {
+      var list = fb.split('|');
+      list.shift();                 // 去掉刚失败的那条
+      if (list.length) {
+        el.setAttribute('data-fb', list.join('|'));
+        el.src = list[0];
+        return;
+      }
+      el.removeAttribute('data-fb');
+    }
+    var src = el.getAttribute('src') || '';
+    if (/\.webp(\?|#|$)/i.test(src)) {
+      el.src = src.replace(/\.webp(\?|#|$)/i, '.png$1');
+      return;
+    }
+    if (window.console && console.warn) console.warn('[art] 图片加载失败：', src);
+  }
+  document.addEventListener('error', onImgError, true);
+
+  // ===== 预热：把某只宝可梦的图先抓进浏览器缓存 =====
+  // 只预热 webp；png 兜底留在真失败时按需取（才 6KB，没必要提前下）
+  var warmed = Object.create(null);
+  function warmOne(url) {
+    if (!url || warmed[url]) return;
+    warmed[url] = 1;
+    try {
+      var img = new Image();
+      img.onload = function () { if (img.decode) { try { img.decode(); } catch (e) {} } };
+      img.onerror = function () {};
+      img.src = url;
+    } catch (e) {}
+  }
+  // withLarge=false 只预热小图；withGif=true 连养成页的动图一起预热（只给主力用）
+  function warm(dex, withLarge, withGif) {
+    if (dex === null || dex === undefined || dex === '') return;
+    warmOne(sm(dex));
+    if (withLarge !== false) warmOne(lg(dex));
+    if (withGif) warmOne('assets/pokemon/animated/' + pad3(dex) + '.gif');
+  }
+  // 主力宝可梦：小图 + 大图 + 动图，一次性备齐
+  function warmMain(dex) {
+    warm(dex, true, true);
+  }
+
+  // ===== 生成 img 标签 =====
+  // opts: { cls, alt, lazy, size: 'lg'|'sm', fallback: '备用地址（可多条，用 | 分隔）' }
+  function imgTag(dex, opts) {
+    opts = opts || {};
+    var url = opts.size === 'lg' ? lg(dex) : sm(dex);
+    return '<img src="' + url + '"' +
+      (opts.cls ? ' class="' + opts.cls + '"' : '') +
+      ' alt="' + (opts.alt || '') + '"' +
+      (opts.lazy ? ' loading="lazy"' : '') +
+      (opts.fallback ? ' data-fb="' + opts.fallback + '"' : '') +
+      '>';
+  }
+
+  APP.art = {
+    pad3: pad3,
+    lg: lg, lgPng: lgPng,
+    sm: sm, smPng: smPng,
+    warm: warm,
+    warmMain: warmMain,
+    imgTag: imgTag
+  };
+})(window.APP);
+
+;
+
 /* ===== js/data/dex.js ===== */
 window.APP = window.APP || {};
 
@@ -8875,7 +8982,7 @@ window.APP = window.APP || {};
     applyMode(el, mode);
 
     var prog = APP.store.levelProgress();
-    var art = '<div class="statusbar__art"><img src="assets/pokemon/' + APP.pad3(p.dexNo) + '.webp" alt=""></div>';
+    var art = '<div class="statusbar__art"><img src="' + APP.art.sm(p.dexNo) + '" alt=""></div>';
     var nameRow = '<div class="statusbar__row">' +
       '<span class="statusbar__name">' + p.nickname + '</span>' +
       '<span class="statusbar__lv">Lv.' + p.level + (prog.maxed ? ' 满级' : '') + '</span>' +
@@ -9305,7 +9412,7 @@ window.APP = window.APP || {};
   }
 
   function art(dexNo) {
-    return 'assets/pokemon/' + APP.pad3(dexNo) + '.webp';
+    return APP.art.lg(dexNo);
   }
 
   function sortEvents(list) {
@@ -10762,7 +10869,7 @@ window.APP = window.APP || {};
       }
     }
     return '<div class="dbg__cur">' +
-      '<img class="dbg__art" src="assets/pokemon/' + APP.pad3(p.dexNo) + '.webp" alt="">' +
+      '<img class="dbg__art" src="' + APP.art.sm(p.dexNo) + '" alt="">' +
       '<div class="dbg__info">' +
         '<div class="dbg__line"><strong>' + esc(p.nickname) + '</strong>' +
           '<span class="badge">' + APP.pad3(p.dexNo) + '</span>' +
@@ -10860,7 +10967,7 @@ window.APP = window.APP || {};
     for (var i = 0; i < list.length; i++) {
       if (list[i].dexNo === n) owned = list[i];
     }
-    el.innerHTML = '<img class="dbg__thumb" src="assets/pokemon/' + APP.pad3(n) + '.webp" alt="">' +
+    el.innerHTML = '<img class="dbg__thumb" src="' + APP.art.sm(n) + '" alt="">' +
       '<span class="dbg__name">' + esc(info.name) + '</span>' +
       '<span class="dbg__no">' + APP.pad3(n) + '</span>' +
       (owned ? '<span class="badge">' + (owned.slot !== 'box' ? '队伍中' : '已拥有') + '</span>' : '');
@@ -12086,7 +12193,8 @@ window.APP = window.APP || {};
 
   function frontSrc(dex) { return 'assets/pokemon/animated/' + pads(dex) + '.gif'; }
   function backSrc(dex) { return 'assets/pokemon/animated/back/' + pads(dex) + '.gif'; }
-  function stillSrc(dex) { return 'assets/pokemon/' + pads(dex) + '.webp'; } // 兜底：官方静态立绘一定存在
+  function stillSrc(dex) { return APP.art.sm(dex); }  // 卡片 / 格子里的 128px 小图
+  function stillBig(dex) { return APP.art.lg(dex); }  // 舞台上的 475px 大图
   function nameOf(p) {
     if (p.nickname) return p.nickname;
     var info = APP.evo && APP.evo.get ? APP.evo.get(p.dexNo) : null;
@@ -12137,7 +12245,7 @@ window.APP = window.APP || {};
   function fallbackStill() {
     if (!imgEl) return;
     imgEl.onerror = null;
-    imgEl.src = stillSrc(curDex);
+    imgEl.src = stillBig(curDex);
   }
   function showFront() {
     imgEl.onerror = fallbackStill;
@@ -14355,7 +14463,8 @@ window.APP = window.APP || {};
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
   function gifSrc(dex) { return 'assets/pokemon/animated/' + APP.pad3(dex) + '.gif'; }
-  function stillSrc(dex) { return 'assets/pokemon/' + APP.pad3(dex) + '.webp'; }
+  function stillSrc(dex) { return APP.art.sm(dex); }
+  function stillBig(dex) { return APP.art.lg(dex); }
   function nameOf(p) {
     if (p.nickname) return p.nickname;
     var info = APP.evo && APP.evo.get ? APP.evo.get(p.dexNo) : null;
@@ -14905,7 +15014,7 @@ window.APP = window.APP || {};
       '<div class="ranch-sheet">' +
         '<div class="ranch-sheet__top">' +
           '<img class="ranch-sheet__img" src="' + gifSrc(p.dexNo) + '" alt="" ' +
-            'onerror="this.onerror=null;this.src=\'' + stillSrc(p.dexNo) + '\'">' +
+            'onerror="this.onerror=null;this.src=\'' + stillBig(p.dexNo) + '\'">' +
           '<div class="ranch-sheet__meta">' +
             '<div class="ranch-sheet__name">' + esc(nameOf(p)) + (isCare ? ' <b>主力中</b>' : '') + '</div>' +
             '<div class="ranch-sheet__sub">' +
@@ -15513,7 +15622,7 @@ window.APP = window.APP || {};
         '<span class="dex-card__no">' + pad(f.id) + '</span>' +
         '<span class="dex-card__st' + stCls + '">' + stTxt + '</span>' +
         '<img class="dex-card__img' + (lit2 ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(f.id) + '.webp" alt="" loading="lazy">' +
+          '" src="' + APP.art.sm(f.id) + '" alt="" loading="lazy">' +
         '<div class="dex-card__nm' + (lit2 || S.showName ? '' : ' is-hide') + '">' + esc(nm) + '</div>' +
         '<div class="dex-tps">' + badges(f.types) + '</div>' +
         '<div class="dex-card__dots">' + dots + '</div></div>';
@@ -15535,7 +15644,7 @@ window.APP = window.APP || {};
       chain += '<div class="' + cls +
         '" data-act="form" data-fi="' + i + '">' +
         '<img class="dex-fnode__img' + (own[x.id] || se[x.id] ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(x.id) + '.webp" alt="">' +
+          '" src="' + APP.art.sm(x.id) + '" alt="">' +
         '<div class="dex-fnode__zh">' + pad(x.id) + ' ' + x.zh + '</div>' +
         (!cur && crossGen && gx ? '<div class="dex-fnode__gen">' + genShort(gx) + '</div>' : '') +
         (x.cond ? '<div class="dex-fnode__cond">' + esc(x.cond) + '</div>' : '') + '</div>';
@@ -15548,7 +15657,7 @@ window.APP = window.APP || {};
       '<button type="button" class="dex-modal__x" data-act="close" aria-label="关闭">×</button>' +
       '<div class="dex-mhead">' +
         '<img class="dex-mhead__img' + (litP ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(p.id) + '.webp" alt="">' +
+          '" src="' + APP.art.sm(p.id) + '" alt="">' +
         '<h2>' + esc(p.zh) + '</h2>' +
         '<div class="dex-mhead__no">No.' + pad(p.id) + '　' + esc(e.g) + '　' +
           (om ? '已拥有' : sm ? '已发现' : '未点亮') + '</div>' +
@@ -19546,10 +19655,11 @@ window.APP = window.APP || {};
       ('#' + s.d);
     return { d: s.d, t: s.t, name: name };
   }
-  // 首登专用 128px 内联小图；常量表缺失时回退到图鉴原图，不至于开天窗
+  // 首登专用素材：直接用真实立绘（128px 小图），选宠的那一刻就在下载，
+  // 不再等后面那轮后台预加载；万一网络不给力，还有内联小图兜底。
   function starterArt(d) {
-    if (APP.STARTER_ART && APP.STARTER_ART[d]) return APP.STARTER_ART[d];
-    return 'assets/pokemon/' + pad(d) + '.webp';
+    var fb = (APP.STARTER_ART && APP.STARTER_ART[d]) || '';
+    return { src: 'assets/pokemon/sm/' + pad(d) + '.png', fallback: fb };
   }
   // 主角形象：选择格只有 64px，用 160px 内联小图；常量表缺失时回退到原始立绘
   function heroArt(base) {
@@ -19596,7 +19706,8 @@ window.APP = window.APP || {};
   function OB_MODAL(o) {
     return '<div class="ui-overlay__bg" data-close="1"></div>' +
       '<div class="ui-modal ob-modal">' +
-      (o.art ? '<div class="ob-art"><img src="' + o.art + '" alt=""></div>' : '') +
+      (o.art ? '<div class="ob-art"><img src="' + ((o.art && o.art.src) || o.art) + '"' +
+        (o.art && o.art.fallback ? ' data-fb="' + o.art.fallback + '"' : '') + ' alt=""></div>' : '') +
       (o.title ? '<h3 class="ui-modal__title">' + o.title + '</h3>' : '') +
       (o.sub ? '<p class="ob-sub">' + o.sub + '</p>' : '') +
       (o.msg ? '<p class="ui-modal__msg">' + o.msg + '</p>' : '') +
@@ -19689,8 +19800,9 @@ window.APP = window.APP || {};
     function paint() {
       var cards = four.map(function (p, i) {
         var cls = p.t === '草' ? 'b-grass' : p.t === '火' ? 'b-fire' : p.t === '水' ? 'b-water' : 'b-elec';
+        var art = starterArt(p.d);
         return '<button type="button" class="ob-pet' + (i === sel ? ' is-sel' : '') + '" data-ob-pet="' + i + '">' +
-          '<img src="' + starterArt(p.d) + '" alt="">' +
+          '<img src="' + art.src + '"' + (art.fallback ? ' data-fb="' + art.fallback + '"' : '') + ' alt="">' +
           '<b>' + esc(p.name) + '</b>' +
           '<span class="ob-badge ' + cls + '">' + esc(p.t) + '</span>' +
           '</button>';
@@ -19720,12 +19832,16 @@ window.APP = window.APP || {};
       var cp = findAttr(e.target, 'data-ob-pet');
       if (cp) {
         sel = parseInt(cp.val, 10);
+        // 点中哪只，立刻把这只的正式立绘抓进缓存——进了养成页不用等图，直接就有
+        if (APP.art && APP.art.warm) APP.art.warm(four[sel].d);
         var all = el.querySelectorAll('.ob-pet');
         for (var i = 0; i < all.length; i++) all[i].classList.remove('is-sel');
         cp.el.classList.add('is-sel'); return;
       }
       if (findAttr(e.target, 'data-ob-ok')) {
         var p = four[sel];
+        // 定了就是主力：小图 / 大图 / 养成页的动图一次备齐
+        if (APP.art && APP.art.warmMain) APP.art.warmMain(p.d);
         // 初始宝可梦「就地替换」默认的皮卡丘，而不是再加一只：选定后即为唯一初始伙伴，且不可重选
         if (p.d !== 25 && APP.store.setFirstPokemon) {
           var r = APP.store.setFirstPokemon(p.d);
@@ -20101,7 +20217,9 @@ window.APP = window.APP || {};
     return out;
   }
 
-  // 图鉴 / 状态栏：已拥有的宝可梦立绘（最多 40 张，编号小的先下）
+  // 图鉴 / 状态栏：已拥有的宝可梦立绘（小图优先，编号小的先下）
+  // 小图 128px 只有 5KB，先把它们铺满，状态栏和图鉴立刻能出图；
+  // 大图 475px 23KB 稍后再补。
   function ownedList() {
     var out = [];
     try {
@@ -20111,8 +20229,21 @@ window.APP = window.APP || {};
       for (i = 0; i < cs.length; i++) ids[Number(cs[i].dexNo)] = 1;
       for (i = 0; i < ps.length; i++) ids[Number(ps[i].dexNo)] = 1;
       var keys = Object.keys(ids).map(Number).sort(function (a, b) { return a - b; });
-      for (i = 0; i < keys.length && i < 40; i++) {
-        out.push('assets/pokemon/' + APP.pad3(keys[i]) + '.webp');
+      for (i = 0; i < keys.length && i < 40; i++) out.push(APP.art.sm(keys[i]));
+      for (i = 0; i < keys.length && i < 20; i++) out.push(APP.art.lg(keys[i]));
+    } catch (e) {}
+    return out;
+  }
+
+  // 主力宝可梦：最高优先级（小图 + 大图 + 养成页动图）
+  function mainList() {
+    var out = [];
+    try {
+      var p = APP.store.activePokemon();
+      if (p && p.dexNo) {
+        out.push(APP.art.sm(p.dexNo));
+        out.push(APP.art.lg(p.dexNo));
+        out.push('assets/pokemon/animated/' + APP.pad3(p.dexNo) + '.gif');
       }
     } catch (e) {}
     return out;
@@ -20138,7 +20269,8 @@ window.APP = window.APP || {};
     if (!p) return; // 还没选宝可梦：新手流程没走完，先不预热
     started = true;
     setTimeout(function () {
-      drain(sceneList().concat(battleList(), ownedList()));
+      // 主力宝可梦 → 自己的立绘 → 捕捉场景 → 战斗背景
+      drain(mainList().concat(ownedList(), sceneList(), battleList()));
     }, 1500);
   }
 
@@ -20636,6 +20768,7 @@ window.APP = window.APP || {};
 })();
 
 </script>
+
 
 
 

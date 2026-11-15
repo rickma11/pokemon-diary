@@ -57,7 +57,9 @@ window.APP = window.APP || {};
     return out;
   }
 
-  // 图鉴 / 状态栏：已拥有的宝可梦立绘（最多 40 张，编号小的先下）
+  // 图鉴 / 状态栏：已拥有的宝可梦立绘（小图优先，编号小的先下）
+  // 小图 128px 只有 5KB，先把它们铺满，状态栏和图鉴立刻能出图；
+  // 大图 475px 23KB 稍后再补。
   function ownedList() {
     var out = [];
     try {
@@ -67,8 +69,21 @@ window.APP = window.APP || {};
       for (i = 0; i < cs.length; i++) ids[Number(cs[i].dexNo)] = 1;
       for (i = 0; i < ps.length; i++) ids[Number(ps[i].dexNo)] = 1;
       var keys = Object.keys(ids).map(Number).sort(function (a, b) { return a - b; });
-      for (i = 0; i < keys.length && i < 40; i++) {
-        out.push('assets/pokemon/' + APP.pad3(keys[i]) + '.webp');
+      for (i = 0; i < keys.length && i < 40; i++) out.push(APP.art.sm(keys[i]));
+      for (i = 0; i < keys.length && i < 20; i++) out.push(APP.art.lg(keys[i]));
+    } catch (e) {}
+    return out;
+  }
+
+  // 主力宝可梦：最高优先级（小图 + 大图 + 养成页动图）
+  function mainList() {
+    var out = [];
+    try {
+      var p = APP.store.activePokemon();
+      if (p && p.dexNo) {
+        out.push(APP.art.sm(p.dexNo));
+        out.push(APP.art.lg(p.dexNo));
+        out.push('assets/pokemon/animated/' + APP.pad3(p.dexNo) + '.gif');
       }
     } catch (e) {}
     return out;
@@ -94,7 +109,8 @@ window.APP = window.APP || {};
     if (!p) return; // 还没选宝可梦：新手流程没走完，先不预热
     started = true;
     setTimeout(function () {
-      drain(sceneList().concat(battleList(), ownedList()));
+      // 主力宝可梦 → 自己的立绘 → 捕捉场景 → 战斗背景
+      drain(mainList().concat(ownedList(), sceneList(), battleList()));
     }, 1500);
   }
 
