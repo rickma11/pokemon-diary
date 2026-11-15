@@ -640,13 +640,8 @@ window.APP = window.APP || {};
     return true;
   }
 
-  function setPin(pin) {
-    beginWrite();
-    var s = load();
-    s.family.pin = String(pin);
-    save();
-    return true;
-  }
+  // 旧版本机「管理密码」(family.pin) 已废弃：家长后台入口改为每次验账号家长密码（auth.verifyParent）。
+  // setPin 已删除；老存档里的 family.pin 字段仅保留不读，无安全作用。
 
   // 显示模式：'auto' 自动检测墨水屏 / 'color' 强制彩色 / 'ink' 强制墨水屏（灰阶）
   function setInkMode(mode) {
@@ -2136,7 +2131,6 @@ window.APP = window.APP || {};
     getAuditQueue: getAuditQueue,
     approve: approve,
     reject: reject,
-    setPin: setPin,
     setInkMode: setInkMode,
     resetAll: resetAll,
     listPokemon: listPokemon,

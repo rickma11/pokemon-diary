@@ -2,7 +2,7 @@
 
 > **这份文件是给「另一个窗口的 AI 助手」直接读的**：自包含、不含任何令牌或凭据，读完即可开工，不需要用户再补充或修改内容。
 >
-> - 最近更新：2026-11-15 19:45（本轮 v81，详见第 11 节）
+> - 最近更新：2026-11-15 19:55（本轮 v82，详见第 12 节）
 > - 本地主交接文档：`F:/宝可梦日常打卡工具/docs/项目交接与继续指南.md`（含敏感配置，`docs/` 被 `.gitignore` 排除、**不进公开仓库**；其他窗口读它可能被安全策略拦下，所以请优先读本文件）
 > - 部署说明：`deploy-package/AI_DEPLOY_GUIDE.md`；完整使用/安全说明：`README.md`
 
@@ -19,9 +19,9 @@
 | 入口 | `index.html`（约 1.37 MB，**构建产物**，内联了全部 38 个 JS + 2 个 CSS） |
 | 源码 | `js/`、`css/`、`index.src.html`、`sw.js`、`manifest.json` |
 | 构建 | `node build.js`（`index.src.html` → `index.html`）；`更新推送.bat` 会自动调用 |
-| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v81'` |
+| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v82'` |
 | 账号/存档 | 客户端 AES-GCM 加密后写进仓库 `accounts/` 与 `saves/`；App 运行时会往 `main` 写 `sync: saves/...` commit |
-| 当前线上 | 本轮 v81；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
+| 当前线上 | 本轮 v82；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
 | 当前本地 | 与本轮线上一致；`accounts/` + `saves/` 共 4 个文件原样保留 |
 
 > **commit 号说明**：远端 `main` 会因 App 运行时写档（`sync: saves/...`）和**纯文档提交**不断前进。上表的 `d84ef845` 指的是**代码版本**；判断「页面是不是这一版」，看 `index.html` 的 sha 或 Pages 构建，不要只比对 `main` 的最新 commit。纯文档提交不会改 `index.html`，页面完全不受影响。
@@ -215,3 +215,17 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 **修复**：`index.src.html` head 加 `<meta name="color-scheme" content="only light">`，`css/app.css` 末尾加 `:root { color-scheme: light; }`——浏览器不再强制反色，原生时间/日期选择器按浅色渲染，任何皮肤下清晰可读。**若未来真的要做深色皮肤，需同步把这两处改成 `light dark` 并配好深色变量。**
 
 **自检**：VM 验证 `verifyParent` 5 项全过（正确密码放行/错误拒绝/孩子密码拒绝/空账号拒绝/**会话零改动**）；`node build.js` 后 `index.html` 含 `only light`、`verifyParent`、`parentUnlocked`；SW 升 v81。备份 `backups/20261115-parentpwd-colorscheme/`。
+
+---
+
+## 12. 2026-11-15 拆掉家长后台第二道密码门（v82）
+
+**用户报**：v81 后进家长后台要输 2 次密码，且第二次输账号家长密码提示不对。
+**根因**：家长屏（`js/screens/parent.js`）里还留着一套**老的本机密码门**——比对存档里的 `family.pin`（models 默认 `'1234'`，可在设置页「修改管理密码」改），和账号家长密码是两码事。以前它靠「login() 把会话切成 parent 角色」自动跳过（第 101-103 行的 role==='parent' 直通分支）；v81 改为 verifyParent 不切角色后，这道老门就露出来了，于是出现双密码 + 家长密码打不开本机 PIN。
+**修复（用户口径：只留一道，用账号家长密码）**：
+- 删除 `parent.js` 的 login 视图 / `renderLogin()` / `act==='login'` 比对 family.pin / `authed` 状态 / 回车提交 login 分支；`render()` 直接按 view 渲染各子页（密码门只剩 app.js 弹窗那一道）。
+- 删除设置页「修改管理密码」卡片与 `setpin` 处理；`js/store.js` 删除 `setPin()` 及其导出（老存档里的 `family.pin` 字段仅保留不读）。
+- **铁律**：家长后台的密码门全站只有一处 = `app.js promptParentPassword()`（每次进入必验、用账号家长密码）。不要再往 parent.js 或其他入口加任何本机 PIN / 额外密码比对。
+- 后台里「退出登录」「重置小孩密码」等用账号体系的功能不受影响；models.js 的默认 `pin:'1234'` 仅为老存档字段兼容保留，无任何作用。
+
+**自检**：4 个改动 JS `node --check` 0 错；`index.html` 中 `renderLogin`/`setpin` 零残留（仅两行废弃注释）；SW 升 v82。备份 `backups/20261115-parentpwd-colorscheme/`（含 parent.js.pre、store.js.pre）。

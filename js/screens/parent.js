@@ -4,8 +4,8 @@ window.APP = window.APP || {};
   'use strict';
 
   // 内部视图状态（模块级变量跨刷新保留，整页重载才重置，符合"无会话持久化"的安全预期）
-  var view = 'login';
-  var authed = false;
+  // 密码门已上移：app.js 在每次进入后台前弹窗验家长密码（verifyParent），这里不再有第二道密码。
+  var view = 'home';
   var editingId = null;
   var bound = false;
   // 调试页的操作结果提示（{ ok, text }），只在调试页内有效
@@ -97,12 +97,8 @@ window.APP = window.APP || {};
   }
 
   function render(container) {
-    // 用大人密码登录过（跨设备已验明身份）→ 不再要求本机 PIN，直接进后台
-    if (view === 'login' && APP.auth && APP.auth.role && APP.auth.role() === 'parent') {
-      authed = true;
-      return renderHome(container);
-    }
-    if (view === 'login') return renderLogin(container);
+    // 密码门只有一道：app.js 在进入后台前已弹窗验过家长密码，这里直接进后台，
+    // 不再有第二道「管理密码」（旧本机 PIN 与账号家长密码无关，已废弃）。
     if (view === 'home') return renderHome(container);
     if (view === 'tasks') return renderTasks(container);
     if (view === 'edit') return renderEdit(container);
@@ -111,23 +107,7 @@ window.APP = window.APP || {};
     if (view === 'playtools') return renderPlayTools(container);
     if (view === 'settings') return renderSettings(container);
     if (view === 'account') return renderAccount(container);
-    renderLogin(container);
-  }
-
-  function renderLogin(container) {
-    container.innerHTML =
-      '<div class="pbar">' +
-        '<button type="button" class="btn btn--sm" data-act="exit">‹ 返回</button>' +
-        '<div class="pbar__title"><strong>家长后台</strong><span>请输入管理密码</span></div>' +
-        '<span class="pbar__side"></span>' +
-      '</div>' +
-      '<section class="card">' +
-        '<label class="field"><span>管理密码</span>' +
-          '<input id="pin" type="password" inputmode="text" maxlength="12" placeholder="请输入管理密码（可含字母）" autocomplete="off">' +
-        '</label>' +
-        '<button type="button" class="btn btn--primary btn--block" data-act="login">进入</button>' +
-        '<p class="hint">输错或不想进时，点左上角「‹ 返回」即可回到孩子的打卡页。</p>' +
-      '</section>';
+    renderHome(container);
   }
 
   function renderHome(container) {
@@ -678,12 +658,6 @@ window.APP = window.APP || {};
       '<p class="hint">当前生效：' + (inkOn ? '黑白（墨水屏模式）' : '彩色') + '。普通手机/电脑默认彩色；在墨水屏上打开会自动变黑白，宝可梦立绘同步转灰，减少残影。</p>' +
     '</div></section>';
 
-    html += '<section class="card"><h2>修改管理密码</h2><div class="form">' +
-      '<label class="field"><span>新密码</span><input id="s_pin" type="password" inputmode="text" maxlength="12" placeholder="4-12 位数字/字母"></label>' +
-      '<label class="field"><span>确认密码</span><input id="s_pin2" type="password" inputmode="text" maxlength="12"></label>' +
-      '<button type="button" class="btn btn--primary btn--block" data-act="setpin">保存新密码</button>' +
-    '</div></section>';
-
     html += '<section class="card"><h2>数据管理</h2>' +
       '<div class="row">' +
         '<button type="button" class="btn" data-act="restore">恢复默认任务</button>' +
@@ -786,18 +760,8 @@ window.APP = window.APP || {};
     // GitHub 同步设置卡（后台设置页用完整版；我的数据页用精简版）：gh-save / gh-test / gh-sync
     if (APP.ghui && APP.ghui.handle(act)) return;
 
-    if (act === 'login') {
-      var pin = (document.getElementById('pin') || {}).value || '';
-      if (pin === APP.store.get().family.pin) {
-        authed = true; view = 'home'; APP.refresh();
-      } else {
-        alert('密码错误');
-      }
-      return;
-    }
     if (act === 'exit') {
-      authed = false;
-      view = 'login';
+      view = 'home';
       editingId = null;
       pendingTemplate = null;
       window.location.hash = '#/schedule';
@@ -998,16 +962,6 @@ window.APP = window.APP || {};
       return;
     }
 
-    if (act === 'setpin') {
-      var p1 = (document.getElementById('s_pin') || {}).value || '';
-      var p2 = (document.getElementById('s_pin2') || {}).value || '';
-      if (!p1) { alert('密码不能为空'); return; }
-      if (p1 !== p2) { alert('两次输入不一致'); return; }
-      APP.store.setPin(p1);
-      alert('密码已更新');
-      APP.refresh();
-      return;
-    }
     if (act === 'restore') {
       APP.ui.confirm('恢复默认任务将覆盖当前所有任务（含自定义），确定？', '恢复').then(function (ok) {
         if (ok) { APP.store.restoreDefaultTasks(); APP.refresh(); }
@@ -1056,10 +1010,9 @@ window.APP = window.APP || {};
     return null;
   }
 
-  // 离开家长后台时调用（路由切走或点「退出后台」）：清登录态，下次进入需重新输密码
+  // 离开家长后台时调用（路由切走或点「退出后台」）：下次进入需重新输家长密码（app.js 的弹窗）
   function reset() {
-    authed = false;
-    view = 'login';
+    view = 'home';
     editingId = null;
     pendingTemplate = null;
     debugMsg = null;
@@ -1079,11 +1032,6 @@ window.APP = window.APP || {};
     var key = e.key || e.keyCode;
     if (key !== 'Enter' && key !== 13) return;
     if (!containerRef) return;
-    if (view === 'login') {
-      var btn = containerRef.querySelector('[data-act="login"]');
-      if (btn) btn.click();
-      return;
-    }
     if (view === 'debug') {
       var map = { d_add: 'debug-add', d_switch: 'debug-switch', d_exp: 'debug-exp' };
       var id = e.target && e.target.id;
