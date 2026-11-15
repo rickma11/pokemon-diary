@@ -16,6 +16,9 @@ window.APP = window.APP || {};
     '#docOverlay .doc-bubble{flex:1;min-width:0;align-self:center}' +
     '#docOverlay .doc-f{font-weight:800;color:#3a2c1c;font-size:15px;margin-bottom:6px}' +
     '#docOverlay .doc-t{font-size:13px;color:#5a4632;line-height:1.55}' +
+    '#docOverlay .doc-line{padding:4px 0;font-size:12.5px;line-height:1.6}' +
+    '#docOverlay .doc-line + .doc-line{border-top:1px dashed rgba(90,70,50,.16);margin-top:2px}' +
+    '#docOverlay .doc-line:first-child{font-weight:700;color:#3a2c1c;font-size:13px}' +
     '#docOverlay .doc-reward{display:inline-block;margin-top:10px;background:#FFF3D6;border:1px solid #E5C77A;color:#8A5A12;border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700}' +
     '#docOverlay .doc-actions{display:flex;gap:8px;margin-top:14px}' +
     '#docOverlay .doc-go{flex:1;min-width:0;background:#e0542f;color:#fff;border:none;border-radius:12px;padding:11px 8px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}' +
@@ -84,16 +87,30 @@ window.APP = window.APP || {};
 
   DOC_CSS += TASK_CSS;
 
-  // ===== 各档位文案（2026-11-14 扩为 8 档；同日把前四档统一改为「累计打卡次数」阶梯）=====
-  // T1 玩耍 2 次 / T2 训练 5 次 / T3 乐园 7 次 / T4 兑换 10 次。
+  // ===== 各档位条件（2026-11-15：前四档改为「累计打卡次数 + 登录天数」双条件）=====
   // 「1 次打卡」= 完成 1 条日程任务（done/submitted/approved），累计全历史、不按月清零。
-  // T5 图鉴+捕捉(Lv5) / T6 对战(Lv7) / T7 道馆(Lv10) 仍按主力等级。
-  var CHECKIN_REQ = { play: 2, train: 5, ranch: 7, exchange: 10 };
+  // 「1 天登录」= 有真实打卡记录的一个不同日期（instances 里当天至少有一条已完成）。
+  // 两个条件都要满足，避免小孩一天之内把全部功能刷开；T5 起仍按主力等级。
+  // T5 图鉴+捕捉(Lv5) / T6 对战(Lv7) / T7 道馆(Lv10) 不受影响。
+  var UNLOCK_REQ = {
+    play:     { checks: 2,  days: 2 },
+    train:    { checks: 5,  days: 3 },
+    ranch:    { checks: 7,  days: 3 },
+    exchange: { checks: 10, days: 4 }
+  };
+  function reqText(id) {
+    var q = UNLOCK_REQ[id];
+    return '累计打卡 ' + q.checks + ' 次 · 登录 ' + q.days + ' 天';
+  }
+  function openLine(id, name) {
+    var q = UNLOCK_REQ[id];
+    return '打卡 ' + q.checks + ' 次 + 登录 ' + q.days + ' 天，' + name + '开放啦！';
+  }
   var TALK = {
-    play: { name: '玩耍 · 记忆翻牌', req: '完成 ' + CHECKIN_REQ.play + ' 次每日打卡', tier: 1 },
-    train: { name: '训练 · 四种小游戏', req: '完成 ' + CHECKIN_REQ.train + ' 次每日打卡', tier: 2 },
-    ranch: { name: '宝可梦乐园', req: '完成 ' + CHECKIN_REQ.ranch + ' 次每日打卡', tier: 3 },
-    exchange: { name: '兑换中心', req: '完成 ' + CHECKIN_REQ.exchange + ' 次每日打卡', tier: 4 },
+    play: { name: '玩耍 · 记忆翻牌', req: reqText('play'), tier: 1 },
+    train: { name: '训练 · 四种小游戏', req: reqText('train'), tier: 2 },
+    ranch: { name: '宝可梦乐园', req: reqText('ranch'), tier: 3 },
+    exchange: { name: '兑换中心', req: reqText('exchange'), tier: 4 },
     dex: { name: '宝可梦图鉴', req: '主力宝可梦达到 5 级', tier: 5 },
     catch: { name: '野外探险·捕捉', req: '主力宝可梦达到 5 级', tier: 5 },
     battle: { name: '外出战斗', req: '主力宝可梦达到 7 级', tier: 6 },
@@ -123,16 +140,15 @@ window.APP = window.APP || {};
     var bp = (APP.store && APP.store.bondProgress) ? APP.store.bondProgress(p) : { percent: 0, daysCared: 0 };
     var bond = bp.percent || 0;
     var careCount = bp.daysCared || 0;
-    // crossedDay / activeDays 仅为兼容旧存档诊断保留：2026-11-14 起前四档统一按累计打卡次数判定，
-    // 不再有「次日登录」「羁绊 ≥10% 且照料 ≥10 次」「或主力 Lv.2」这类备用条件。
+    // crossedDay / bond / careCount 仅为兼容旧存档诊断保留；activeDays 现在就是「登录天数」。
     var today = APP.todayStr ? APP.todayStr() : '';
     var created = (s.meta && s.meta.createdAt) || '';
     var crossedDay = !!(created && today && created !== today);
     var st = {};
-    st.play = tasksDone >= CHECKIN_REQ.play;
-    st.train = tasksDone >= CHECKIN_REQ.train;
-    st.ranch = tasksDone >= CHECKIN_REQ.ranch;
-    st.exchange = tasksDone >= CHECKIN_REQ.exchange;
+    st.play = tasksDone >= UNLOCK_REQ.play.checks && activeDays >= UNLOCK_REQ.play.days;
+    st.train = tasksDone >= UNLOCK_REQ.train.checks && activeDays >= UNLOCK_REQ.train.days;
+    st.ranch = tasksDone >= UNLOCK_REQ.ranch.checks && activeDays >= UNLOCK_REQ.ranch.days;
+    st.exchange = tasksDone >= UNLOCK_REQ.exchange.checks && activeDays >= UNLOCK_REQ.exchange.days;
     st.dex = level >= 5;
     st.catch = level >= 5;
     st.battle = level >= 7;
@@ -141,11 +157,11 @@ window.APP = window.APP || {};
     // onboarding 的老档分支会写入 legacy:true；新档一律按上面的条件走。
     var u = (APP.store && APP.store.unlock) ? APP.store.unlock() : {};
     if (u.legacy) { st.play = true; st.train = true; }
-    // 条件数值调整后的迁移保护：已经播过讲解 / 发过奖励的档位不回收功能。
-    // 否则 T1 从「1 次」提到「2 次」后，已开了玩耍的用户会被重新锁上（gate 读的正是 evalState）。
+    // 条件调整后的迁移保护：已经播过讲解 / 发过奖励的档位不回收功能。
+    // 否则前四档新增「登录天数」后，已开了玩耍的用户会被重新锁上（gate 读的正是 evalState）。
     var seenKeep = u.seen || {}, claimedKeep = u.claimed || {};
-    for (var ck in CHECKIN_REQ) {
-      if (Object.prototype.hasOwnProperty.call(CHECKIN_REQ, ck) && (seenKeep[ck] || claimedKeep[ck])) st[ck] = true;
+    for (var ck in UNLOCK_REQ) {
+      if (Object.prototype.hasOwnProperty.call(UNLOCK_REQ, ck) && (seenKeep[ck] || claimedKeep[ck])) st[ck] = true;
     }
     return { st: st, level: level, tasksDone: tasksDone, loginDays: activeDays, crossedDay: crossedDay, bond: bond, careCount: careCount };
   }
@@ -190,15 +206,41 @@ window.APP = window.APP || {};
     return docEl;
   }
 
+  // 讲解文案：一行一个重点、行间留分隔，不再塞成一整段。
+  // 首行讲「解锁了什么」，后面只留孩子真正需要知道的两件事。
   function buildDoc(id) {
-    if (id === 'play') return { f: '解锁：玩耍 · 记忆翻牌', t: '累计完成 2 次每日打卡啦！养成页的【玩耍】开放了～点进去是记忆翻牌，拼音和英语每天各能玩 1 次，全部配对能拿经验、果实，还有机会得碎片。', go: '#/care', goLabel: '去玩耍' };
-    if (id === 'train') return { f: '解锁：训练', t: '累计完成 5 次每日打卡，【训练】开放了！99 乘法表、成语填空、井字棋、剪刀石头布四种玩法，每天各 1 次，拿到「完美」能得最多经验和心情。记得先喂食，饱腹低于 30 是不能训练的哦～', go: '#/care', goLabel: '去训练' };
-    if (id === 'ranch') return { f: '解锁：宝可梦乐园', t: '累计完成 7 次每日打卡，你解锁了【宝可梦乐园】！在这里给伙伴安排帮手、陪它玩耍，每天还会结算羁绊值，快去逛逛吧～', go: '#/ranch', goLabel: '去乐园看看' };
-    if (id === 'exchange') return { f: '解锁：兑换中心', t: '累计完成 10 次每日打卡，你解锁了【兑换中心】！完成任务攒下的碎片，可以在这里兑换精灵球和战斗券，记得常来逛逛～', go: '#/exchange', goLabel: '去兑换中心' };
-    if (id === 'dex') return { f: '解锁：图鉴 + 野外探险', t: '主力宝可梦已经达到 5 级啦！解锁了【宝可梦图鉴】和【野外探险·捕捉】。先去图鉴认识更多宝可梦，再出发去野外捕捉新伙伴吧！', go: '#/dex', goLabel: '去看看图鉴' };
-    if (id === 'battle') return { f: '解锁：外出战斗', t: '主力宝可梦达到 7 级，解锁了【外出战斗】！带伙伴去野外和别的训练师对战，赢取奖励与经验～（在探险页切到「外出战斗」页签）', go: '#/catch', goLabel: '去外出战斗' };
-    if (id === 'gym') return { f: '解锁：道馆挑战', t: '太厉害了！主力宝可梦突破 10 级，解锁了【道馆挑战】！去挑战道馆馆主，赢取徽章和心愿星吧！（在探险页切到「道馆挑战」页签）', go: '#/catch', goLabel: '去挑战道馆' };
+    if (id === 'play') return { f: '解锁：玩耍 · 记忆翻牌',
+      t: [openLine('play', '【玩耍】'), '记忆翻牌：拼音 / 英语每天各 1 次', '全部配对 → 经验、果实，还有机会得碎片'],
+      go: '#/care', goLabel: '去玩耍' };
+    if (id === 'train') return { f: '解锁：训练',
+      t: [openLine('train', '【训练】'), '四种小游戏：乘法表 / 成语 / 井字棋 / 猜拳，每天各 1 次', '「完美」经验更多；饱腹低于 30 不能训练'],
+      go: '#/care', goLabel: '去训练' };
+    if (id === 'ranch') return { f: '解锁：宝可梦乐园',
+      t: [openLine('ranch', '【乐园】'), '给伙伴安排帮手、陪它玩耍', '每天结算羁绊值'],
+      go: '#/ranch', goLabel: '去乐园看看' };
+    if (id === 'exchange') return { f: '解锁：兑换中心',
+      t: [openLine('exchange', '【兑换中心】'), '碎片可换精灵球、战斗券', '完成任务就能攒碎片'],
+      go: '#/exchange', goLabel: '去兑换中心' };
+    if (id === 'dex') return { f: '解锁：图鉴 + 野外探险',
+      t: ['主力达到 Lv.5，【图鉴】和【野外捕捉】开放啦！', '先去图鉴认识更多宝可梦', '再出发去野外收服新伙伴'],
+      go: '#/dex', goLabel: '去看看图鉴' };
+    if (id === 'battle') return { f: '解锁：外出战斗',
+      t: ['主力达到 Lv.7，【外出战斗】开放啦！', '在探险页切到「外出战斗」页签', '赢了能拿奖励和经验'],
+      go: '#/catch', goLabel: '去外出战斗' };
+    if (id === 'gym') return { f: '解锁：道馆挑战',
+      t: ['主力突破 Lv.10，【道馆挑战】开放啦！', '在探险页切到「道馆挑战」页签', '赢徽章、攒心愿星'],
+      go: '#/catch', goLabel: '去挑战道馆' };
     return null;
+  }
+
+  // 数组 → 逐行短句；字符串保持原样（首登寄语等旧调用仍传字符串）
+  function docBody(t) {
+    if (Object.prototype.toString.call(t) === '[object Array]') {
+      var out = '';
+      for (var i = 0; i < t.length; i++) out += '<div class="doc-line">' + esc(t[i]) + '</div>';
+      return out;
+    }
+    return t || '';
   }
 
   function doctor(o) {
@@ -207,8 +249,9 @@ window.APP = window.APP || {};
     if (TASK_OPEN) closeTasks();
     var el = ensureDocEl();
     if (docHideTimer) { clearTimeout(docHideTimer); docHideTimer = null; }
-    // 博士形象统一用全身图，不再按档位切半身 / 全身
-    var img = 'assets/doctor-full.png';
+    // 博士形象：192px 小图已内联进 index.html，弹窗打开零网络请求；
+    // 常量未加载时回退到原 PNG（单独打开源码调试页时用）
+    var img = APP.DOCTOR_ART || 'assets/doctor-full.png';
     var go = o.go || '';
     var goLabel = o.goLabel || '去看看';
     el.innerHTML =
@@ -217,7 +260,7 @@ window.APP = window.APP || {};
         '<div class="doc-fig"><img src="' + img + '" alt="宝可梦博士"></div>' +
         '<div class="doc-bubble">' +
           (o.f ? '<div class="doc-f">' + esc(o.f) + '</div>' : '') +
-          '<div class="doc-t">' + (o.t || '') + '</div>' +
+          '<div class="doc-t">' + docBody(o.t) + '</div>' +
           (o.reward ? '<div class="doc-reward">🎁 解锁奖励：' + esc(o.reward) + ' 已到账</div>' : '') +
           '<div class="doc-actions">' +
             (go ? '<button type="button" class="doc-go" data-doc-go="1">' + esc(goLabel) + ' →</button>' : '') +
@@ -374,47 +417,43 @@ window.APP = window.APP || {};
 
   // ===== 解锁任务面板：日程页入口条 + 居中弹窗 =====
   // 八档清单与条件/奖励按确认方案，进度全部实读现有解锁判定与存档，不另建一套进度。
-  // 2026-11-14：前四档统一为「累计打卡次数」单一条件；同一时刻条件只显示一处
-  // （收起时看卡头小字，展开时卡头小字隐藏、只看带进度的任务清单）。
-  // 保留「或」合并一行的渲染逻辑，日后若恢复多条件档位可直接复用。
+  // 2026-11-15：前四档改为「累计打卡次数 + 登录天数」双条件，展开后各显示一行带进度的任务；
+  // 收起时卡头小字隐藏条件，只在展开区出现，避免同一条件重复显示。
+  // 双条件档位统一生成两条任务，避免四份重复代码
+  function checkTasks(id, r) {
+    var q = UNLOCK_REQ[id];
+    return [
+      { t: '累计打卡 ' + q.checks + ' 次', ok: r.tasksDone >= q.checks, hint: Math.min(r.tasksDone, q.checks) + '/' + q.checks },
+      { t: '累计登录 ' + q.days + ' 天', ok: r.loginDays >= q.days, hint: Math.min(r.loginDays, q.days) + '/' + q.days }
+    ];
+  }
+
   var TIERS = [
     {
       key: 'start', tag: 'T0', name: '启程 · 日程 / 基础照料', req: '首登即开', reward: '树果 ×3', go: '',
+      // 首登即开、奖励在 onboarded 时就发，不需要再挂一条「完成 1 次每日打卡」
       tasks: function (r, ob) {
         return [
           { t: '选择第一支宝可梦', ok: !!ob.firstPokemon },
-          { t: '选择主角形象', ok: !!ob.character },
-          { t: '完成 1 次每日打卡', ok: r.tasksDone >= 1, hint: Math.min(r.tasksDone, 1) + '/1' }
+          { t: '选择主角形象', ok: !!ob.character }
         ];
       }
     },
     {
-      key: 'play', tag: 'T1', name: '玩耍 · 记忆翻牌', req: '完成 ' + CHECKIN_REQ.play + ' 次每日打卡', reward: '树果 ×2', go: '#/care',
-      tasks: function (r) {
-        var n = CHECKIN_REQ.play;
-        return [{ t: '完成 ' + n + ' 次每日打卡', ok: r.tasksDone >= n, hint: Math.min(r.tasksDone, n) + '/' + n }];
-      }
+      key: 'play', tag: 'T1', name: '玩耍 · 记忆翻牌', req: reqText('play'), reward: '树果 ×2', go: '#/care',
+      tasks: function (r) { return checkTasks('play', r); }
     },
     {
-      key: 'train', tag: 'T2', name: '训练 · 四种小游戏', req: '完成 ' + CHECKIN_REQ.train + ' 次每日打卡', reward: '树果 ×2 · 碎片 ×2', go: '#/care',
-      tasks: function (r) {
-        var n = CHECKIN_REQ.train;
-        return [{ t: '完成 ' + n + ' 次每日打卡', ok: r.tasksDone >= n, hint: Math.min(r.tasksDone, n) + '/' + n }];
-      }
+      key: 'train', tag: 'T2', name: '训练 · 四种小游戏', req: reqText('train'), reward: '树果 ×2 · 碎片 ×2', go: '#/care',
+      tasks: function (r) { return checkTasks('train', r); }
     },
     {
-      key: 'ranch', tag: 'T3', name: '宝可梦乐园', req: '完成 ' + CHECKIN_REQ.ranch + ' 次每日打卡', reward: '树果 ×3 · 精灵球 ×2', go: '#/ranch',
-      tasks: function (r) {
-        var n = CHECKIN_REQ.ranch;
-        return [{ t: '完成 ' + n + ' 次每日打卡', ok: r.tasksDone >= n, hint: Math.min(r.tasksDone, n) + '/' + n }];
-      }
+      key: 'ranch', tag: 'T3', name: '宝可梦乐园', req: reqText('ranch'), reward: '树果 ×3 · 精灵球 ×2', go: '#/ranch',
+      tasks: function (r) { return checkTasks('ranch', r); }
     },
     {
-      key: 'exchange', tag: 'T4', name: '兑换中心', req: '完成 ' + CHECKIN_REQ.exchange + ' 次每日打卡', reward: '碎片 ×5', go: '#/exchange',
-      tasks: function (r) {
-        var n = CHECKIN_REQ.exchange;
-        return [{ t: '完成 ' + n + ' 次每日打卡', ok: r.tasksDone >= n, hint: Math.min(r.tasksDone, n) + '/' + n }];
-      }
+      key: 'exchange', tag: 'T4', name: '兑换中心', req: reqText('exchange'), reward: '碎片 ×5', go: '#/exchange',
+      tasks: function (r) { return checkTasks('exchange', r); }
     },
     {
       key: 'dex', tag: 'T5', name: '图鉴 + 野外探险', req: '主力 Lv.5', reward: '碎片 ×8', go: '#/dex',
@@ -538,7 +577,7 @@ window.APP = window.APP || {};
           '<button type="button" class="tk-x" data-tk-close="1" aria-label="关闭">×</button>' +
           '<div class="tk-sum">冒险进度 ' + d.done + ' / ' + d.total + ' 个功能已解锁</div>' +
           '<div class="tk-bar"><i style="width:' + pct + '%"></i></div>' +
-          '<div class="tk-count-line">累计打卡 <b class="tk-hl">' + d.r.tasksDone + '</b> 次（每完成 1 条日程任务算 1 次）</div>' +
+          '<div class="tk-count-line">累计打卡 <b class="tk-hl">' + d.r.tasksDone + '</b> 次 · 登录 <b class="tk-hl">' + d.r.loginDays + '</b> 天（完成 1 条任务算 1 次打卡，当天有打卡即算登录 1 天）</div>' +
           '<div class="tk-next">' + nextLine + '</div>' +
         '</div>' +
         '<div class="tk-body">' + items + '</div>' +

@@ -2,7 +2,7 @@
 
 > **这份文件是给「另一个窗口的 AI 助手」直接读的**：自包含、不含任何令牌或凭据，读完即可开工，不需要用户再补充或修改内容。
 >
-> - 最近更新：2026-11-15 16:45（对应线上 `d84ef845`）
+> - 最近更新：2026-11-15 18:05（本轮 v78，详见第 8 节）
 > - 本地主交接文档：`F:/宝可梦日常打卡工具/docs/项目交接与继续指南.md`（含敏感配置，`docs/` 被 `.gitignore` 排除、**不进公开仓库**；其他窗口读它可能被安全策略拦下，所以请优先读本文件）
 > - 部署说明：`deploy-package/AI_DEPLOY_GUIDE.md`；完整使用/安全说明：`README.md`
 
@@ -16,13 +16,13 @@
 | 仓库 | `rickma11/pokemon-diary`（Public，分支 `main`） |
 | 线上地址 | https://rickma11.github.io/pokemon-diary/ |
 | 形态 | 纯静态单页 PWA，**无后端、无打包工具**；Node 只用于 `build.js` 和本地预览 |
-| 入口 | `index.html`（约 1.34 MB，**构建产物**，内联了全部 35 个 JS + 2 个 CSS） |
+| 入口 | `index.html`（约 1.33 MB，**构建产物**，内联了全部 38 个 JS + 2 个 CSS） |
 | 源码 | `js/`、`css/`、`index.src.html`、`sw.js`、`manifest.json` |
 | 构建 | `node build.js`（`index.src.html` → `index.html`）；`更新推送.bat` 会自动调用 |
-| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v77'` |
+| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v78'` |
 | 账号/存档 | 客户端 AES-GCM 加密后写进仓库 `accounts/` 与 `saves/`；App 运行时会往 `main` 写 `sync: saves/...` commit |
-| 当前线上 | 远端 `d84ef845`，Pages `built @ d84ef84577fb`，线上 200 / 1,341,249 字节 |
-| 当前本地 | `7862d2a`（与远端内容等价）；`accounts/` + `saves/` 共 4 个文件原样保留 |
+| 当前线上 | 本轮 v78；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
+| 当前本地 | 与本轮线上一致；`accounts/` + `saves/` 共 4 个文件原样保留 |
 
 > **commit 号说明**：远端 `main` 会因 App 运行时写档（`sync: saves/...`）和**纯文档提交**不断前进。上表的 `d84ef845` 指的是**代码版本**；判断「页面是不是这一版」，看 `index.html` 的 sha 或 Pages 构建，不要只比对 `main` 的最新 commit。纯文档提交不会改 `index.html`，页面完全不受影响。
 
@@ -135,3 +135,23 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 3. 作业照片只存本机，换设备看不到（设计如此）。
 4. 若首次打开仍偏慢，可把 `assets/pmd-sliced/manifest.js`（约 280 KB 动作切片清单）拆成进乐园时才加载 —— 未实施，等用户实测反馈。
 5. 旧 App 预览 `wbapp_j2fuV7LZsuIdpqeODeu5PN` 仍是上一轮版本，待用户决定是否下线。
+
+---
+
+## 8. 2026-11-15 手机端体验轮（v78）
+
+| # | 改动 | 文件 |
+|---|---|---|
+| 1 | 日程页下拉时进度卡只留「今日进度 + 进度条」，其余（打卡反馈 / 本月累计 / 连击阶梯 / 解锁入口）隐藏，回顶部自动展开；折叠 72px / 展开 24px 双阈值防抖 | `js/screens/schedule.js`、`css/app.css` |
+| 2 | 任务卡由「图标 + 正文 + 80px 截止列 + 90px 按钮列」四列改三列：标题单行不换行、碎片与截止时间收进同一标签行、说明文字置底 | 同上 |
+| 3 | 博士弹窗图 351×600 PNG 138 KB → 192px WebP **12 KB**，写进 `js/data/doctor-art.js` 常量并随构建内联，弹窗零网络请求；原图不动，常量已随源码提交，重新生成只需把 `assets/doctor-full.png` 缩到 192px 转 WebP 再 base64（本机脚本在 `tools/`，`tools/` 不发布） | `js/unlock.js`、`index.src.html` |
+| 4 | 解锁讲解改「一行一个重点 + 虚线分隔」：首行讲解锁了什么，后两行只留必要信息；`docBody()` 同时兼容数组与旧的纯字符串调用（首登寄语） | `js/unlock.js` |
+| 5 | T0「启程」删掉「完成 1 次每日打卡」：首登即开、奖励在 `onboarded` 时就发，这条纯展示且无关判定 | `js/unlock.js` |
+| 6 | T1–T4 由「累计打卡 N 次」单条件改为 **双条件都要满足**：玩耍 2 次+2 天 / 训练 5 次+3 天 / 乐园 7 次+3 天 / 兑换 10 次+4 天。面板展开后各显示两行进度；`UNLOCK_REQ` / `reqText()` / `checkTasks()` 统一生成 | `js/unlock.js` |
+| 7 | **家长密码可含英文**：`inputmode="numeric"` 会让小米安全键盘只弹数字，含字母的密码根本输不进去。所有大人 / 家长 / 管理密码框改为 `inputmode="text"`，登录表单加 `autocapitalize="off"` 防首字母自动大写；小孩密码仍保留数字键盘（设计上建议纯数字） | `js/app.js`、`js/screens/login.js`、`js/screens/parent.js` |
+
+**「登录天数」口径（重要）**：`evalState()` 的 `loginDays` = `activeDays` = `instances` 里「当天至少有一条 done/submitted/approved」的不同日期数，**不是**「打开过 App 的天数」。所以「打卡 2 次 + 登录 2 天」意味着至少分两天各打一次卡，一天刷满 2 条仍不解锁。若以后要改成「只要打开就算一天」，需要在 store 里新增独立登录日期记录。已播讲解 / 已发奖励的档位有 `seen`/`claimed` 迁移保护，加条件不会把已解锁功能收回去。
+
+**自检记录**：改动 JS 全部 `node --check` 0 错；`node build.js` 内联 38 个 JS + 2 CSS；VM 模拟 6 组打卡分布验证双条件（含「一天刷满 5 条不解锁」）；入口条文案确认为「累计打卡 5 次 · 登录 3 天」。备份在 `backups/20261115-mobile-schedule-unlock/`。
+
+**未执行（等用户确认）**：养成页提示语的人性化改写，本轮只出清单，未改 `js/screens/care.js`。

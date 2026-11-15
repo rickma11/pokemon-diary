@@ -31,6 +31,27 @@ window.APP = window.APP || {};
   // 「已完成」折叠区：默认收起，点标题栏展开（本次会话内记住选择，刷新不丢）
   var doneOpen = false;
 
+  // 下拉时进度卡只留「今日进度 + 进度条」，回到顶部自动展开。
+  // 折叠/展开用两个阈值做滞回，避免在临界点反复切换导致卡片高度抖动。
+  var scrollBound = false;
+  var compactOn = false;
+  function applyCompact(force) {
+    var card = document.querySelector ? document.querySelector('.schedule-progress') : null;
+    if (!card) return;
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    var want = compactOn ? (y > 24) : (y > 72);
+    if (force || want !== compactOn) {
+      compactOn = want;
+      if (want) card.classList.add('is-compact');
+      else card.classList.remove('is-compact');
+    }
+  }
+  function bindScroll() {
+    if (scrollBound || !window.addEventListener) return;
+    window.addEventListener('scroll', function () { applyCompact(false); });
+    scrollBound = true;
+  }
+
   function ensureInputs() {
     if (!photoInput) {
       photoInput = document.createElement('input');
@@ -131,20 +152,22 @@ window.APP = window.APP || {};
     var titleCls = 'task__title';
     if (status === 'done' || status === 'approved') titleCls += ' is-line';
 
-    // 截止列：填了用填的，没填按时段兜底（上午 12:00 / 下午 18:00 / 晚上 22:00）；固定宽度保证所有卡片对齐
+    // 截止标签：填了用填的，没填按时段兜底（上午 12:00 / 下午 18:00 / 晚上 22:00）
     var dl = effectiveDeadline(task);
     var dlHtml = dl
-      ? '<div class="task__dl">截止 ' + escapeText(dl) + '</div>'
-      : '<div class="task__dl task__dl--none"></div>';
+      ? '<span class="task__dl">截止 ' + escapeText(dl) + '</span>'
+      : '';
 
+    // 窄屏重排：图标 / 内容 / 按钮三列，内容区独占整行宽度。
+    // 标题单独一行不换行，碎片与截止时间收进同一条标签行，说明文字放最后。
     return '<div class="' + cls + '">' +
       '<div class="task__icon">' + icon + '</div>' +
       '<div class="task__body">' +
-        '<div class="' + titleCls + '">' + escapeText(task.title) + badges + '</div>' +
+        '<div class="' + titleCls + '">' + escapeText(task.title) + '</div>' +
+        '<div class="task__tags">' + badges + dlHtml + '</div>' +
         '<div class="task__meta">' + escapeText(meta) + '</div>' +
         thumb +
       '</div>' +
-      dlHtml +
       '<div class="task__action">' + action + '</div>' +
     '</div>';
   }
@@ -314,6 +337,9 @@ window.APP = window.APP || {};
     }
 
     container.innerHTML = html;
+    // innerHTML 会丢掉旧节点上的 class，每次重绘都要按当前滚动位置重新套用折叠态
+    bindScroll();
+    applyCompact(true);
 
     var thumbs = container.querySelectorAll('[data-photo]');
     for (var j = 0; j < thumbs.length; j++) {

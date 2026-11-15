@@ -123,7 +123,7 @@ window.APP = window.APP || {};
       '</div>' +
       '<section class="card">' +
         '<label class="field"><span>管理密码</span>' +
-          '<input id="pin" type="password" inputmode="numeric" maxlength="12" placeholder="请输入管理密码" autocomplete="off">' +
+          '<input id="pin" type="password" inputmode="text" maxlength="12" placeholder="请输入管理密码（可含字母）" autocomplete="off">' +
         '</label>' +
         '<button type="button" class="btn btn--primary btn--block" data-act="login">进入</button>' +
         '<p class="hint">输错或不想进时，点左上角「‹ 返回」即可回到孩子的打卡页。</p>' +
@@ -679,8 +679,8 @@ window.APP = window.APP || {};
     '</div></section>';
 
     html += '<section class="card"><h2>修改管理密码</h2><div class="form">' +
-      '<label class="field"><span>新密码</span><input id="s_pin" type="password" inputmode="numeric" maxlength="12" placeholder="4-12 位数字/字母"></label>' +
-      '<label class="field"><span>确认密码</span><input id="s_pin2" type="password" inputmode="numeric" maxlength="12"></label>' +
+      '<label class="field"><span>新密码</span><input id="s_pin" type="password" inputmode="text" maxlength="12" placeholder="4-12 位数字/字母"></label>' +
+      '<label class="field"><span>确认密码</span><input id="s_pin2" type="password" inputmode="text" maxlength="12"></label>' +
       '<button type="button" class="btn btn--primary btn--block" data-act="setpin">保存新密码</button>' +
     '</div></section>';
 

@@ -25,7 +25,7 @@ window.APP = window.APP || {};
     return '<label class="field"><span>' + esc(label) + '</span>' +
       '<input id="' + id + '" type="' + type + '" value="' + esc(value) + '"' +
       (placeholder ? ' placeholder="' + esc(placeholder) + '"' : '') +
-      ' autocomplete="off" ' + (extra || '') + '></label>';
+      ' autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" ' + (extra || '') + '></label>';
   }
 
   // 第一次用的人手上还没有仓库，不能让他「自己去仓库里找 README」。
@@ -79,7 +79,7 @@ window.APP = window.APP || {};
     return '<p>家长和小孩共用账号：用<b>家长密码</b>进入管理后台，用<b>小孩密码</b>进入日程打卡，不用选角色。</p>' +
       '<p class="field__hint">账号可填 <b>昵称</b>（如 小明）、<b>短码</b>（如 a1b2c3）或 <b>完整账号码</b>（小明-a1b2c3），三种都能登录。</p>' +
       field('账号', 'lg_account', 'text', vals.account, '昵称 / 短码 / 完整账号码') +
-      field('密码', 'lg_pwd', 'password', vals.pwd, '', 'inputmode="numeric"') +
+      field('密码', 'lg_pwd', 'password', vals.pwd, '家长密码可含字母', 'inputmode="text"') +
       '<div class="row"><button type="button" class="btn btn--primary btn--block" data-act="login"' +
         (busy ? ' disabled' : '') + '>' + (busy ? '正在进入…' : '进入') + '</button></div>' +
       msgHtml() +

@@ -366,7 +366,7 @@
         '<h3 class="ui-modal__title">' + '请输入家长密码' + '</h3>' +
         '<p class="ui-modal__msg" style="font-size:13px;opacity:.8">用家长密码进入管理后台，孩子的密码进不去。</p>' +
         '<label class="field"><span>家长密码</span>' +
-          '<input id="ppPwd" type="password" autocomplete="off" inputmode="numeric"></label>' +
+          '<input id="ppPwd" type="password" autocomplete="off" inputmode="text" placeholder="可输入数字和字母"></label>' +
         '<p class="hint" id="ppErr" style="color:#c0392b;display:none"></p>' +
         '<div class="row">' +
           '<button type="button" class="btn" data-c="0">取消</button>' +

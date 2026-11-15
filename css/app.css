@@ -3738,3 +3738,26 @@ body.ink .b4-intro__npc img { animation: none; }
 .b3-tab.is-locked .b3-tab__s { color: #A6791F; font-weight: 700; }
 body.ink .b3-tab.is-locked { opacity: .5; }
 body.ink .lock-tip { color: #7A6A55; }
+
+/* ============ 2026-11-15：日程页窄屏重排 + 下拉折叠 ============ */
+/* 任务卡改成「图标 / 内容 / 按钮」三列：内容区独占宽度，标题不再被截止列挤到换行；
+   碎片与截止时间收进同一条标签行，说明文字放最后，整卡层次固定 */
+.task { align-items: center; gap: 10px; }
+.task__title {
+  font-size: 15px; font-weight: 600; line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.task__tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.task__tags .badge { margin-left: 0; font-size: 11px; line-height: 1.6; padding: 1px 7px; }
+.task__tags .task__dl {
+  flex: none; width: auto; align-self: auto; text-align: left;
+  font-size: 11px; line-height: 1.6; padding: 1px 7px;
+}
+.task__meta { margin-top: 5px; font-size: 12px; line-height: 1.4; }
+.task__action { flex-basis: 84px; width: 84px; align-self: center; }
+
+/* 下拉后进度卡只留「今日进度 + 进度条」，其余内容隐藏，把屏幕让给任务列表 */
+.schedule-progress { transition: padding .18s ease; }
+.schedule-progress.is-compact { padding-top: 9px; padding-bottom: 9px; }
+.schedule-progress.is-compact > :not(h2):not(.bar) { display: none !important; }
+.schedule-progress.is-compact h2 { margin-bottom: 7px; font-size: 15px; }
