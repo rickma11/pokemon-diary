@@ -22,7 +22,11 @@ let html = read('index.src.html');
 // ---- 1) CSS：所有 stylesheet link 合成一个 <style> ----
 const cssTags = [...html.matchAll(/<link rel="stylesheet" href="([^"]+\.css)">/g)];
 if (!cssTags.length) throw new Error('index.src.html 找不到 CSS link');
-const cssText = cssTags.map(m => '\n/* ===== ' + m[1] + ' ===== */\n' + read(m[1])).join('\n');
+// 内联后 CSS 就在页面根目录了，url('../assets/…') 会解析到站点根之外（404，图全丢）。
+// 统一改写成 url('assets/…')：http 与 file:// 双击打开都能正确取到图。
+const cssText = cssTags.map(m => '\n/* ===== ' + m[1] + ' ===== */\n' + read(m[1]))
+  .join('\n')
+  .replace(/url\((['"]?)\.\.\/assets\//g, 'url($1assets/');
 html = html.replace(cssTags[0][0], () => '<style>' + cssText + '\n</style>');
 for (let i = 1; i < cssTags.length; i++) html = html.replace(cssTags[i][0], () => '');
 

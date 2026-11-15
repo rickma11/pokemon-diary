@@ -3071,7 +3071,9 @@ body.ink .shard { filter: grayscale(1); }
 .b3-hide:hover .b3-hide__num { background: #2f4a86; border-color: #fff; }
 .b3-hide.is-off { opacity: .5; pointer-events: none; }
 .b3-hide__halo { position: absolute; left: 50%; top: 14%; width: 84px; height: 72px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle, rgba(255,214,70,.9), rgba(255,214,70,0) 70%); opacity: .5; animation: b3HideGlow 1.6s ease-in-out infinite; pointer-events: none; }
-.b3-hide.is-active .b3-hide__halo { opacity: 1; animation: none; box-shadow: 0 0 0 3px rgba(255,228,120,.6); }
+/* 第 9 轮：去掉选中时那圈 3px 黄色描边（用户反馈「圆圈线很丑」），只留柔光；
+   躲藏点的高亮交给图片自己的 drop-shadow，不再画一圈线 */
+.b3-hide.is-active .b3-hide__halo { opacity: .85; animation: none; }
 .b3-hide__spark { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #fff6c9; box-shadow: 0 0 6px #ffe07a; opacity: 0; animation: b3Twinkle 1.8s ease-in-out infinite; pointer-events: none; }
 .b3-hide__spark--1 { left: 16%; top: 10%; animation-delay: -.2s; }
 .b3-hide__spark--2 { left: 80%; top: 22%; animation-delay: -.9s; }

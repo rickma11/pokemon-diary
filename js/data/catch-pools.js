@@ -18,6 +18,10 @@ window.APP = window.APP || {};
 
   var CATCH_RATE = { common:.80, uncommon:.55, rare:.35 };
 
+  // 第 9 轮：稀有度决定「遇到它会不会先打一场」——常见 0% / 少见 50% / 稀有 100%。
+  // 触发战斗的必须打赢才能投球；已捕捉过的宝可梦不看稀有度，必定直接开战。
+  var TIER_BATTLE_ODDS = { common:0, uncommon:.50, rare:1 };
+
   // 7 个场景主题：每个主题对应一张背景图 + 3 个宝可梦躲藏点（透明精灵）。
   // 每轮随机抽一个主题，3 个躲藏点再随机摆放到 3 个槽位（纯视觉、不绑定稀有度）。
   var THEMES = [
@@ -35,7 +39,7 @@ window.APP = window.APP || {};
 
   APP.catchData = {
     POOLS: POOLS, TYPES: TY, COUNTS: COUNTS, PM_FIT: PM_FIT,
-    TIER_ODDS: TIER_ODDS, CATCH_RATE: CATCH_RATE,
+    TIER_ODDS: TIER_ODDS, CATCH_RATE: CATCH_RATE, TIER_BATTLE_ODDS: TIER_BATTLE_ODDS,
     THEMES: THEMES, SLOT_MARK: SLOT_MARK,
     GIF_BASE: 'assets/pokemon/animated/',
     CRY_BASE: 'assets/cries/'

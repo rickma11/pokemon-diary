@@ -18,6 +18,7 @@
   var rootEl = null;
   var cur = null;
   var slotPick = null;
+  var pendingCatch = null;   // 战斗中的捕捉上下文：打赢后要接着投球
   var sceneThemeKey = null;   // 本轮随机抽到的场景主题 key（供测试只读读取）
   var activeTab = 'catch';   // 当前出门页签：catch / battle / train
   var seq = { busy: false, timers: [], bonus: 0, clicked: false, tTarget: 0, decay: null, iv: null, holding: false };
@@ -84,13 +85,13 @@
   }
 
   function hideHtml() {
-    // [中心点%, 上边距%]：CSS 用 translateX(-50%) 让 left 指中心，场景任意宽度都整体居中
-    // 第 7 轮：三点统一 top:22%，编号框下移到图片下方；这样三点天然齐平、不压图片，
-    // 也留足「编号底 442 → 提示气泡顶 453」的安全带（420px 窄屏实测同样不重叠）。
-    var pos = [[16, 22], [50, 22], [82, 22]], h = '';
+    // [中心点%, 距顶 px]：CSS 用 translateX(-50%) 让 left 指中心，场景任意宽度都整体居中
+    // 第 9 轮：三点统一下移到 top:150px（场景固定 420px 高），用 px 不用百分比，
+    // 这样任何屏宽下三个躲藏点都落在同一条水平线上，编号框自然齐平。
+    var pos = [[16, 150], [50, 150], [82, 150]], h = '';
     for (var i = 0; i < 3; i++) {
       h += '<div class="b3-hide" id="b3-hide-' + (i + 1) + '" data-slot="' + (i + 1) +
-        '" style="left:' + pos[i][0] + '%;top:' + pos[i][1] + '%">' +
+        '" style="left:' + pos[i][0] + '%;top:' + pos[i][1] + 'px">' +
         '<div class="b3-hide__halo"></div>' +
         '<i class="b3-hide__spark b3-hide__spark--1"></i>' +
         '<i class="b3-hide__spark b3-hide__spark--2"></i>' +
@@ -367,12 +368,23 @@
     $('game').className = 'b3-game';
   }
 
-  function closeRound(next) {
+  // 一轮探索结束：收干净演出、换一个场景主题（不自动选点、不自动弹确认框）
+  function closeRound() {
     resetStage();
     applyScene();
     seq.busy = false;
     sync();
-    if (next) askConsume(null);
+  }
+
+  // 捕捉结果弹窗的两个出口：「关闭」回乐园 tab；「继续探索」只换场景，等用户自己点躲藏点
+  function resultBtns() {
+    return [
+      { text: '关闭', fn: function () { closeRound(); gotoRanch(); } },
+      { text: '继续探索', yes: true, fn: function () { closeRound(); } }
+    ];
+  }
+  function gotoRanch() {
+    try { window.location.hash = '#/ranch'; } catch (e) {}
   }
 
   // 切走页面时把所有定时器 / 小游戏收干净，避免回调打到已被替换的 DOM
@@ -399,7 +411,9 @@
     if (!g.ok) { toast(gateToast(g), true); return; }
     slotPick = slot || null;
     dialog('探索宝可梦躲藏点？',
-      '探索这个宝可梦躲藏点，将消耗 1 次探索机会。<br>如果遇到新宝可梦将直接捕捉，遇到已拥有宝可梦将触发战斗。',
+      '探索这个宝可梦躲藏点，将消耗 1 次探索机会。<br>' +
+      '遇到新宝可梦：<b>常见直接捕捉</b>，<b>少见 50% / 稀有 100% 先打一场</b>，打赢才能投球。<br>' +
+      '遇到已拥有的宝可梦必定开战。',
       [{ text: '再想想', fn: function () {} },
        { text: '立即探索', yes: true, fn: function () {
          var r = APP.store.spendTicket('capture');
@@ -414,6 +428,18 @@
     return 'rare';
   }
 
+  // 第 9 轮：稀有度决定「会不会先打一场」——常见 0% / 少见 50% / 稀有 100%。
+  // 已捕捉过的宝可梦不看稀有度，必定直接开战（保持原规则）。
+  function battleOdds(tier) {
+    var o = D.TIER_BATTLE_ODDS && D.TIER_BATTLE_ODDS[tier];
+    return typeof o === 'number' ? o : 0;
+  }
+  function needBattle(tier, dup) {
+    if (dup) return true;
+    var o = battleOdds(tier);
+    return o > 0 && Math.random() < o;
+  }
+
   function startCatch() {
     resetStage();
     hideDialog();
@@ -424,6 +450,7 @@
     var no = pad3(one.id);
     cur = { tier: tier, slot: slot, id: one.id, no: no, name: one.zh,
             types: one.types, dup: !!ownedSet()[no] };
+    cur.battle = needBattle(cur.tier, cur.dup); // 少见 50% / 稀有 100%：先打一场才能投球
     APP.store.markSeen(one.id); // 图鉴「已遇到」点亮
     sync();
 
@@ -437,41 +464,59 @@
     g.classList.add('is-rustle', 'is-active'); // 只有被选中的那片会动
     later(700, function () {
       g.classList.remove('is-rustle');
-      var w = $('wild'), sc = $('scene'), cx = g.offsetLeft, half = 95; // left 已是中心点（translateX(-50%)），不再加半宽
-      // 宝可梦（球会跟随 w.style.left）正对选中的躲藏点；宽名字条单独夹到安全区，避免被场景裁掉
-      var safe = Math.max(half + 4, Math.min(sc.clientWidth - half - 4, cx));
-      w.style.left = cx + 'px';
-      var fit = D.PM_FIT[no] || [40, 40, 0, 0, 40, 40], k = Math.min(120 / fit[4], 82 / fit[5]);
-      var im = w.querySelector('img');
-      im.style.width = (fit[0] * k) + 'px';
-      im.style.height = (fit[1] * k) + 'px';
-      im.style.left = ((120 - fit[4] * k) / 2 - fit[2] * k) + 'px';
-      im.style.top = ((82 - fit[5] * k) / 2 - fit[3] * k) + 'px';
-      im.src = D.GIF_BASE + no + '.gif';
-      var tag = w.querySelector('.b3-wild__tag');
-      tag.innerHTML = 'No.' + no + ' ' + esc(cur.name) + ' ' + badges(cur.types);
-      tag.style.position = 'relative';
-      tag.style.left = (safe - cx) + 'px';
-      w.classList.add('is-on');
+      var w = showWild(slot);
       later(700, function () {
-        if (cur.dup) battleStub(no, g, w);
+        if (cur.battle) battleChallenge(no, g, w);
         else throwBall(no, g, w);
       });
     });
   }
 
-  // 已拥有：不投球、不重复收录、不再补 🧩3（Q9 改成战斗胜利奖励），直接进 B4 对战
-  function battleStub(no, g, w) {
+  // 把野生宝可梦摆到指定躲藏点上（战斗打回来后要重摆一次）
+  function showWild(slot) {
+    var g = $('hide-' + slot);
+    g.classList.remove('is-still', 'is-rustle');
+    g.classList.add('is-active');   // 战斗回来后，被选中的那片仍是高亮的那片
+    var w = $('wild'), sc = $('scene'), cx = g.offsetLeft, half = 95; // left 已是中心点（translateX(-50%)），不再加半宽
+    // 宝可梦（球会跟随 w.style.left）正对选中的躲藏点；宽名字条单独夹到安全区，避免被场景裁掉
+    var safe = Math.max(half + 4, Math.min(sc.clientWidth - half - 4, cx));
+    w.style.left = cx + 'px';
+    var fit = D.PM_FIT[cur.no] || [40, 40, 0, 0, 40, 40], k = Math.min(120 / fit[4], 82 / fit[5]);
+    var im = w.querySelector('img');
+    im.style.width = (fit[0] * k) + 'px';
+    im.style.height = (fit[1] * k) + 'px';
+    im.style.left = ((120 - fit[4] * k) / 2 - fit[2] * k) + 'px';
+    im.style.top = ((82 - fit[5] * k) / 2 - fit[3] * k) + 'px';
+    im.src = D.GIF_BASE + cur.no + '.gif';
+    var tag = w.querySelector('.b3-wild__tag');
+    tag.innerHTML = 'No.' + cur.no + ' ' + esc(cur.name) + ' ' + badges(cur.types);
+    tag.style.position = 'relative';
+    tag.style.left = (safe - cx) + 'px';
+    w.className = 'b3-wild is-on';
+    return w;
+  }
+
+  // 战斗入口：已拥有（必定开战）或稀有度触发（少见 50% / 稀有 100%）。
+  // 战斗逻辑与「外出战斗 / 道馆挑战」同一套 B4 对战模块。
+  function battleChallenge(no, g, w) {
     APP.audio.playCry(cur.id);
     var foe = { dexNo: cur.id, name: cur.name, types: cur.types };
-    dialog('它发起挑战！',
-      'No.' + no + ' <b>' + esc(cur.name) + '</b> 已经捕捉，无法重复捕捉。<br>它向我们发起了战斗，请做好战斗准备。',
-      [{ text: '逃跑', fn: function () { closeRound(false); } },
+    var isDup = cur.dup;
+    dialog(isDup ? '它发起挑战！' : '战斗触发！',
+      isDup
+        ? 'No.' + no + ' <b>' + esc(cur.name) + '</b> 已经捕捉，无法重复捕捉。<br>它向我们发起了战斗，请做好战斗准备。'
+        : 'No.' + no + ' <b>' + esc(cur.name) + '</b> 挡在躲藏点前！<br>必须先打赢它，才能投出精灵球。',
+      [{ text: '逃跑', fn: function () {
+          if (isDup) { closeRound(); return; }
+          pendingCatch = null;
+          escapeDialog('run');
+        } },
        { text: '立即迎战', yes: true, fn: function () {
-         closeRound(false);       // 先收干净本轮捕捉演出与定时器
-         switchTab('battle');
-         if (APP.screens.battle) APP.screens.battle.start({ foe: foe, fromCatch: true });
-       } }]);
+          if (isDup) closeRound();                       // 老流程：进战斗前先收干净本轮捕捉演出
+          else pendingCatch = { no: no, slot: cur.slot, g: g }; // 打赢后接着投球
+          switchTab('battle');
+          if (APP.screens.battle) APP.screens.battle.start({ foe: foe, fromCatch: true });
+        } }]);
     sync();
     seq.busy = false;
     rootEl.classList.remove('is-busy');
@@ -479,11 +524,32 @@
     w.className = 'b3-wild is-on';
   }
 
-  // 战斗结算点「收工」时回到捕捉页（仅从「已拥有开战」进来的场次）
-  function backFromBattle() {
+  // 战斗结算后回到捕捉页：打赢才能继续投球；战败 / 逃跑 = 宝可梦跑掉
+  function backFromBattle(result) {
     if (!alive()) return;
     switchTab('catch');
-    closeRound(false);
+    var p = pendingCatch;
+    pendingCatch = null;
+    if (!p) { closeRound(); return; }        // 已拥有的老流程：打完就收工
+    if (result === 'win') {
+      var w = showWild(p.slot);
+      throwBall(p.no, p.g, w);
+      return;
+    }
+    escapeDialog(result === 'run' ? 'run' : 'lose');
+  }
+
+  // 战斗没赢：宝可梦跑掉
+  function escapeDialog(kind) {
+    var w = $('wild');
+    if (w) w.className = 'b3-wild';
+    dialog(kind === 'run' ? '你逃走了…' : '跑掉了…',
+      esc(cur.name) + (kind === 'run' ? ' 趁你不注意跑掉了。' : ' 战败后钻回躲藏点里了。'),
+      resultBtns());
+    sync();
+    seq.busy = false;
+    rootEl.classList.remove('is-busy');
+    if (APP.sync && APP.sync.criticalPush) APP.sync.criticalPush();
   }
 
   // ===== V5 完整捕捉动画：8 阶段时序（摆动固定 3 秒，小游戏在摆动窗口内） =====
@@ -535,8 +601,7 @@
       $('ball').className = 'b3-ball';
       w.className = 'b3-wild';
       g.classList.remove('is-rustle');
-      var btns = [{ text: '收工', fn: function () { closeRound(false); } },
-                  { text: '再探一次', yes: true, fn: function () { closeRound(true); } }];
+      var btns = resultBtns();
       if (win) {
         var r = APP.store.addPokemonByDex(cur.id, { via: 'wild' });
         var where = r && r.ok
@@ -697,7 +762,7 @@
         '<b>No.' + no + ' ' + esc(p.zh) + '</b><span>' + badges(p.types) + '<i>' + p.gen + '</i></span></div></div>';
     }
     h += '</div><div class="b3-dtext"><b>三个躲藏点共用这 59 只</b>，任何一处都可能遇到任何稀有度。' +
-      '稀有度只决定出现占比（70% / 22% / 8%）与投球成功率（80% / 55% / 35%），不绑定场景主题。' +
+      '稀有度决定出现占比（70% / 22% / 8%）、先触发战斗的概率（0% / 50% / 100%）与投球成功率（80% / 55% / 35%），不绑定场景主题。' +
       '名单来自定稿图鉴 64 格的初始形态去重；对战专用 51 只不会出现。</div>';
     $('drawerBody').innerHTML = h;
     $('dtabs').onclick = function (e) {
@@ -713,10 +778,12 @@
     if (kind === 'list') renderList('common');
     else $('drawerBody').innerHTML = '<div class="b3-dtext">' +
       '· 入场门禁：<b>平日每 2 天 1 次；周末 / 节假日每天 3 次</b>（捕捉与战斗各自独立计次）<br>' +
-      '· 每次探索消耗 <b>1 次探索机会</b>（即精灵球；在兑换中心用 <b><i class="shard shard--sm"></i>' + rate + ' 碎片</b>兑换）；遇到新宝可梦直接捕捉、遇到已拥有宝可梦触发对战<br>' +
+      '· 每次探索消耗 <b>1 次探索机会</b>（即精灵球；在兑换中心用 <b><i class="shard shard--sm"></i>' + rate + ' 碎片</b>兑换）；遇到已拥有的宝可梦<b>必定开战</b><br>' +
+      '· <b>稀有度决定会不会先打一场</b>：常见 0% / <b>少见 50%</b> / <b>稀有 100%</b>；触发战斗的必须<b>打赢才能投球</b>，战败（或你逃跑）它就跑掉；战斗与「外出战斗 / 道馆挑战」同一套打法<br>' +
       '· <b>点左下「投石问路」石头＝随机挑一处躲藏点；点任意一处躲藏点＝指定那处</b>，都只是「从哪处跳出来」的演出；遇到谁一律从 59 只共享池按稀有度抽：常见 70% / 少见 22% / 稀有 8%<br>' +
       '· 场景主题共 <b>7 种</b>（湿地 / 火山 / 竹林 / 沙漠 / 海滩 / 洞窟 / 雪山），每轮随机一个，<b>3 个躲藏点随机摆放</b>，纯视觉、不绑定稀有度；右下「<b>换场景</b>」路标只换主题，不消耗精灵球、不算入场<br>' +
       '· 稀有度越高越难抓：投球成功率 <b>80% / 55% / 35%</b>；只抓 59 个初始形态（前三世代，≤386）<br>' +
+      '· 捕捉结果弹窗：「<b>关闭</b>」回乐园页签；「<b>继续探索</b>」只换一个场景，<b>不会自动选点</b>，要自己点躲藏点才开始下一次探索<br>' +
       '· 两个入口都先弹消耗确认，选「立即探索」才扣；「再想想」不扣任何东西<br>' +
       '· <b>已拥有也会从躲藏点出现</b>：不能重复捕捉，会发起<b>对战</b>；打赢得经验 +30 与 <b><i class="shard shard--sm"></i>2 碎片</b>，战败有 <b><i class="shard shard--sm"></i>1 碎片</b>安慰，不再另发 3 碎片补偿；「逃跑」直接结束探索、不进战斗<br>' +
       '· 队伍满 5 只自动进仓库；投球失败不退精灵球与次数<br>' +
@@ -817,6 +884,11 @@
     logic: {
       state: function () { return { cur: cur, seq: seq, slotPick: slotPick, sceneTheme: sceneThemeKey }; },
       pickTier: pickTier,
+      battleOdds: battleOdds,
+      needBattle: needBattle,
+      showWild: showWild,
+      resultBtns: resultBtns,
+      escapeDialog: escapeDialog,
       decide: decide,
       gateText: gateText,
       gateHtml: gateHtml,

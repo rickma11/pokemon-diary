@@ -880,7 +880,8 @@
       return;
     }
     if (B && B.fromCatch) {
-      try { APP.screens.catch.logic.backFromBattle(); } catch (e) {}
+      // 把结算结果（win / lose / run）交给捕捉页：打赢才接着投球，战败 = 宝可梦跑掉
+      try { APP.screens.catch.logic.backFromBattle(B.result); } catch (e) {}
     }
     introBegin(); // 回 P0 野外对战区（战斗结束的家）
   }
