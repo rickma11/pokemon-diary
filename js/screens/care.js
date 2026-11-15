@@ -73,20 +73,22 @@ window.APP = window.APP || {};
     imgEl.src = backSrc(curDex);
   }
 
-  // 宝可梦自己的台词 → 头顶气泡（保留）
+  // 宝可梦自己的台词 → 头顶气泡（保留）；空文本表示「此刻不说话」，要顺手收掉上一次的气泡
   function showBubble(txt) {
-    if (!txt || !bubbleEl) return;
+    if (!bubbleEl) return;
+    if (!txt) { bubbleEl.classList.remove('show'); bubbleEl.textContent = ''; return; }
     bubbleEl.textContent = txt;
     bubbleEl.classList.remove('show');
     void bubbleEl.offsetWidth; // 强制重排以重启动画
     bubbleEl.classList.add('show');
   }
 
-  // —— GBA 风底部对话框 · 系统提示口吻 ——
-  // 空闲轮播 4 条（每条 7 秒）：今日训练进度 / 今日成长汇总 / 状态加成与玩耍 / 最近一次成长。
-  // 临时插话（果实不够、抚摸太快、新结算事件）优先，说完 4.2 秒自动回到轮播。
-  // 数据来自 state.trainingPlays / memoryPlays / careLog 与三维，不重复顶部状态条和羁绊卡的内容。
-  var SYS_DEFAULT = '用下面的按钮照顾它，或者直接点它摸摸看～';
+  // —— GBA 风底部对话框 · 系统 / 博士口吻 ——
+  // 口径 A（2026-11-15 确认）：这个框只讲事实、给下一步，句子完整、带主语，
+  // 不用日志符号（冒号 / 箭头 / 「·」）和后台词（生效中、获得、累计）；
+  // 宝可梦的情绪和撒娇只放在头顶气泡里，两套口吻不混。
+  // 空闲轮播每条 7 秒；临时插话优先，说完 4.2 秒自动回到轮播。
+  var SYS_DEFAULT = '点下面的按钮，就能喂食、抚摸、玩耍和训练了。';
   var ROTATE_MS = 7000;
   var GAME_LABELS = [
     { k: 'mul99', n: '99 乘法表' }, { k: 'idiom', n: '成语填空' },
@@ -100,24 +102,35 @@ window.APP = window.APP || {};
     for (var i = 0; i < list.length; i++) if (list[i] && list[i].date === t) return list[i];
     return null;
   }
+  // 临时插话：结算 / 升级 / 进化，都改成能读出口语的完整句，数值仍照实报
   function careText(e) {
     if (!e) return SYS_DEFAULT;
-    if (e.t === 'evo') return '进化成功：' + e.fromName + ' → ' + e.name;
-    if (e.t === 'level') return '升级啦：Lv.' + e.from + ' → Lv.' + e.level;
-    if (e.t === 'train') return e.game + '「' + e.grade + '」· +' + e.exp + ' 经验 +' + e.mood + ' 心情' +
-      (e.shard ? ' · +1 碎片' : '');
-    if (e.t === 'play') return e.title + ' 配对 ' + e.done + '/' + e.pairs +
-      (e.exp ? ' · +' + e.exp + ' 经验' : '') + (e.berry ? ' · +' + e.berry + ' 果实' : '') +
-      (e.shard ? ' · +1 碎片' : '');
-    if (e.t === 'exp') return '获得经验 +' + e.exp;
+    if (e.t === 'evo') return (e.fromName || '宝可梦') + '进化成' + (e.name || '新样子') + '了！';
+    if (e.t === 'level') return '宝可梦升到 Lv.' + e.level + '了，继续加油！';
+    if (e.t === 'train') {
+      var g = e.grade === '完美' ? '拿了完美' : (e.grade === '优秀' ? '表现优秀' : '也认真完成了');
+      return '这局「' + (e.game || '训练') + '」' + g + '！经验 +' + (e.exp || 0) + '、心情 +' + (e.mood || 0) +
+        (e.shard ? '，还多拿了 1 个碎片。' : '，继续加油！');
+    }
+    if (e.t === 'play') {
+      var r = (e.done >= e.pairs) ? '全部配对成功' : ('配上了 ' + e.done + ' 对');
+      return '「' + (e.title || '翻牌') + '」' + r + '！' +
+        (e.exp ? '经验 +' + e.exp + '，' : '') + (e.berry ? '树果 +' + e.berry + '，' : '') +
+        (e.shard ? '还多拿了 1 个碎片。' : '继续加油！');
+    }
+    if (e.t === 'exp') return '拿到 ' + e.exp + ' 点经验，离升级又近了一步呢。';
     return e.txt || SYS_DEFAULT;
   }
-  // 短式成长文案（宝可梦口吻）：升级 / 进化 / 训练 / 玩耍成绩
-  function careTextShort(e) {
-    if (e.t === 'evo') return '进化成 ' + (e.name || '') + ' 啦，样子变了！';
-    if (e.t === 'level') return '升到 Lv.' + (e.level || '') + ' 啦，越来越厉害！';
-    if (e.t === 'train') return '刚完成 ' + (e.game || '') + '「' + (e.grade || '') + '」，好棒！';
-    if (e.t === 'play') return '刚玩完 ' + (e.title || '') + '，配对 ' + (e.done || 0) + '/' + (e.pairs || 0) + '！';
+  // 轮播里的成长播报：整句自带主语，不再用「名字 + 短句」硬拼出「妙蛙种子 刚完成…」这种病句
+  function careTextShort(e, name) {
+    var nm = name || '宝可梦';
+    if (e.t === 'evo') return (e.fromName || nm) + '进化成' + (e.name || '新伙伴') + '了，样子也变了呢。';
+    if (e.t === 'level') return nm + '升到 Lv.' + (e.level || '') + '了，越来越厉害！';
+    if (e.t === 'train') {
+      var g = e.grade === '完美' ? '拿了完美' : (e.grade === '优秀' ? '表现优秀' : '也认真完成了');
+      return '刚才那局「' + (e.game || '训练') + '」' + g + '，真棒！';
+    }
+    if (e.t === 'play') return '刚才的「' + (e.title || '翻牌') + '」配上了 ' + (e.done || 0) + ' 对，太厉害了！';
     return '';
   }
   function buildFeed(p) {
@@ -127,30 +140,33 @@ window.APP = window.APP || {};
     var trainOpen = featureOpen('train');
     var playOpen = featureOpen('play');
 
-    // 训练（仅解锁后展示）
+    // 训练：今天还剩几项没做（读当天 trainingPlays.games，4 个小游戏各算 1 项）
     if (trainOpen) {
       var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
       var tn = 0; for (i = 0; i < GAME_LABELS.length; i++) if (games[GAME_LABELS[i].k]) tn++;
-      if (tn >= GAME_LABELS.length) out.push(name + ' 今天的训练都完成啦，明天再一起练吧！');
-      else out.push(name + ' 很想和你玩 训练 玩法，快来和它一起玩吧！');
-      if (p && p.stats && p.stats.food < 30) out.push(name + ' 有点饿了，先喂饱它才能一起训练哦～');
-      else if (p && p.perfectToday) out.push('元气满满生效中，今天训练经验 +10%！');
+      var tLeft = GAME_LABELS.length - tn;
+      if (tLeft <= 0) out.push('今天四项训练全做完了，明天再来挑战吧。');
+      else out.push('今天还剩 ' + tLeft + ' 项训练没做，点「训练」接着做吧。');
+      if (p && p.stats && p.stats.food < 30) out.push('宝可梦饿着肚子没法训练，先给它喂一颗树果吧。');
+      else if (p && p.perfectToday) out.push('今天宝可梦元气满满，训练能多拿 10% 经验呢。');
     }
 
-    // 玩耍（仅解锁后展示）
+    // 玩耍：拼音 / 英语各算 1 项
     if (playOpen) {
       var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
       var pd = 0; if (packs.pinyin) pd++; if (packs.english) pd++;
-      if (pd >= 2) out.push(name + ' 今天的玩耍都完成啦，玩得真开心！');
-      else out.push(name + ' 很想和你玩 玩耍 玩法，快来和它一起玩吧！');
+      var pLeft = 2 - pd;
+      if (pLeft <= 0) out.push('今天的拼音和英语翻牌都玩过了，明天再来吧。');
+      else out.push('今天还剩 ' + pLeft + ' 项翻牌没玩，点「玩耍」接着玩吧。');
     }
 
-    // 成长事件（升级 / 进化 / 训练 / 玩耍成绩）：宝可梦口吻播报
+    // 最近一次成长：整句播报，不再拼名字前缀
     var log = (s && s.careLog) || [];
     for (i = 0; i < log.length; i++) {
       var e = log[i];
       if (e.t === 'evo' || e.t === 'level' || e.t === 'train' || e.t === 'play') {
-        out.push(name + ' ' + careTextShort(e));
+        var line = careTextShort(e, name);
+        if (line) out.push(line);
         break;
       }
     }
@@ -329,12 +345,13 @@ window.APP = window.APP || {};
 
   // 待机台词：以宝可梦的「心情/状态」为主角（饿→想吃东西，不开心→想被摸，元气→满足…）
   function restBubble(p) {
-    if (!p || !p.stats) return '用下面的按钮照顾它～';
+    // 拿不到宝可梦时不硬塞台词：气泡是宝可梦在说话，没有它就不显示（口径 A）
+    if (!p || !p.stats) return '';
     if (p.stats.food < 30) return '肚子好饿…想吃点东西~';
     if (p.stats.mood < 30) return '有点不开心…想让你摸摸我~';
     if (p.stats.energy < 30) return '好累呀，想睡一觉~';
     if (p.perfectToday) return '今天元气满满！超幸福~';
-    var greet = ['今天也要一起玩哦~', '主人在吗？陪我嘛~', '嘻嘻，今天也要加油哦~'];
+    var greet = ['今天也要一起玩哦~', '在吗在吗？陪我一会儿嘛~', '嘻嘻，今天也要加油哦~'];
     return greet[Math.floor(Math.random() * greet.length)];
   }
 
@@ -362,11 +379,11 @@ window.APP = window.APP || {};
   // —— 互动反应（移植自已验收的 7c Demo，并接到真实状态）——
   function doFeed() { // 喂食：消耗 1 颗果实 → 饱食+30、心情+10、体力+10（加餐回力）
     var p = APP.store.activePokemon();
-    if (!p) { showSys('还没有主力宝可梦，去家长后台添加一只吧'); return; }
+    if (!p) { showSys('还没有主力宝可梦，请家长帮忙添加一只吧。'); return; }
     var s = APP.store.get();
     if (!s.wallet || s.wallet.berries <= 0) {
       clearSeq(); showFront(); setState('idle');
-      showSys('果实不够啦，去完成任务或完成翻牌配对获得～');
+      showSys('树果用完了，去做日程任务或者玩翻牌就能再拿到。');
       return;
     }
     s.wallet.berries -= 1;
@@ -478,7 +495,7 @@ window.APP = window.APP || {};
           // GBA 风对话框：系统提示走这里，宝可梦台词走头顶气泡
           '<div class="care-dlg" id="careDlg">' +
             '<span class="care-dlg__name"></span>' +
-            '<span class="care-dlg__txt">用下面的按钮照顾它，或者直接点它摸摸看～</span>' +
+            '<span class="care-dlg__txt">' + SYS_DEFAULT + '</span>' +
             '<span class="care-dlg__caret">▼</span>' +
           '</div>' +
         '</div>' +
@@ -561,7 +578,7 @@ window.APP = window.APP || {};
       '<div class="rules-li">喂食 / 玩耍：当天计 1 天（同一天重复不再累加）</div>' +
       '<div class="rules-li">抚摸：每次 +0.1 天，一天最多 +0.5 天</div>' +
       '<div class="rules-li">星级 = 照顾天数 + 元气天数 + 对战胜场：★ 7 天；★★ 14 / 7 / 3；★★★ 21 / 14 / 6；★★★★ 28 / 20 / 12；★★★★★ 30 / 30 / 20</div>' +
-      '<div class="rules-li">对战还没开放（胜场为 0），所以现在最高 2 星</div>' +
+      '<div class="rules-li">外出战斗在主力 Lv.7 时开放，赢一场就能多攒一个胜场</div>' +
     '</div>';
 
   function openRules() {
@@ -827,17 +844,17 @@ window.APP = window.APP || {};
     }
     // 墨水屏不做动画（与进化演出一致）：直接换 + 一句提示
     if (isInkMode()) {
-      showSys(fromName + ' 回到乐园，' + toName + ' 登场！');
+      showSys(fromName + '回到队伍，' + toName + '上场了！');
       swapTimers.push(setTimeout(function () { cleanup(); done(); }, 600));
       return;
     }
     if (stageEl) stageEl.classList.add('is-busy');
     setState('swap-out');
-    showSys(fromName + '，回来吧！');
+    showSys(fromName + '先回队伍里休息一下。');
     swapTimers.push(setTimeout(function () {
       if (ballEl) ballEl.className = 'care-swap-ball is-in';
       setState('swap-warp');
-      showSys('交换中…');
+      showSys('正在换伙伴…');
     }, 800));
     swapTimers.push(setTimeout(function () {
       if (ballEl) ballEl.className = 'care-swap-ball is-out';
@@ -845,7 +862,7 @@ window.APP = window.APP || {};
       curDex = toDex;
       if (imgEl) { imgEl.onerror = fallbackStill; imgEl.src = frontSrc(toDex); }
       setState('swap-in');
-      showSys('去吧，' + toName + '！');
+      showSys(toName + '上场了！');
     }, 2000));
     swapTimers.push(setTimeout(function () {
       cleanup();
@@ -856,7 +873,7 @@ window.APP = window.APP || {};
   function doSwitch(fromDex, toDex, fromName, toName) {
     playSwap(fromDex, toDex, fromName, toName, function () {
       var r = APP.store.setActiveByDex(toDex);
-      if (!r || !r.ok) { showSys((r && r.msg) || '切换失败'); return; }
+      if (!r || !r.ok) { showSys((r && r.msg) || '这只暂时换不了，再试一次吧。'); return; }
       APP.refresh();
     });
   }
@@ -868,10 +885,8 @@ window.APP = window.APP || {};
     return !APP.unlock || !APP.unlock.gate || APP.unlock.gate(id);
   }
   function lockTip(id) {
-    var info = APP.unlock && APP.unlock.tierInfo ? APP.unlock.tierInfo(id) : null;
-    var name = id === 'play' ? '玩耍' : '训练';
-    var msg = '🔒 ' + name + '尚未解锁';
-    if (info && info.req) msg += '：' + info.req;
+    // 还差几次打卡 / 还差几天由 unlock.js 按真实进度算，这里不再抄一份条件数
+    var msg = (APP.unlock && APP.unlock.lockMsg) ? APP.unlock.lockMsg(id) : '🔒 这个功能还没开放，再等等吧。';
     if (APP.unlock && APP.unlock.toast) APP.unlock.toast(msg);
   }
   function careBtn(act, icon, label, gateId) {
@@ -894,7 +909,8 @@ window.APP = window.APP || {};
       APP.store.activePokemon() && (function () {
         var p = APP.store.activePokemon(); APP.store.checkPerfect(p); renderPerfect(p); renderBond(p); updateSub(p);
       })();
-      showBubble('好开心！再来一次嘛~');
+      // 还没开始玩就别说「再来一次」：改成出发时的招呼
+      showBubble('走！去玩翻牌～');
       APP.openMemory();
     }
     else if (act === 'pet') doPet();

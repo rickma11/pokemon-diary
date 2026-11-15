@@ -2,7 +2,7 @@
 
 > **这份文件是给「另一个窗口的 AI 助手」直接读的**：自包含、不含任何令牌或凭据，读完即可开工，不需要用户再补充或修改内容。
 >
-> - 最近更新：2026-11-15 18:05（本轮 v78，详见第 8 节）
+> - 最近更新：2026-11-15 18:45（本轮 v79，详见第 9 节）
 > - 本地主交接文档：`F:/宝可梦日常打卡工具/docs/项目交接与继续指南.md`（含敏感配置，`docs/` 被 `.gitignore` 排除、**不进公开仓库**；其他窗口读它可能被安全策略拦下，所以请优先读本文件）
 > - 部署说明：`deploy-package/AI_DEPLOY_GUIDE.md`；完整使用/安全说明：`README.md`
 
@@ -16,12 +16,12 @@
 | 仓库 | `rickma11/pokemon-diary`（Public，分支 `main`） |
 | 线上地址 | https://rickma11.github.io/pokemon-diary/ |
 | 形态 | 纯静态单页 PWA，**无后端、无打包工具**；Node 只用于 `build.js` 和本地预览 |
-| 入口 | `index.html`（约 1.33 MB，**构建产物**，内联了全部 38 个 JS + 2 个 CSS） |
+| 入口 | `index.html`（约 1.37 MB，**构建产物**，内联了全部 38 个 JS + 2 个 CSS） |
 | 源码 | `js/`、`css/`、`index.src.html`、`sw.js`、`manifest.json` |
 | 构建 | `node build.js`（`index.src.html` → `index.html`）；`更新推送.bat` 会自动调用 |
-| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v78'` |
+| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v79'` |
 | 账号/存档 | 客户端 AES-GCM 加密后写进仓库 `accounts/` 与 `saves/`；App 运行时会往 `main` 写 `sync: saves/...` commit |
-| 当前线上 | 本轮 v78；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
+| 当前线上 | 本轮 v79；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
 | 当前本地 | 与本轮线上一致；`accounts/` + `saves/` 共 4 个文件原样保留 |
 
 > **commit 号说明**：远端 `main` 会因 App 运行时写档（`sync: saves/...`）和**纯文档提交**不断前进。上表的 `d84ef845` 指的是**代码版本**；判断「页面是不是这一版」，看 `index.html` 的 sha 或 Pages 构建，不要只比对 `main` 的最新 commit。纯文档提交不会改 `index.html`，页面完全不受影响。
@@ -154,4 +154,28 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 
 **自检记录**：改动 JS 全部 `node --check` 0 错；`node build.js` 内联 38 个 JS + 2 CSS；VM 模拟 6 组打卡分布验证双条件（含「一天刷满 5 条不解锁」）；入口条文案确认为「累计打卡 5 次 · 登录 3 天」。备份在 `backups/20261115-mobile-schedule-unlock/`。
 
-**未执行（等用户确认）**：养成页提示语的人性化改写，本轮只出清单，未改 `js/screens/care.js`。
+**第 8 节里「入口条文案为『累计打卡 5 次 · 登录 3 天』」已在 v79 改成「还差多少」，见下节。**
+
+---
+
+## 9. 2026-11-15 文案人性化轮（v79）
+
+**用户确认的口径 A（后续改文案一律沿用）**：底部「提示」框 = 系统 / 博士口吻，只讲事实、给下一步；头顶气泡 = 宝可梦第一人称，负责撒娇和情绪。两者不混。用户明确要求「描述不要生硬，要像正常人说话」，所以**完整句 + 带主语 + 不用日志符号（冒号 / 箭头 / `·`）和后台词（生效中、获得、累计）**，但也不是冷冰冰的机器播报。
+
+| # | 改动 | 文件 |
+|---|---|---|
+| 1 | 养成页「提示」框整批重写：`SYS_DEFAULT`、`careText()` 结算话术、`careTextShort()`（改为整句自带主语，不再 `name + 短句` 硬拼出「妙蛙种子 刚完成 99乘法表」这种主谓错位病句）、`buildFeed()` 轮播 | `js/screens/care.js` |
+| 2 | **「还剩 N 项」**：训练读当天 `trainingPlays.games`（4 个小游戏）、玩耍读 `memoryPlays.packs`（拼音 / 英语），显示「今天还剩 3 项训练没做 / 还剩 1 项翻牌没玩」 | `js/screens/care.js` |
+| 3 | **「还差几次 / 还差几天」**：`unlock.js` 新增 `remaining(id)` / `gapText(id)` / `lockMsg(id)`，复用 `evalState()` 的真实进度，不另建计数；未解锁轻提示、底部页签、探险子页签、日程页入口条、任务面板「下个目标」全部改成「再打卡 2 次、再来 2 天就能解锁了」；等级档显示「主力再升 6 级」 | `js/unlock.js`、`js/app.js`、`js/screens/catch.js` |
+| 4 | 用户点名两条：饿肚子那句**补主语** → `宝可梦饿着肚子没法训练，先给它喂一颗树果吧。`；`用下面的按钮照顾我吧～` **整句删掉**（拿不到宝可梦时气泡不显示，`showBubble('')` 会顺手收掉上次残留气泡） | `js/screens/care.js` |
+| 5 | 气泡/台词修正：`主人在吗？陪我嘛~` → `在吗在吗？陪我一会儿嘛~`；点「玩耍」瞬间 `好开心！再来一次嘛~` → `走！去玩翻牌～`（还没开始玩不能说「再来一次」） | `js/screens/care.js` |
+| 6 | 博士解锁讲解由「提纲短句」改回自然句（仍保持一行一句 + 虚线分隔的版式），去掉 `【】`、`→`、`：`；规则弹窗删掉过时的「对战还没开放…最高 2 星」，换成 `外出战斗在主力 Lv.7 时开放` | `js/unlock.js`、`js/screens/care.js` |
+| 7 | 抚摸提示：`今天抚摸计满 5 次啦` / `抚摸太快啦，约 N 分钟后` 改成口语；换宠演出 4 句命令口吻改陈述；`切换失败` → `这只暂时换不了，再试一次吧。` | `js/store.js`、`js/screens/care.js` |
+
+**两个必须记住的依赖**：
+- `js/store.js` 的 `petBond()` 冷却 `msg` **必须保留「抚摸太快」四字** —— `care.js` 用 `/抚摸太快/.test(r.msg)` 判断是不是冷却（连点第 2 次才播报），改词会静默失效。
+- `SYS_DEFAULT` 现在是 `render()` 里 HTML 初始文案和 `careText()` 兜底共用的常量，改一处即可，别再写两遍。
+
+**自检记录**：6 个改动 JS 全部 `node --check` 0 错；`node build.js` 内联 38 JS + 2 CSS / 1,365,539 字节；VM 探针插入 IIFE 内部取私有函数，验证 6 组打卡分布的 `gapText` / `lockMsg`、`buildFeed` 的「还剩 N 项」、饿肚子主语、结算主谓、8 个生硬词零残留，全部 PASS。备份在 `backups/20261115-care-copy-natural/`。
+
+**用户仍未确认的口径**：「登录 N 天」= 有打卡记录的不同日期数（第 8 节口径），不是打开 App 就算一天；若要改需新增独立登录日期记录。

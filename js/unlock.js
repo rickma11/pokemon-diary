@@ -98,13 +98,34 @@ window.APP = window.APP || {};
     ranch:    { checks: 7,  days: 3 },
     exchange: { checks: 10, days: 4 }
   };
+  // 「还差多少」统一在这里算，复用 evalState 的真实进度，不另建一套计数。
+  // 未解锁轻提示、日程页入口条、任务面板的「下个目标」都读它。
+  function remaining(id) {
+    var r = evalState();
+    var q = UNLOCK_REQ[id];
+    if (q) return { checks: Math.max(0, q.checks - r.tasksDone), days: Math.max(0, q.days - r.loginDays) };
+    var lv = (id === 'dex' || id === 'catch') ? 5 : (id === 'battle' ? 7 : (id === 'gym' ? 10 : 0));
+    return { levels: Math.max(0, lv - r.level) };
+  }
+  function gapText(id) {
+    var m = remaining(id), parts = [];
+    if (m.levels != null) return m.levels > 0 ? ('主力再升 ' + m.levels + ' 级') : '马上就好';
+    if (m.checks > 0) parts.push('再打卡 ' + m.checks + ' 次');
+    if (m.days > 0) parts.push('再来 ' + m.days + ' 天');
+    return parts.length ? parts.join('、') : '明天再来';
+  }
+  function lockMsg(id) {
+    var t = TALK[id];
+    var name = id === 'play' ? '玩耍' : (id === 'train' ? '训练' : (t ? t.name.split(' · ')[0] : '这个功能'));
+    return '🔒 ' + name + '还没开放，' + gapText(id) + '就能解锁了。';
+  }
   function reqText(id) {
     var q = UNLOCK_REQ[id];
-    return '累计打卡 ' + q.checks + ' 次 · 登录 ' + q.days + ' 天';
+    return '打卡 ' + q.checks + ' 次、坚持 ' + q.days + ' 天';
   }
   function openLine(id, name) {
     var q = UNLOCK_REQ[id];
-    return '打卡 ' + q.checks + ' 次 + 登录 ' + q.days + ' 天，' + name + '开放啦！';
+    return '你已经完成 ' + q.checks + ' 次打卡，还坚持了 ' + q.days + ' 天，' + name + '现在开放了！';
   }
   var TALK = {
     play: { name: '玩耍 · 记忆翻牌', req: reqText('play'), tier: 1 },
@@ -209,26 +230,26 @@ window.APP = window.APP || {};
   // 讲解文案：一行一个重点、行间留分隔，不再塞成一整段。
   // 首行讲「解锁了什么」，后面只留孩子真正需要知道的两件事。
   function buildDoc(id) {
-    if (id === 'play') return { f: '解锁：玩耍 · 记忆翻牌',
-      t: [openLine('play', '【玩耍】'), '记忆翻牌：拼音 / 英语每天各 1 次', '全部配对 → 经验、果实，还有机会得碎片'],
+    if (id === 'play') return { f: '玩耍开放啦！',
+      t: [openLine('play', '玩耍'), '点「玩耍」就能玩记忆翻牌，拼音和英语每天各一次。', '全部配对能拿经验和树果，运气好还有碎片呢。'],
       go: '#/care', goLabel: '去玩耍' };
-    if (id === 'train') return { f: '解锁：训练',
-      t: [openLine('train', '【训练】'), '四种小游戏：乘法表 / 成语 / 井字棋 / 猜拳，每天各 1 次', '「完美」经验更多；饱腹低于 30 不能训练'],
+    if (id === 'train') return { f: '训练开放啦！',
+      t: [openLine('train', '训练'), '里面有乘法表、成语填空、井字棋和猜拳，每天各能玩一次。', '拿到「完美」经验更多；宝可梦饿着肚子时练不了，记得先喂食。'],
       go: '#/care', goLabel: '去训练' };
-    if (id === 'ranch') return { f: '解锁：宝可梦乐园',
-      t: [openLine('ranch', '【乐园】'), '给伙伴安排帮手、陪它玩耍', '每天结算羁绊值'],
+    if (id === 'ranch') return { f: '宝可梦乐园开放啦！',
+      t: [openLine('ranch', '乐园'), '可以给伙伴安排帮手，也能陪它一起玩。', '每天还会结算一次羁绊值呢。'],
       go: '#/ranch', goLabel: '去乐园看看' };
-    if (id === 'exchange') return { f: '解锁：兑换中心',
-      t: [openLine('exchange', '【兑换中心】'), '碎片可换精灵球、战斗券', '完成任务就能攒碎片'],
+    if (id === 'exchange') return { f: '兑换中心开放啦！',
+      t: [openLine('exchange', '兑换中心'), '攒下的碎片能换精灵球和战斗券。', '每天完成日程任务就能慢慢攒起来。'],
       go: '#/exchange', goLabel: '去兑换中心' };
-    if (id === 'dex') return { f: '解锁：图鉴 + 野外探险',
-      t: ['主力达到 Lv.5，【图鉴】和【野外捕捉】开放啦！', '先去图鉴认识更多宝可梦', '再出发去野外收服新伙伴'],
+    if (id === 'dex') return { f: '图鉴和野外探险开放啦！',
+      t: ['主力升到 Lv.5 了，图鉴和野外捕捉都开放了。', '先去图鉴认识更多宝可梦吧。', '再出发去野外收服新伙伴。'],
       go: '#/dex', goLabel: '去看看图鉴' };
-    if (id === 'battle') return { f: '解锁：外出战斗',
-      t: ['主力达到 Lv.7，【外出战斗】开放啦！', '在探险页切到「外出战斗」页签', '赢了能拿奖励和经验'],
+    if (id === 'battle') return { f: '外出战斗开放啦！',
+      t: ['主力升到 Lv.7 了，可以带伙伴去和别的训练师对战了。', '在探险页切到「外出战斗」就能找到。', '赢了能拿奖励和经验呢。'],
       go: '#/catch', goLabel: '去外出战斗' };
-    if (id === 'gym') return { f: '解锁：道馆挑战',
-      t: ['主力突破 Lv.10，【道馆挑战】开放啦！', '在探险页切到「道馆挑战」页签', '赢徽章、攒心愿星'],
+    if (id === 'gym') return { f: '道馆挑战开放啦！',
+      t: ['主力突破 Lv.10 了，道馆在等你挑战。', '在探险页切到「道馆挑战」就能找到。', '赢了可以拿徽章，还能攒心愿星。'],
       go: '#/catch', goLabel: '去挑战道馆' };
     return null;
   }
@@ -423,8 +444,8 @@ window.APP = window.APP || {};
   function checkTasks(id, r) {
     var q = UNLOCK_REQ[id];
     return [
-      { t: '累计打卡 ' + q.checks + ' 次', ok: r.tasksDone >= q.checks, hint: Math.min(r.tasksDone, q.checks) + '/' + q.checks },
-      { t: '累计登录 ' + q.days + ' 天', ok: r.loginDays >= q.days, hint: Math.min(r.loginDays, q.days) + '/' + q.days }
+      { t: '完成 ' + q.checks + ' 次打卡', ok: r.tasksDone >= q.checks, hint: Math.min(r.tasksDone, q.checks) + '/' + q.checks },
+      { t: '打卡天数满 ' + q.days + ' 天', ok: r.loginDays >= q.days, hint: Math.min(r.loginDays, q.days) + '/' + q.days }
     ];
   }
 
@@ -491,7 +512,7 @@ window.APP = window.APP || {};
   // 日程页进度卡内的常驻入口条
   function entryHtml() {
     var d = panelData();
-    var next = d.info ? ('下个目标：' + d.info.name + ' · ' + d.info.req) : '全部功能已解锁，继续收集徽章吧！';
+    var next = d.info ? ('下个目标：' + d.info.name + ' · ' + gapText(d.info.id)) : '全部功能都解锁了，继续去收集徽章吧！';
     return '<button type="button" class="unlock-entry" data-act="open-unlock-tasks">' +
       '<span class="unlock-entry__i">🗺️</span>' +
       '<span class="unlock-entry__m">' +
@@ -567,8 +588,8 @@ window.APP = window.APP || {};
     for (var i = 0; i < TIERS.length; i++) items += taskItemHtml(TIERS[i], d);
     var pct = Math.round(d.done / d.total * 100);
     var nextLine = d.info
-      ? ('下个目标：' + esc(d.info.name) + ' · ' + esc(d.info.req))
-      : '全部功能已解锁，继续收集徽章吧！';
+      ? ('下个目标：' + esc(d.info.name) + ' · ' + esc(gapText(d.info.id)) + ' 就解锁了')
+      : '全部功能都解锁了，继续去收集徽章吧！';
     el.innerHTML =
       '<div class="tk-bg" data-tk-close="1"></div>' +
       '<div class="tk-modal" role="dialog" aria-label="解锁任务">' +
@@ -577,7 +598,7 @@ window.APP = window.APP || {};
           '<button type="button" class="tk-x" data-tk-close="1" aria-label="关闭">×</button>' +
           '<div class="tk-sum">冒险进度 ' + d.done + ' / ' + d.total + ' 个功能已解锁</div>' +
           '<div class="tk-bar"><i style="width:' + pct + '%"></i></div>' +
-          '<div class="tk-count-line">累计打卡 <b class="tk-hl">' + d.r.tasksDone + '</b> 次 · 登录 <b class="tk-hl">' + d.r.loginDays + '</b> 天（完成 1 条任务算 1 次打卡，当天有打卡即算登录 1 天）</div>' +
+          '<div class="tk-count-line">到现在一共打卡 <b class="tk-hl">' + d.r.tasksDone + '</b> 次、来了 <b class="tk-hl">' + d.r.loginDays + '</b> 天。每完成 1 条任务算 1 次打卡，当天打过卡就算来了 1 天。</div>' +
           '<div class="tk-next">' + nextLine + '</div>' +
         '</div>' +
         '<div class="tk-body">' + items + '</div>' +
@@ -641,6 +662,8 @@ window.APP = window.APP || {};
     isGated: isGated,
     tierInfo: tierInfo,
     evalState: evalState,
+    gapText: gapText,
+    lockMsg: lockMsg,
     entryHtml: entryHtml,
     openTasks: openTasks,
     closeTasks: closeTasks,

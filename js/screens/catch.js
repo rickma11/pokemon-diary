@@ -755,7 +755,8 @@
       var nm = tabBtn.getAttribute('data-b3-tab');
       // 页签门禁：只拦用户点击，捕捉遭遇战内部的 switchTab('battle') 不受影响
       if (subTabLocked(nm)) {
-        toast('🔒 ' + SUBTAB_REQ[nm].name + '尚未解锁：' + SUBTAB_REQ[nm].req);
+        var gap = (APP.unlock && APP.unlock.gapText) ? APP.unlock.gapText(nm) : '';
+        toast('🔒 ' + SUBTAB_REQ[nm].name + '还没开放，' + (gap || '再等等') + '就能解锁了。');
         return;
       }
       switchTab(nm);

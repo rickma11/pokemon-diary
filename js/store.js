@@ -1884,10 +1884,11 @@ window.APP = window.APP || {};
       p.petCountToday = 0;
     }
 
-    if (petCount >= 5) return { ok: false, msg: '今天抚摸计满 5 次啦，明天再来～' };
+    if (petCount >= 5) return { ok: false, msg: '今天已经摸够 5 次了，明天再来摸吧。' };
     if (now - lastAt < 5 * 60 * 1000) {
       var left = Math.ceil((5 * 60 * 1000 - (now - lastAt)) / 60000);
-      return { ok: false, msg: '抚摸太快啦，约 ' + left + ' 分钟后再摸摸它～' };
+      // 保留「抚摸太快」四字：care.js 靠它识别冷却提示，连点两次才播报
+      return { ok: false, msg: '抚摸太快了，再等 ' + left + ' 分钟就能摸它了。' };
     }
     if (p.bondedToday) return { ok: true, counted: false, msg: '今天已经陪过我啦，不过还是喜欢被摸摸~' };
 

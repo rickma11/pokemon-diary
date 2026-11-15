@@ -330,9 +330,8 @@
     var id = btn.getAttribute('data-tab');
     if (id === currentTab()) return;
     if (tabLocked(id)) {
-      var info = APP.unlock && APP.unlock.tierInfo ? APP.unlock.tierInfo(id) : null;
-      var msg = '🔒 ' + tabLabel(id) + ' 尚未解锁';
-      if (info && info.req) msg += '：' + info.req;
+      var gap = (APP.unlock && APP.unlock.gapText) ? APP.unlock.gapText(id) : '';
+      var msg = '🔒 ' + tabLabel(id) + '还没开放，' + (gap || '再等等') + '就能解锁了。';
       if (APP.unlock && APP.unlock.toast) APP.unlock.toast(msg);
       return;
     }
