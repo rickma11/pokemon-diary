@@ -112,48 +112,50 @@ window.APP = window.APP || {};
     if (e.t === 'exp') return '获得经验 +' + e.exp;
     return e.txt || SYS_DEFAULT;
   }
+  // 短式成长文案（宝可梦口吻）：升级 / 进化 / 训练 / 玩耍成绩
+  function careTextShort(e) {
+    if (e.t === 'evo') return '进化成 ' + (e.name || '') + ' 啦，样子变了！';
+    if (e.t === 'level') return '升到 Lv.' + (e.level || '') + ' 啦，越来越厉害！';
+    if (e.t === 'train') return '刚完成 ' + (e.game || '') + '「' + (e.grade || '') + '」，好棒！';
+    if (e.t === 'play') return '刚玩完 ' + (e.title || '') + '，配对 ' + (e.done || 0) + '/' + (e.pairs || 0) + '！';
+    return '';
+  }
   function buildFeed(p) {
-    var s = APP.store.get(), t = APP.todayStr(), out = [], i;
-    var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
-    var n = 0, left = [];
-    for (i = 0; i < GAME_LABELS.length; i++) {
-      if (games[GAME_LABELS[i].k]) n++; else left.push(GAME_LABELS[i].n);
-    }
-    out.push(n === 0 ? '今日训练 0/4 · 四个玩法都可以玩' :
-      (n >= 4 ? '今日训练 4/4 · 全部完成' : '今日训练 ' + n + '/4 · 还剩' + left.join('、')));
+    var s = APP.store.get(), out = [], i;
+    var name = p ? nameOf(p) : '';
+    // 玩法是否解锁：未解锁（带锁）则不在提示里邀请该玩法
+    var trainOpen = featureOpen('train');
+    var playOpen = featureOpen('play');
 
-    var log = (s && s.careLog) || [], exp = 0, perfect = 0, shards = 0, trains = 0;
+    // 训练（仅解锁后展示）
+    if (trainOpen) {
+      var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
+      var tn = 0; for (i = 0; i < GAME_LABELS.length; i++) if (games[GAME_LABELS[i].k]) tn++;
+      if (tn >= GAME_LABELS.length) out.push(name + ' 今天的训练都完成啦，明天再一起练吧！');
+      else out.push(name + ' 很想和你玩 训练 玩法，快来和它一起玩吧！');
+      if (p && p.stats && p.stats.food < 30) out.push(name + ' 有点饿了，先喂饱它才能一起训练哦～');
+      else if (p && p.perfectToday) out.push('元气满满生效中，今天训练经验 +10%！');
+    }
+
+    // 玩耍（仅解锁后展示）
+    if (playOpen) {
+      var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
+      var pd = 0; if (packs.pinyin) pd++; if (packs.english) pd++;
+      if (pd >= 2) out.push(name + ' 今天的玩耍都完成啦，玩得真开心！');
+      else out.push(name + ' 很想和你玩 玩耍 玩法，快来和它一起玩吧！');
+    }
+
+    // 成长事件（升级 / 进化 / 训练 / 玩耍成绩）：宝可梦口吻播报
+    var log = (s && s.careLog) || [];
     for (i = 0; i < log.length; i++) {
       var e = log[i];
-      if (e.d !== t) continue;
-      if (e.t === 'train') { trains++; exp += e.exp || 0; shards += e.shard || 0; if (e.grade === '完美') perfect++; }
-      else if (e.t === 'play' || e.t === 'exp') { exp += e.exp || 0; shards += e.shard || 0; }
-    }
-    out.push(trains || exp ?
-      '今日训练 ' + trains + ' 局 · 共 +' + exp + ' 经验' + (perfect ? ' · ' + perfect + ' 次完美' : '') +
-        (shards ? ' · +' + shards + ' 碎片' : '') :
-      '训练每局约 3 分钟 · 消耗体力 −10 / 饱腹 −10');
-
-    var food = p && p.stats ? p.stats.food : 0;
-    if (food < 30) out.push('饱腹 ' + food + ' 低于 30 · 先喂食才能训练');
-    else if (p && p.perfectToday) out.push('元气满满生效中 · 今日经验 +10%');
-    else {
-      var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
-      var lv = (mem.levels && mem.levels.english) || '';
-      var lvName = lv === 'easy' ? '简单' : (lv === 'hard' ? '困难' : (lv === 'normal' ? '中等' : ''));
-      var done = [];
-      if (packs.pinyin) done.push('拼音已玩');
-      if (packs.english) done.push('英语已玩' + (lvName ? '（' + lvName + '）' : ''));
-      out.push(done.length ? '今日玩耍：' + done.join(' · ') : '今日玩耍 0/2 · 拼音、英语各 1 次');
-    }
-
-    var recent = null;
-    for (i = 0; i < log.length; i++) {
-      if (log[i].t === 'evo' || log[i].t === 'level' || log[i].t === 'train' || log[i].t === 'play') {
-        recent = log[i]; break;
+      if (e.t === 'evo' || e.t === 'level' || e.t === 'train' || e.t === 'play') {
+        out.push(name + ' ' + careTextShort(e));
+        break;
       }
     }
-    out.push(recent ? '最近：' + careText(recent) : SYS_DEFAULT);
+
+    if (!out.length) out.push(SYS_DEFAULT);
     return out;
   }
   function showFeed() {
@@ -455,10 +457,6 @@ window.APP = window.APP || {};
           '<span class="gba-shell__led"></span><span class="gba-shell__brand">POWER</span>' +
         '</div>' +
         '<div class="gba-screen">' +
-          // 屏幕左上角：掌机按键质感的「更换」按钮（精灵球图标 + 文字）→ 打开宝可梦中心
-          '<button type="button" class="gba-swap-btn" data-act="switch">' + ballSvg('gba-swap-btn__ball') + '<span>更换</span></button>' +
-          // 屏幕右上角：同款掌机按键质感的「设置」按钮（齿轮图标 + 文字）→ 打开声音/庆祝动画开关
-          '<button type="button" class="gba-set-btn" data-act="careset" aria-label="设置">' + gearSvg() + '<span>设置</span></button>' +
           '<div class="care-stage state-idle" id="careStage">' +
             '<div class="care-bubble" id="careBubble"></div>' +
             '<div class="care-creature-wrap" id="careCreature">' +
@@ -471,6 +469,11 @@ window.APP = window.APP || {};
             // 交换演出层（默认隐藏，playSwap 时按段切换 class）
             '<div class="care-swap-ball" id="careSwapBall">' + ballSvg('') + '</div>' +
             '<div class="care-swap-flash" id="careSwapFlash"></div>' +
+          '</div>' +
+          // 屏幕内工具条：更换 / 设置 移到对话框上方（data-act 不变，仍由 onButton 接管）
+          '<div class="gba-screen__tools">' +
+            '<button type="button" class="gba-swap-btn" data-act="switch">' + ballSvg('gba-swap-btn__ball') + '<span>更换</span></button>' +
+            '<button type="button" class="gba-set-btn" data-act="careset" aria-label="设置">' + gearSvg() + '<span>设置</span></button>' +
           '</div>' +
           // GBA 风对话框：系统提示走这里，宝可梦台词走头顶气泡
           '<div class="care-dlg" id="careDlg">' +

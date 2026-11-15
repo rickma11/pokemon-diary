@@ -342,6 +342,22 @@ body {
   background: linear-gradient(#F5E7C4, #E8D3A6);
 }
 
+/* 屏幕内工具条：更换 / 设置 从屏幕顶角下移到底部对话框上方（data-act 不变）。
+   限定 .gba-screen__tools 作用域，不影响牧场页等其它 GBA 屏的按钮定位。 */
+.gba-screen__tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 2px 4px;
+}
+.gba-screen__tools .gba-swap-btn,
+.gba-screen__tools .gba-set-btn {
+  position: static;
+  top: auto; left: auto; right: auto;
+  z-index: auto;
+}
+
 /*  stage 不再是独立卡片，作为屏幕内容区：留足 padding，动画不再被屏幕边缘裁切。
     高度在原来基础上放大约 130%（宝可梦尺寸不变），让跳跃/下沉等动作始终留在框内 */
 .care-stage {
