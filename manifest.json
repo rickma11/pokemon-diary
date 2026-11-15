@@ -1,6 +1,6 @@
 {
-  "name": "宝可梦训练师成长日记",
-  "short_name": "成长日记",
+  "name": "宝可梦训练日记",
+  "short_name": "宝可梦训练日记",
   "description": "小学生日常打卡工具：作业、阅读、运动、家务、睡眠",
   "lang": "zh-CN",
   "start_url": "./index.html",

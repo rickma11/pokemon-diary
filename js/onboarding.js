@@ -51,18 +51,42 @@ window.APP = window.APP || {};
     return null;
   }
 
-  // 皮卡丘固定 + 随机 3 个世代各 1 只御三家
+  var PIKA_CHANCE = 0.8;  // 每批 4 只里，皮卡丘出现的概率（不再固定出现）
+  var REROLL_MAX = 3;     // 除首次外，还能「换一批」的次数
+
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function starterInfo(s) {
+    var info = APP.evo && APP.evo.get ? APP.evo.get(s.d) : null;
+    return { d: s.d, t: s.t, name: info ? info.name : ('#' + s.d) };
+  }
+
+  // 三个世代各抽 1 只御三家保证多样性；第 4 只有 80% 概率是皮卡丘，
+  // 剩下 20% 从其余御三里补 1 只。最后打乱位置，皮卡丘不再固定在第一格。
   function pickFour() {
     var gens = STARTERS.slice();
-    for (var i = gens.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = gens[i]; gens[i] = gens[j]; gens[j] = t; }
-    var chosen = [{ d: 25, t: '电', fixed: true, name: '皮卡丘' }];
-    for (var k = 0; k < 3; k++) {
-      var arr = gens[k].list;
-      var s = arr[Math.floor(Math.random() * 3)];
-      var info = APP.evo && APP.evo.get ? APP.evo.get(s.d) : null;
-      chosen.push({ d: s.d, t: s.t, fixed: false, name: info ? info.name : ('#' + s.d) });
+    shuffle(gens);
+    var chosen = [];
+    var rest = [];
+    for (var k = 0; k < gens.length; k++) {
+      var arr = gens[k].list.slice();
+      shuffle(arr);
+      chosen.push(starterInfo(arr[0]));
+      rest.push(arr[1], arr[2]);
     }
-    return chosen;
+    if (Math.random() < PIKA_CHANCE) {
+      chosen.push({ d: 25, t: '电', name: '皮卡丘' });
+    } else {
+      shuffle(rest);
+      chosen.push(starterInfo(rest[0]));
+    }
+    return shuffle(chosen);
   }
 
   function overlayEl() {
@@ -164,22 +188,41 @@ window.APP = window.APP || {};
 
   function pickPet() {
     var four = pickFour();
-    var cards = four.map(function (p, i) {
-      var cls = p.t === '草' ? 'b-grass' : p.t === '火' ? 'b-fire' : p.t === '水' ? 'b-water' : 'b-elec';
-      return '<button type="button" class="ob-pet' + (i === 0 ? ' is-sel' : '') + '" data-ob-pet="' + i + '">' +
-        '<img src="assets/pokemon/' + pad(p.d) + '.png" alt="">' +
-        '<b>' + esc(p.name) + '</b>' +
-        '<span class="ob-badge ' + cls + '">' + (p.fixed ? '固定 · 电' : p.t) + '</span>' +
-        '</button>';
-    }).join('');
-    var el = overlayEl();
-    el.innerHTML = OB_MODAL({
-      title: '选择你的第一支宝可梦！',
-      body: '<div class="ob-petgrid">' + cards + '</div>',
-      ok: '下一步 →'
-    });
+    var rerolls = REROLL_MAX;
     var sel = 0;
-    el.onclick = function (e) {
+    var el = null;
+
+    function paint() {
+      var cards = four.map(function (p, i) {
+        var cls = p.t === '草' ? 'b-grass' : p.t === '火' ? 'b-fire' : p.t === '水' ? 'b-water' : 'b-elec';
+        return '<button type="button" class="ob-pet' + (i === sel ? ' is-sel' : '') + '" data-ob-pet="' + i + '">' +
+          '<img src="assets/pokemon/' + pad(p.d) + '.png" alt="">' +
+          '<b>' + esc(p.name) + '</b>' +
+          '<span class="ob-badge ' + cls + '">' + esc(p.t) + '</span>' +
+          '</button>';
+      }).join('');
+      var reroll = '<button type="button" class="btn btn--sm btn--block" data-ob-reroll="1" ' +
+        'style="margin:12px 0 2px"' + (rerolls <= 0 ? ' disabled' : '') + '>🎲 换一批' +
+        (rerolls > 0 ? '（还能换 ' + rerolls + ' 次）' : '（次数已用完）') + '</button>';
+      el = overlayEl();
+      el.innerHTML = OB_MODAL({
+        title: '选择你的第一支宝可梦！',
+        body: '<div class="ob-petgrid">' + cards + '</div>' + reroll,
+        ok: '下一步 →'
+      });
+      el.onclick = onClick;
+    }
+
+    function onClick(e) {
+      // 换一批：重新抽 4 只（皮卡丘仍按 80% 概率出现），次数用完按钮自动禁用
+      if (findAttr(e.target, 'data-ob-reroll')) {
+        if (rerolls <= 0) return;
+        rerolls--;
+        four = pickFour();
+        sel = 0;
+        paint();
+        return;
+      }
       var cp = findAttr(e.target, 'data-ob-pet');
       if (cp) {
         sel = parseInt(cp.val, 10);
@@ -200,7 +243,9 @@ window.APP = window.APP || {};
         APP.store.setOnboarding({ firstPokemon: p.name, onboarded: false, character: null, welcomed: false });
         closeOb(); pickChar();
       }
-    };
+    }
+
+    paint();
   }
 
   function pickChar() {

@@ -19,6 +19,16 @@ self.addEventListener('activate', function (event) {
   );
 });
 
+// 缓存兜底：优先命中所请求的文件，完全没缓存时退回首页壳。
+function fromCache(request) {
+  return caches.match(request).then(function (cached) {
+    if (cached) return cached;
+    return caches.match('index.html').then(function (shell) {
+      return shell || new Response('离线', { status: 503 });
+    });
+  });
+}
+
 self.addEventListener('fetch', function (event) {
   var request = event.request;
   if (request.method !== 'GET') return;
@@ -34,18 +44,23 @@ self.addEventListener('fetch', function (event) {
     /\.(html|js|css|json)$/.test(url.pathname);
 
   if (isCode) {
-    event.respondWith(
-      fetch(request).then(function (response) {
+    // 国内访问 github.io 常有几秒抖动：代码文件先等网络 900ms，
+    // 超时就直接用缓存秒开，网络请求继续在后台把新版写进缓存（下次生效）。
+    // 比原来的「纯 network-first」少等一整串请求，又比纯 cache-first 更容易拿到修复版。
+    var net = fetch(request).then(function (response) {
+      if (response && response.ok) {
         var copy = response.clone();
-        caches.open(CACHE).then(function (cache) {
-          cache.put(request, copy);
-        });
-        return response;
-      })['catch'](function () {
-        return caches.match(request).then(function (cached) {
-          return cached || caches.match('index.html');
-        });
-      })
+        caches.open(CACHE).then(function (cache) { cache.put(request, copy); });
+      }
+      return response;
+    })['catch'](function () { return null; });
+    var slow = new Promise(function (resolve) {
+      setTimeout(function () { resolve(null); }, 900);
+    });
+    event.respondWith(
+      Promise.race([net, slow]).then(function (response) {
+        return response || fromCache(request);
+      })['catch'](function () { return fromCache(request); })
     );
     return;
   }

@@ -9,12 +9,26 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="成长日记">
+  <meta name="apple-mobile-web-app-title" content="宝可梦训练日记">
+  <meta name="application-name" content="宝可梦训练日记">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="assets/icons/icon-192.png">
 <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/gba.css">
+<style>
+  /* 首屏骨架：不等 30+ 个脚本全部下载完才有内容，避免长时间纯白 */
+  #bootSplash{box-sizing:border-box;min-height:62vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#5a4632}
+  #bootSplash img{width:88px;height:88px;object-fit:contain}
+  #bootSplash b{font-size:15px;letter-spacing:.5px}
+  #bootSplash small{font-size:12px;opacity:.62}
+  #bootSplash .boot-dots{display:flex;gap:6px;margin-top:2px}
+  #bootSplash .boot-dots i{width:7px;height:7px;border-radius:50%;background:#e0542f;opacity:.35;animation:bootPulse 1.1s ease-in-out infinite}
+  #bootSplash .boot-dots i:nth-child(2){animation-delay:.18s}
+  #bootSplash .boot-dots i:nth-child(3){animation-delay:.36s}
+  @keyframes bootPulse{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-5px)}}
+  @media (prefers-reduced-motion:reduce){#bootSplash .boot-dots i{animation:none}}
+</style>
 </head>
 <body>
 
@@ -44,45 +58,53 @@
   <span class="press-hint__bar"><i id="pressBar"></i></span>
 </div>
 
-<main class="screen" id="screen"></main>
+<main class="screen" id="screen">
+  <div id="bootSplash" role="status" aria-live="polite">
+    <img src="assets/pokemon/025.png" alt="">
+    <b>正在打开训练日记…</b>
+    <small>首次加载资源会稍慢一点，请稍等</small>
+    <span class="boot-dots"><i></i><i></i><i></i></span>
+  </div>
+</main>
 
 <div class="statusbar" id="statusbar"></div>
 
 <nav class="tabbar" id="tabbar" role="tablist" aria-label="主导航"></nav>
 
-<script src="js/models.js"></script>
-<script src="js/data/dex.js"></script>
-<script src="js/data/evolution.js"></script>
-<script src="js/store.js"></script>
-<script src="js/github.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/sync.js"></script>
-<script src="js/photos.js"></script>
-<script src="js/statusbar.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/audio.js"></script>
-<script src="js/events.js"></script>
-<script src="js/data/words.js"></script>
-<script src="js/bank-import.js"></script>
-<script src="js/screens/schedule.js"></script>
-<script src="js/screens/parent.js"></script>
-<script src="js/screens/mine.js"></script>
-<script src="js/screens/login.js"></script>
-<script src="js/screens/care.js"></script>
-<script src="js/screens/memory.js"></script>
-<script src="js/screens/training.js"></script>
-<script src="assets/pmd-sliced/manifest.js"></script>
-<script src="js/screens/ranch.js"></script>
-<script src="js/screens/exchange.js"></script>
-<script src="js/screens/dex.js"></script>
-<script src="js/data/catch-pools.js"></script>
-<script src="js/data/battle-moves.js"></script>
-<script src="js/data/gym-data.js"></script>
-  <script src="js/screens/battle.js"></script>
-  <script src="js/screens/gym.js"></script>
-  <script src="js/screens/catch.js"></script>
-  <script src="js/unlock.js"></script>
-  <script src="js/onboarding.js"></script>
-  <script src="js/app.js"></script>
+<!-- defer：保持原有执行顺序，但让浏览器并行预取全部脚本，不再逐个阻塞页面解析 -->
+<script defer src="js/models.js"></script>
+<script defer src="js/data/dex.js"></script>
+<script defer src="js/data/evolution.js"></script>
+<script defer src="js/store.js"></script>
+<script defer src="js/github.js"></script>
+<script defer src="js/auth.js"></script>
+<script defer src="js/sync.js"></script>
+<script defer src="js/photos.js"></script>
+<script defer src="js/statusbar.js"></script>
+<script defer src="js/ui.js"></script>
+<script defer src="js/audio.js"></script>
+<script defer src="js/events.js"></script>
+<script defer src="js/data/words.js"></script>
+<script defer src="js/bank-import.js"></script>
+<script defer src="js/screens/schedule.js"></script>
+<script defer src="js/screens/parent.js"></script>
+<script defer src="js/screens/mine.js"></script>
+<script defer src="js/screens/login.js"></script>
+<script defer src="js/screens/care.js"></script>
+<script defer src="js/screens/memory.js"></script>
+<script defer src="js/screens/training.js"></script>
+<script defer src="assets/pmd-sliced/manifest.js"></script>
+<script defer src="js/screens/ranch.js"></script>
+<script defer src="js/screens/exchange.js"></script>
+<script defer src="js/screens/dex.js"></script>
+<script defer src="js/data/catch-pools.js"></script>
+<script defer src="js/data/battle-moves.js"></script>
+<script defer src="js/data/gym-data.js"></script>
+<script defer src="js/screens/battle.js"></script>
+<script defer src="js/screens/gym.js"></script>
+<script defer src="js/screens/catch.js"></script>
+<script defer src="js/unlock.js"></script>
+<script defer src="js/onboarding.js"></script>
+<script defer src="js/app.js"></script>
 </body>
 </html>

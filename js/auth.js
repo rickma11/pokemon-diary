@@ -2,7 +2,7 @@
 // 账号元数据存 GitHub：accounts/{accountId}.json（仅含随机文件名 + 两个角色密码包裹的存档主密钥，公开仓库不可读）
 // 存档存 GitHub：saves/{accountId}.json（AES-GCM 加密，密钥由登录密码派生）
 // 强制登录：无会话即要求登录 / 注册，不再有「本机模式」。
-// 登录名支持三种：完整账号码（马一一-wd52it）、昵称（马一一）、短码（wd52it）；靠列目录 + 密码消歧，存量账号无需迁移。
+// 登录名支持三种：完整账号码（小明-a1b2c3）、昵称（小明）、短码（a1b2c3）；靠列目录 + 密码消歧，存量账号无需迁移。
 window.APP = window.APP || {};
 
 (function (APP) {
@@ -101,11 +101,11 @@ window.APP = window.APP || {};
   }
 
   // —— 登录名解析：三种都能登 ——
-  //   ① 完整账号码（马一一-wd52it）：直接读 accounts/{name}.json，最快
-  //   ② 昵称（马一一）：匹配 id 去掉 6 位随机后缀后的 slug 前缀
-  //   ③ 短码（wd52it）：匹配 id 的 6 位后缀
+  //   ① 完整账号码（小明-a1b2c3）：直接读 accounts/{name}.json，最快
+  //   ② 昵称（小明）：匹配 id 去掉 6 位随机后缀后的 slug 前缀
+  //   ③ 短码（a1b2c3）：匹配 id 的 6 位后缀
   // 用「列 accounts/ 目录 + 逐个验密码」实现，不写别名索引文件：
-  // 旧版注册的存量账号（如已存在的 马一一-wd52it）同样能命中，零数据迁移。
+  // 旧版注册的存量账号（如已存在的 小明-a1b2c3）同样能命中，零数据迁移。
   function normName(s) { return String(s || '').trim().toLowerCase(); }
   function slugOf(s) {
     return normName(s).replace(/[^a-z0-9\u4e00-\u9fa5]/g, '').slice(0, 8);

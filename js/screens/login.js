@@ -28,6 +28,38 @@ window.APP = window.APP || {};
       ' autocomplete="off" ' + (extra || '') + '></label>';
   }
 
+  // 第一次用的人手上还没有仓库，不能让他「自己去仓库里找 README」。
+  // 从当前 Pages 地址推出仓库 README 链接，并在 App 内直接给一份可点的 5 步说明。
+  function repoReadmeUrl() {
+    try {
+      var m = String(window.location.hostname || '').match(/^([a-z0-9-]+)\.github\.io$/i);
+      if (m) {
+        var seg = String(window.location.pathname || '').split('/').filter(Boolean);
+        if (seg.length) return 'https://github.com/' + m[1] + '/' + seg[0] + '/blob/main/README.md';
+      }
+    } catch (e) {}
+    return 'https://github.com/rickma11/pokemon-diary/blob/main/README.md';
+  }
+
+  function showDeployGuide() {
+    var url = repoReadmeUrl();
+    var body =
+      '<div style="max-height:56vh;overflow:auto;text-align:left;font-size:13px;line-height:1.75;color:#5a4632">' +
+      '<p>还没有仓库和令牌？按下面 5 步做一遍，约 5 分钟，全程免费：</p>' +
+      '<ol style="padding-left:20px;margin:8px 0">' +
+      '<li>Fork 这个仓库到你自己的 GitHub 账号（选 Public 即可，记录是加密的）。</li>' +
+      '<li>仓库 → <b>Settings → Pages</b> → Source 选 <b>Deploy from a branch</b>，分支 <b>main</b>、目录 <b>/(root)</b> → Save。</li>' +
+      '<li>GitHub 头像 → <b>Settings → Developer settings → Personal access tokens → Tokens (classic)</b>，勾 <b>repo</b> 生成，复制 <code>ghp_…</code>。</li>' +
+      '<li>打开生成的网址回到本页，把 <b>用户名 / 仓库名 / main / PAT</b> 填进下面 4 项，点「保存设置」会自动验证。</li>' +
+      '<li>连接成功后切到「账号注册」，填孩子昵称 + 小孩密码 + 家长密码即可。</li>' +
+      '</ol>' +
+      '<p class="field__hint">不想自己动手：把仓库里的 <b>deploy-package/AI_DEPLOY_GUIDE.md</b> 发给 AI 助手，让它照着部署。</p>' +
+      '<p><a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer" ' +
+      'style="color:#c0492b;font-weight:700">在 GitHub 查看完整 README →</a></p>' +
+      '</div>';
+    if (APP.ui && APP.ui.sheet) APP.ui.sheet('第一次用？5 步建好数据仓库', body);
+  }
+
   function msgHtml() {
     if (!msg) return '';
     return '<p class="hint"' + (msg.ok ? '' : ' style="color:#c0392b"') + '>' + esc(msg.text) + '</p>';
@@ -45,7 +77,7 @@ window.APP = window.APP || {};
 
   function loginFormHtml() {
     return '<p>家长和小孩共用账号：用<b>家长密码</b>进入管理后台，用<b>小孩密码</b>进入日程打卡，不用选角色。</p>' +
-      '<p class="field__hint">账号可填 <b>昵称</b>（如 马一一）、<b>短码</b>（如 wd52it）或 <b>完整账号码</b>（马一一-wd52it），三种都能登录。</p>' +
+      '<p class="field__hint">账号可填 <b>昵称</b>（如 小明）、<b>短码</b>（如 a1b2c3）或 <b>完整账号码</b>（小明-a1b2c3），三种都能登录。</p>' +
       field('账号', 'lg_account', 'text', vals.account, '昵称 / 短码 / 完整账号码') +
       field('密码', 'lg_pwd', 'password', vals.pwd, '', 'inputmode="numeric"') +
       '<div class="row"><button type="button" class="btn btn--primary btn--block" data-act="login"' +
@@ -57,7 +89,7 @@ window.APP = window.APP || {};
   function registerFormHtml() {
     return '<p>一个家一个账号：<b>孩子密码</b>用来看日程、打卡、照顾宝可梦；<b>家长密码</b>用来审核作业、设置任务。</p>' +
       '<p class="field__hint">记录以加密形式存进 GitHub 仓库（公开仓库也读不到内容）。<b>注册成功后直接进入应用</b>，请先抄下弹窗里的账号码。</p>' +
-      field('孩子昵称（也能直接当账号登录）', 'rg_nickname', 'text', vals.nickname, '如：马一一') +
+      field('孩子昵称（也能直接当账号登录）', 'rg_nickname', 'text', vals.nickname, '如：小明') +
       field('小孩密码（4–16 位，建议纯数字）', 'rg_child', 'text', vals.childPwd, '如：2468', 'inputmode="numeric"') +
       field('家长密码（8–64 位）', 'rg_parent', 'password', vals.parentPwd, '数字+英文组合') +
       '<div class="row"><button type="button" class="btn btn--primary btn--block" data-act="register"' +
@@ -82,7 +114,9 @@ window.APP = window.APP || {};
       var lead = '<section class="card"><h2>第一步：连接已建好的数据仓库</h2>' +
         '<p>记录会加密存放在<b>部署者已创建好的</b> GitHub 仓库里。这里只是填地址，<b>不需要新建仓库</b>；' +
         '填完 4 项点「保存设置」会自动验证连接。</p>' +
-        '<p class="field__hint">还没有仓库和令牌？按仓库里 README 的「复制这个仓库，自己部署一份」做一遍即可。</p>' +
+        '<p class="field__hint">还没有仓库和令牌？' +
+        '<button type="button" data-act="deploy-guide" style="border:0;background:none;padding:0;color:#c0492b;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer">点这里看 5 步部署说明</button>' +
+        '，或 <a href="' + esc(repoReadmeUrl()) + '" target="_blank" rel="noopener noreferrer" style="color:#c0492b;font-weight:700">直接打开 README →</a></p>' +
         '</section>';
       return lead + full + authCardHtml();
     }
@@ -142,6 +176,7 @@ window.APP = window.APP || {};
 
     if (act === 'gh-expand') { showSetup = true; return repaint(); }
     if (act === 'gh-collapse') { showSetup = false; return repaint(); }
+    if (act === 'deploy-guide') { showDeployGuide(); return; }
 
     // 首次使用的 GitHub 连接设置卡（gh-save / gh-test / gh-sync）与登录页共用事件委托。
     // 刷新由 ghui 内部按需触发：保存成功才刷新，失败保持展开让用户就地修改。
