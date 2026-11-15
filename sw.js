@@ -2,7 +2,7 @@
 // 必须放在站点根目录、注册时 scope 为 './'，才能缓存 index.html 等全站资源。
 // 旧版放在 js/ 子目录，作用域只覆盖 js/，既缓存不到首页，又会把没缓存的 JS
 // 换成 index.html 壳（浏览器当 JS 解析失败 → 名字表缺失、选宠只显示 #编号）。
-var CACHE = 'pokedex-checkin-v83';
+var CACHE = 'pokedex-checkin-v84';
 var SHELL = 'index.html'; // 首页壳统一用这个 key，避免 / 与 /index.html 存两份
 
 self.addEventListener('install', function () { self.skipWaiting(); });

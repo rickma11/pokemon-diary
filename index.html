@@ -3091,7 +3091,7 @@ body.ink .shard { filter: grayscale(1); }
 
 .b3-hide { position: absolute; width: 88px; height: 92px; z-index: 4; cursor: pointer; text-align: center; transform: translateX(-50%) scale(1.4); }
 .b3-hide:hover .b3-hide__inner { filter: drop-shadow(0 0 10px rgba(255,235,140,.95)); }
-.b3-hide:hover .b3-hide__label { background: #2f4a86; }
+.b3-hide:hover .b3-hide__num { background: #2f4a86; border-color: #fff; }
 .b3-hide.is-off { opacity: .5; pointer-events: none; }
 .b3-hide__halo { position: absolute; left: 50%; top: 14%; width: 84px; height: 72px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(circle, rgba(255,214,70,.9), rgba(255,214,70,0) 70%); opacity: .5; animation: b3HideGlow 1.6s ease-in-out infinite; pointer-events: none; }
 .b3-hide.is-active .b3-hide__halo { opacity: 1; animation: none; box-shadow: 0 0 0 3px rgba(255,228,120,.6); }
@@ -3105,12 +3105,17 @@ body.ink .shard { filter: grayscale(1); }
 @keyframes b3HideSway { from { transform: translateX(-50%) rotate(-2.5deg) scaleY(.98); } to { transform: translateX(-50%) rotate(2.5deg) scaleY(1.03); } }
 @keyframes b3HideGlow { 0%,100% { opacity: .35; } 50% { opacity: .85; } }
 @keyframes b3Twinkle { 0%,100% { opacity: .1; transform: scale(.5); } 50% { opacity: 1; transform: scale(1.4); } }
-.b3-hide__img { display: block; width: 72px; height: auto; max-height: 78px; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.3)); image-rendering: pixelated; pointer-events: none; }
+/* 第 8 轮：hide 素材有的带不透明矩形底（cave 等），直接叠到场景会有硬边方形贴纸感；
+   用径向遮罩把四边淡出，与 .b3-hide__halo 圆形光晕衔接，看起来像从草丛/岩壁里透光浮现 */
+.b3-hide__img { display: block; width: 72px; height: auto; max-height: 78px; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.3)); image-rendering: pixelated; pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 72% 76% at 50% 52%, #000 56%, rgba(0,0,0,0) 100%);
+  mask-image: radial-gradient(ellipse 72% 76% at 50% 52%, #000 56%, rgba(0,0,0,0) 100%); }
 /* 第 7 轮：编号框从「压在躲藏点图片上」下移到图片下方，不再遮挡展示 */
-.b3-hide__label { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 26px; line-height: 1; padding: 0 9px; font-size: 11px; font-weight: 800; color: #fff; background: rgba(28,44,24,.96); border: 2px solid #fff; border-radius: 999px; white-space: nowrap; }
-/* 第 6 轮：Unicode 带圈数字在不同字体下基线会漂，改用 CSS 自绘圆圈 + flex 双向居中 */
-.b3-hide__num { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px;
-  border: 2px solid #fff; border-radius: 50%; font-size: 11px; line-height: 1; font-weight: 800; color: #fff; }
+/* 第 8 轮：去掉数字外面的胶囊框，只保留圆圈+数字本体；label 退化为纯定位容器 */
+.b3-hide__label { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); display: inline-flex; align-items: center; justify-content: center; line-height: 1; white-space: nowrap; }
+/* Unicode 带圈数字在不同字体下基线会漂，改用 CSS 自绘圆圈 + flex 双向居中；加半透明底与描边保证在任意场景上都清晰 */
+.b3-hide__num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; box-sizing: border-box;
+  border: 2px solid #fff; border-radius: 50%; background: rgba(28,44,24,.72); font-size: 12px; line-height: 1; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); box-shadow: 0 1px 4px rgba(0,0,0,.35); }
 /* 第 7 轮：三个躲藏点已统一到 top:22%，编号框天然齐平，不再需要按 slot 单独补偿高差 */
 .b3-hide.is-still .b3-hide__inner { animation: none !important; }
 .b3-hide.is-rustle .b3-hide__inner { animation: b3HideRustle .16s linear 4; }
