@@ -410,10 +410,9 @@
     if (!g.demo && tk < 1) { toast('精灵球不够啦，先去兑换中心', true); return; }
     if (!g.ok) { toast(gateToast(g), true); return; }
     slotPick = slot || null;
+    // 第 10 轮：弹窗只留「消耗 1 次探索机会」这一句；稀有度 / 先打一场等规则统一放到设置里的「规则」
     dialog('探索宝可梦躲藏点？',
-      '探索这个宝可梦躲藏点，将消耗 1 次探索机会。<br>' +
-      '遇到新宝可梦：<b>常见直接捕捉</b>，<b>少见 50% / 稀有 100% 先打一场</b>，打赢才能投球。<br>' +
-      '遇到已拥有的宝可梦必定开战。',
+      '探索这个宝可梦躲藏点，将消耗 1 次探索机会。',
       [{ text: '再想想', fn: function () {} },
        { text: '立即探索', yes: true, fn: function () {
          var r = APP.store.spendTicket('capture');
@@ -502,10 +501,10 @@
     APP.audio.playCry(cur.id);
     var foe = { dexNo: cur.id, name: cur.name, types: cur.types };
     var isDup = cur.dup;
-    dialog(isDup ? '它发起挑战！' : '战斗触发！',
+    dialog(isDup ? '它发起挑战！' : '触发战斗',
       isDup
         ? 'No.' + no + ' <b>' + esc(cur.name) + '</b> 已经捕捉，无法重复捕捉。<br>它向我们发起了战斗，请做好战斗准备。'
-        : 'No.' + no + ' <b>' + esc(cur.name) + '</b> 挡在躲藏点前！<br>必须先打赢它，才能投出精灵球。',
+        : 'No.' + no + ' <b>' + esc(cur.name) + '</b> 向你发起战斗，<br>必须打赢它，才能进行捕捉！',
       [{ text: '逃跑', fn: function () {
           if (isDup) { closeRound(); return; }
           pendingCatch = null;
@@ -604,12 +603,11 @@
       var btns = resultBtns();
       if (win) {
         var r = APP.store.addPokemonByDex(cur.id, { via: 'wild' });
-        var where = r && r.ok
-          ? (r.pokemon && r.pokemon.slot === 'box' ? '队伍满了，先住仓库' : '加入队伍')
-          : esc(r && r.msg ? r.msg : '已收录');
         APP.audio.playCry(cur.id);
         if (!animated && cfg().celebrateOn && !isInk() && APP.events) APP.events.confetti();
-        dialog('抓到啦！', 'No.' + no + ' <b>' + esc(cur.name) + '</b> ' + where, btns);
+        // 第 10 轮：不管队伍满不满，都统一说「传送到宝可梦中心」（满员时它进仓库，不是进队伍）
+        var to = (r && r.ok) ? '传送到宝可梦中心' : esc(r && r.msg ? r.msg : '已收录');
+        dialog('成功捕捉到 ' + cur.name + '！', 'No.' + no + ' <b>' + esc(cur.name) + '</b> ' + to, btns);
       } else {
         dialog('跑掉了…', esc(cur.name) + ' 钻回躲藏点里了。', btns);
       }
@@ -779,7 +777,7 @@
     else $('drawerBody').innerHTML = '<div class="b3-dtext">' +
       '· 入场门禁：<b>平日每 2 天 1 次；周末 / 节假日每天 3 次</b>（捕捉与战斗各自独立计次）<br>' +
       '· 每次探索消耗 <b>1 次探索机会</b>（即精灵球；在兑换中心用 <b><i class="shard shard--sm"></i>' + rate + ' 碎片</b>兑换）；遇到已拥有的宝可梦<b>必定开战</b><br>' +
-      '· <b>稀有度决定会不会先打一场</b>：常见 0% / <b>少见 50%</b> / <b>稀有 100%</b>；触发战斗的必须<b>打赢才能投球</b>，战败（或你逃跑）它就跑掉；战斗与「外出战斗 / 道馆挑战」同一套打法<br>' +
+      '· <b>稀有度决定会不会先打一场</b>：<b>常见直接捕捉</b> / <b>少见 50%</b> / <b>稀有 100%</b>；触发战斗的必须<b>打赢才能投球</b>，战败（或你逃跑）它就跑掉；战斗与「外出战斗 / 道馆挑战」同一套打法<br>' +
       '· <b>点左下「投石问路」石头＝随机挑一处躲藏点；点任意一处躲藏点＝指定那处</b>，都只是「从哪处跳出来」的演出；遇到谁一律从 59 只共享池按稀有度抽：常见 70% / 少见 22% / 稀有 8%<br>' +
       '· 场景主题共 <b>7 种</b>（湿地 / 火山 / 竹林 / 沙漠 / 海滩 / 洞窟 / 雪山），每轮随机一个，<b>3 个躲藏点随机摆放</b>，纯视觉、不绑定稀有度；右下「<b>换场景</b>」路标只换主题，不消耗精灵球、不算入场<br>' +
       '· 稀有度越高越难抓：投球成功率 <b>80% / 55% / 35%</b>；只抓 59 个初始形态（前三世代，≤386）<br>' +

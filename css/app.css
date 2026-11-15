@@ -3084,11 +3084,12 @@ body.ink .shard { filter: grayscale(1); }
 @keyframes b3HideSway { from { transform: translateX(-50%) rotate(-2.5deg) scaleY(.98); } to { transform: translateX(-50%) rotate(2.5deg) scaleY(1.03); } }
 @keyframes b3HideGlow { 0%,100% { opacity: .35; } 50% { opacity: .85; } }
 @keyframes b3Twinkle { 0%,100% { opacity: .1; transform: scale(.5); } 50% { opacity: 1; transform: scale(1.4); } }
-/* 第 8 轮：hide 素材有的带不透明矩形底（cave 等），直接叠到场景会有硬边方形贴纸感；
-   用径向遮罩把四边淡出，与 .b3-hide__halo 圆形光晕衔接，看起来像从草丛/岩壁里透光浮现 */
-.b3-hide__img { display: block; width: 72px; height: auto; max-height: 78px; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.3)); image-rendering: pixelated; pointer-events: none;
-  -webkit-mask-image: radial-gradient(ellipse 72% 76% at 50% 52%, #000 56%, rgba(0,0,0,0) 100%);
-  mask-image: radial-gradient(ellipse 72% 76% at 50% 52%, #000 56%, rgba(0,0,0,0) 100%); }
+/* 第 10 轮：逐张测过 alpha，21 张躲藏点素材里只有 cave-2 是整块不透明矩形（洞窟内景），
+   其余 20 张都是抠图。第 8 轮给所有图统一套径向遮罩，把雪屋 / 覆雪松树这类白色素材的边缘
+   侵蚀发虚，看着像被掏空（用户反馈「中间镂空，原图是正常的」）。现在默认原样渲染，
+   只给唯一需要柔化四边的 cave-2 单独加遮罩。 */
+.b3-hide__img { display: block; width: 72px; height: auto; max-height: 78px; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.3)); image-rendering: pixelated; pointer-events: none; }
+.b3-hide__img[src*="cave-2"] { -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 52%, #000 58%, rgba(0,0,0,0) 100%); mask-image: radial-gradient(ellipse 74% 78% at 50% 52%, #000 58%, rgba(0,0,0,0) 100%); }
 /* 第 7 轮：编号框从「压在躲藏点图片上」下移到图片下方，不再遮挡展示 */
 /* 第 8 轮：去掉数字外面的胶囊框，只保留圆圈+数字本体；label 退化为纯定位容器 */
 .b3-hide__label { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); display: inline-flex; align-items: center; justify-content: center; line-height: 1; white-space: nowrap; }
