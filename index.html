@@ -18822,6 +18822,10 @@ window.APP = window.APP || {};
     var today = APP.todayStr ? APP.todayStr() : '';
     var created = (s.meta && s.meta.createdAt) || '';
     var crossedDay = !!(created && today && created !== today);
+    // 「今天才注册的新账号」：createdAt 就是今天。这类账号不该享受旧规则的迁移保护——
+    // 否则第一天打了 2 次卡（旧单条件）领过奖后，即使天数不够也会被 claimed 标记硬撑成已解锁。
+    // 老账号（crossedDay=true）或 createdAt 缺失的历史档，照旧享受迁移保护，功能不回收。
+    var isFreshAccount = !!(created && today && created === today);
     var st = {};
     st.play = tasksDone >= UNLOCK_REQ.play.checks && activeDays >= UNLOCK_REQ.play.days;
     st.train = tasksDone >= UNLOCK_REQ.train.checks && activeDays >= UNLOCK_REQ.train.days;
@@ -18834,14 +18838,17 @@ window.APP = window.APP || {};
     // 老存档（升级前玩耍 / 训练本来就无门槛）不回收已用的功能。
     // onboarding 的老档分支会写入 legacy:true；新档一律按上面的条件走。
     var u = (APP.store && APP.store.unlock) ? APP.store.unlock() : {};
-    if (u.legacy) { st.play = true; st.train = true; }
+    if (u.legacy && !isFreshAccount) { st.play = true; st.train = true; }
     // 条件调整后的迁移保护：已经播过讲解 / 发过奖励的档位不回收功能。
     // 否则前四档新增「登录天数」后，已开了玩耍的用户会被重新锁上（gate 读的正是 evalState）。
-    var seenKeep = u.seen || {}, claimedKeep = u.claimed || {};
-    for (var ck in UNLOCK_REQ) {
-      if (Object.prototype.hasOwnProperty.call(UNLOCK_REQ, ck) && (seenKeep[ck] || claimedKeep[ck])) st[ck] = true;
+    // 关键：今日新注册的账号（isFreshAccount）跳过此保护，必须真实满足双条件才算解锁。
+    if (!isFreshAccount) {
+      var seenKeep = u.seen || {}, claimedKeep = u.claimed || {};
+      for (var ck in UNLOCK_REQ) {
+        if (Object.prototype.hasOwnProperty.call(UNLOCK_REQ, ck) && (seenKeep[ck] || claimedKeep[ck])) st[ck] = true;
+      }
     }
-    return { st: st, level: level, tasksDone: tasksDone, loginDays: activeDays, crossedDay: crossedDay, bond: bond, careCount: careCount };
+    return { st: st, level: level, tasksDone: tasksDone, loginDays: activeDays, crossedDay: crossedDay, isFreshAccount: isFreshAccount, bond: bond, careCount: careCount };
   }
 
   // 是否解锁（true=已解锁）。支持 ranch/catch/exchange/dex/battle/gym
@@ -19053,6 +19060,16 @@ window.APP = window.APP || {};
       seen = u.seen || {};
     }
     var changed = false, claimedChanged = false, played = false;
+    // 今日新账号：清理「条件没达标却残留的领奖/讲解标记」（例如旧单条件规则下第一天打了卡就领过奖）。
+    // 否则明天即便真的凑够天数，check() 也因 claimed/seen 已占位而不再发奖、不再播讲解。
+    // 只对真实未解锁的前四档动手；已解锁档位与按等级判定的 T5-T7 一律不碰。树果不追回。
+    if (res.isFreshAccount) {
+      for (var fk in UNLOCK_REQ) {
+        if (Object.prototype.hasOwnProperty.call(UNLOCK_REQ, fk) && !res.st[fk] && (seen[fk] || claimed[fk])) {
+          delete seen[fk]; delete claimed[fk]; changed = true; claimedChanged = true;
+        }
+      }
+    }
 
     // T0「启程」首登即开：不发博士浮层（首登结语由 onboarding 负责），静默到账，面板里可查。
     var ob = APP.store.onboarding ? APP.store.onboarding() : {};

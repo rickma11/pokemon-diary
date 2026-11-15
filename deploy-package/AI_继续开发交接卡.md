@@ -2,7 +2,7 @@
 
 > **这份文件是给「另一个窗口的 AI 助手」直接读的**：自包含、不含任何令牌或凭据，读完即可开工，不需要用户再补充或修改内容。
 >
-> - 最近更新：2026-11-15 18:45（本轮 v79，详见第 9 节）
+> - 最近更新：2026-11-15 19:20（本轮 v80，详见第 10 节）
 > - 本地主交接文档：`F:/宝可梦日常打卡工具/docs/项目交接与继续指南.md`（含敏感配置，`docs/` 被 `.gitignore` 排除、**不进公开仓库**；其他窗口读它可能被安全策略拦下，所以请优先读本文件）
 > - 部署说明：`deploy-package/AI_DEPLOY_GUIDE.md`；完整使用/安全说明：`README.md`
 
@@ -19,9 +19,9 @@
 | 入口 | `index.html`（约 1.37 MB，**构建产物**，内联了全部 38 个 JS + 2 个 CSS） |
 | 源码 | `js/`、`css/`、`index.src.html`、`sw.js`、`manifest.json` |
 | 构建 | `node build.js`（`index.src.html` → `index.html`）；`更新推送.bat` 会自动调用 |
-| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v79'` |
+| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v80'` |
 | 账号/存档 | 客户端 AES-GCM 加密后写进仓库 `accounts/` 与 `saves/`；App 运行时会往 `main` 写 `sync: saves/...` commit |
-| 当前线上 | 本轮 v79；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
+| 当前线上 | 本轮 v80；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
 | 当前本地 | 与本轮线上一致；`accounts/` + `saves/` 共 4 个文件原样保留 |
 
 > **commit 号说明**：远端 `main` 会因 App 运行时写档（`sync: saves/...`）和**纯文档提交**不断前进。上表的 `d84ef845` 指的是**代码版本**；判断「页面是不是这一版」，看 `index.html` 的 sha 或 Pages 构建，不要只比对 `main` 的最新 commit。纯文档提交不会改 `index.html`，页面完全不受影响。
@@ -179,3 +179,22 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 **自检记录**：6 个改动 JS 全部 `node --check` 0 错；`node build.js` 内联 38 JS + 2 CSS / 1,365,539 字节；VM 探针插入 IIFE 内部取私有函数，验证 6 组打卡分布的 `gapText` / `lockMsg`、`buildFeed` 的「还剩 N 项」、饿肚子主语、结算主谓、8 个生硬词零残留，全部 PASS。备份在 `backups/20261115-care-copy-natural/`。
 
 **用户仍未确认的口径**：「登录 N 天」= 有打卡记录的不同日期数（第 8 节口径），不是打开 App 就算一天；若要改需新增独立登录日期记录。
+
+---
+
+## 10. 2026-11-15 解锁修复轮（v80）：新账号「提前解锁 + 打钩不一致」
+
+**现象**：当天注册的账号（马一一）第一天只打了 2 次卡，玩耍却显示「已解锁、奖励已领取」，但面板两个条件（打卡 2/2、登录 2/2）都是空心没打钩，顶部还显示打卡 0 次。
+
+**根因**：`js/unlock.js` `evalState()` 里的迁移保护「`claimed`/`seen` 有标记就无条件强制已解锁」，对该账号 `claimed.play=true` 生效，把天数不够的账号硬撑成已解锁；而面板打钩读真实条件（0/2、0/2），两套逻辑打架。T1-T4 四档都有这个隐患（T5-T7 按等级判、不受影响）。「打卡显示 0」另因：该设备本地存档没有那 2 次打卡记录（同步层面，非本 bug）。
+
+**用户选的方案**：用「注册是否满一天」（`meta.createdAt === APP.todayStr()`）区分——**今天新注册的账号按真实条件重判，老用户已解锁的一律不动**。
+
+**实际改动（都在 `js/unlock.js`）**：
+- `evalState()` 新增 `isFreshAccount`：今日新账号跳过迁移保护（`claimed`/`seen` 强制放行段整体包进 `if (!isFreshAccount)`）；`u.legacy` 放行段同理对新账号不生效。
+- `check()` 新增孤儿标记清理：今日新账号且真实未解锁的前四档，删掉残留的 `seen[fk]`/`claimed[fk]`（树果不追回）——否则明天真达标时 `check()` 会因标记已占位而不再发奖、不再播讲解。清理后走已有的 `criticalPush()` 立刻上云，不会被云端旧标记拉回覆盖（`check()` 在每次 `render()` 时触发）。
+- 已解锁档位与 T5-T7 一律不碰；老账号（注册≥1天）行为与之前完全一致。
+
+**自检**：VM 验证脚本 15 项全过（新账号提前解锁被拦、老账号不回收、真达标正常解锁、孤儿标记被清理）。`node build.js` 后 `index.html` 含 `isFreshAccount`；SW 升 v80。备份 `backups/20261115-unlock-newaccount/`。
+
+**遗留**：若用户以后要求「打开 App 就算登录一天」（当前口径=有打卡记录的不同日期数），需新增独立登录日期记录，会同时影响 v78/v79 的「还差几天」。
