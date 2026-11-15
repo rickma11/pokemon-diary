@@ -185,10 +185,15 @@
               '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94a7.07 7.07 0 0 0 .05-.94 7.07 7.07 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.62l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94L14.4 2.8a.5.5 0 0 0-.5-.4h-3.84a.5.5 0 0 0-.5.4l-.36 2.54a7.3 7.3 0 0 0-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.67 8.86a.5.5 0 0 0 .12.62l2.03 1.58a7.07 7.07 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.62l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.4 1.04.71 1.62.94l.36 2.54c.04.23.24.4.5.4h3.84c.26 0 .46-.17.5-.4l.36-2.54c.58-.23 1.12-.54 1.62-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.62l-2.03-1.58ZM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2Z"/></svg>' +
             '</button>' +
             '<div class="b3-wild" id="b3-wild"><div class="b3-wild__pop"><div class="b3-wild__frame"><img alt=""></div><div class="b3-wild__tag"></div></div></div>' +
+            '<div class="b3-stage__veil" id="b3-stageVeil"></div>' +
             '<div class="b3-ball" id="b3-ball">' +
               '<div class="b3-ball__glow"></div><div class="b3-ball__beam"></div><div class="b3-ball__ding"></div>' +
+              '<div class="b3-ball__fx"><i class="b3-ball__fx--a"></i><i class="b3-ball__fx--b"></i><i class="b3-ball__fx--c"></i></div>' +
+              '<div class="b3-ball__shadow"></div><div class="b3-ball__shine"></div>' +
               '<div class="b3-ball__top"></div><div class="b3-ball__bot"></div>' +
               '<div class="b3-ball__btn"></div><div class="b3-ball__ring"></div>' +
+              '<i class="b3-ball__spark b3-ball__spark--1"></i><i class="b3-ball__spark b3-ball__spark--2"></i>' +
+              '<i class="b3-ball__spark b3-ball__spark--3"></i><i class="b3-ball__spark b3-ball__spark--4"></i>' +
             '</div>' +
             '<div class="b3-game" id="b3-game"></div>' +
             '<div class="b3-dialog" id="b3-dialog"><h3 id="b3-dlgTitle"></h3><p id="b3-dlgBody"></p>' +
@@ -366,6 +371,7 @@
     $('wild').className = 'b3-wild';
     $('ball').className = 'b3-ball';
     $('game').className = 'b3-game';
+    exitStage();
   }
 
   // 一轮探索结束：收干净演出、换一个场景主题（不自动选点、不自动弹确认框）
@@ -551,6 +557,24 @@
     if (APP.sync && APP.sync.criticalPush) APP.sync.criticalPush();
   }
 
+  // ===== 聚光舞台（第 11 轮）：球闭合后进入「浅灰底 + 中间大球 + 缩放光环」舞台 =====
+  // 两套配色随机出：A 暖金 / B 冷白蓝（写进场景的 data-fx）。
+  // 墨水屏不铺浅灰底（那边也没动画），维持原来的小球老样子。
+  function enterStage(b) {
+    var sc = $('scene');
+    if (!sc || isInk()) return;
+    sc.setAttribute('data-fx', Math.random() < .5 ? 'a' : 'b');
+    sc.classList.add('is-stage');
+    b.classList.add('is-big');
+    b.style.left = '50%';
+  }
+  function exitStage() {
+    var sc = $('scene');
+    if (!sc) return;
+    sc.classList.remove('is-stage');
+    sc.removeAttribute('data-fx');
+  }
+
   // ===== V5 完整捕捉动画：8 阶段时序（摆动固定 3 秒，小游戏在摆动窗口内） =====
   function throwBall(no, g, w) {
     var base = D.CATCH_RATE[cur.tier];
@@ -570,6 +594,7 @@
     later(1640, function () {                                                                                          // P5 闭合
       w.classList.remove('is-suck'); w.classList.remove('is-on');
       b.classList.remove('is-open'); b.classList.add('is-flash'); APP.audio.sfxBall('close');
+      enterStage(b);                                                                                                   // 聚光舞台：浅灰底 + 中间大球 + 缩放光环
     });
     later(1860, function () {                                                                                          // P6 摆动 3 秒
       b.classList.remove('is-flash'); b.classList.add('is-wobble'); startGame(b);
@@ -598,6 +623,7 @@
   function finish(win, no, g, w, animated) {
     function show() {
       $('ball').className = 'b3-ball';
+      exitStage();   // 结果弹窗出现时把聚光底收掉，画面回到原场景
       w.className = 'b3-wild';
       g.classList.remove('is-rustle');
       var btns = resultBtns();
