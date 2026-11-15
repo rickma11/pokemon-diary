@@ -72,7 +72,7 @@ window.APP = window.APP || {};
   // 首登专用 128px 内联小图；常量表缺失时回退到图鉴原图，不至于开天窗
   function starterArt(d) {
     if (APP.STARTER_ART && APP.STARTER_ART[d]) return APP.STARTER_ART[d];
-    return 'assets/pokemon/' + pad(d) + '.png';
+    return 'assets/pokemon/' + pad(d) + '.webp';
   }
   // 主角形象：选择格只有 64px，用 160px 内联小图；常量表缺失时回退到原始立绘
   function heroArt(base) {

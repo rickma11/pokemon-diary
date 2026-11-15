@@ -75,6 +75,8 @@ window.APP = window.APP || {};
     return e;
   }
   function playedToday(game) {
+    // 演示账号可反复练同一个玩法，次数记录照写但这里视而不见
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) return false;
     var e = dayEntry(false);
     return !!(e && e.games && e.games[game]);
   }
@@ -445,18 +447,20 @@ window.APP = window.APP || {};
   // ===== 训练中心 =====
   function renderChooser() {
     var food = statOf('food');
-    var canGo = food >= FOOD_GATE;
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
+    var canGo = demo || food >= FOOD_GATE;
     var h =
       '<section class="card tr-hero">' +
         '<div class="tr-hero__hd"><div><div class="tr-hero__t">💪 训练中心</div>' +
-          '<div class="tr-hero__s">每节课约 3 分钟 · 每个玩法每天各 1 次</div></div>' +
-          '<span class="tr-hero__count">今日 ' + playedCount() + ' / 4</span></div>' +
+          '<div class="tr-hero__s">' + (demo ? '演示模式 · 不限时不限次' : '每节课约 3 分钟 · 每个玩法每天各 1 次') + '</div></div>' +
+          '<span class="tr-hero__count">' + (demo ? '不限次' : '今日 ' + playedCount() + ' / 4') + '</span></div>' +
         '<div class="tr-cost">参与消耗　体力 −10 · 饱腹 −10<br>' +
           '全对「完美」+6 经验 +10 心情 · 45% 概率 +1 碎片<br>' +
           '达标「优秀」+5 经验 +8 心情 · 36% 概率 +1 碎片<br>' +
           '未达标「加油」+3 经验 +5 心情 · 无碎片</div>' +
-        (canGo ? '<div class="tr-gate is-ok">饱腹 ' + food + ' · 可以开始训练</div>'
-               : '<div class="tr-gate is-no">饱腹 ' + food + ' 低于 30，先喂点东西再来吧</div>') +
+        (demo ? '<div class="tr-gate is-ok">演示模式 · 随时可以开始训练</div>'
+              : (canGo ? '<div class="tr-gate is-ok">饱腹 ' + food + ' · 可以开始训练</div>'
+                       : '<div class="tr-gate is-no">饱腹 ' + food + ' 低于 30，先喂点东西再来吧</div>')) +
         (notice ? '<div class="tr-notice">' + esc(notice) + '</div>' : '') +
       '</section>' +
       '<section class="tr-grid">';
@@ -489,8 +493,9 @@ window.APP = window.APP || {};
     var p = APP.store.activePokemon();
     if (!p) return '还没有主力宝可梦，去家长后台添加一只吧';
     if (!p.stats) p.stats = { food: 80, mood: 80, energy: 80 };
-    if (p.stats.food < FOOD_GATE) return '饱腹感低于 30，先喂点东西再来训练吧～';
-    if (playedToday(game)) return '今天这个玩法已经练过啦，明天再来～';
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
+    if (!demo && p.stats.food < FOOD_GATE) return '饱腹感低于 30，先喂点东西再来训练吧～';
+    if (!demo && playedToday(game)) return '今天这个玩法已经练过啦，明天再来～';
     return '';
   }
 
@@ -577,15 +582,16 @@ window.APP = window.APP || {};
     var st = document.getElementById('trStep');
     var bar = document.getElementById('trStepBar');
     var sec = document.getElementById('trStepSec');
-    if (c) c.textContent = mmss(session.totalLeft);
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
+    if (c) c.textContent = demo ? '不限时' : mmss(session.totalLeft);
     if (st) st.textContent = session.def.stepLabel(session);
     if (bar) {
-      bar.style.width = Math.max(0, session.stepLeft / STEP_SEC * 100) + '%';
-      bar.className = session.stepLeft <= 3 ? 'is-urgent' : '';
+      bar.style.width = demo ? '100%' : Math.max(0, session.stepLeft / STEP_SEC * 100) + '%';
+      bar.className = !demo && session.stepLeft <= 3 ? 'is-urgent' : '';
     }
     if (sec) {
-      sec.textContent = session.paused ? '动画中 · 计时暂停' : '本步 ' + session.stepLeft + ' 秒';
-      sec.className = !session.paused && session.stepLeft <= 3 ? 'is-urgent' : '';
+      sec.textContent = demo ? '演示模式 · 不限时' : (session.paused ? '动画中 · 计时暂停' : '本步 ' + session.stepLeft + ' 秒');
+      sec.className = !demo && !session.paused && session.stepLeft <= 3 ? 'is-urgent' : '';
     }
   }
 
@@ -624,6 +630,8 @@ window.APP = window.APP || {};
 
   function tick() {
     if (!session || session.finished || session.paused) return;
+    // 演示账号不限时：3 分钟全局倒计时和每题 10 秒都不走
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) { updateHud(); return; }
     session.totalLeft--;
     session.stepLeft--;
     if (session.totalLeft <= 0) {

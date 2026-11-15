@@ -50,7 +50,7 @@ window.APP = window.APP || {};
     applyMode(el, mode);
 
     var prog = APP.store.levelProgress();
-    var art = '<div class="statusbar__art"><img src="assets/pokemon/' + APP.pad3(p.dexNo) + '.png" alt=""></div>';
+    var art = '<div class="statusbar__art"><img src="assets/pokemon/' + APP.pad3(p.dexNo) + '.webp" alt=""></div>';
     var nameRow = '<div class="statusbar__row">' +
       '<span class="statusbar__name">' + p.nickname + '</span>' +
       '<span class="statusbar__lv">Lv.' + p.level + (prog.maxed ? ' 满级' : '') + '</span>' +

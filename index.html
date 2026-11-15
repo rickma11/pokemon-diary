@@ -6450,6 +6450,10 @@ window.APP = window.APP || {};
   // 节假日：每天最多 holidayPerDay 次（按 countToday 计）。
   // 返回 { ok, reason?, left?, waitDays? }
   function canPlay(kind) {
+    // 演示账号：不受冷却 / 每日次数限制，也不产生任何次数记录
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) {
+      return { ok: true, left: 0, demo: true };
+    }
     beginWrite();
     var s = load();
     var cap = s.playCaps && s.playCaps[kind];
@@ -6496,6 +6500,8 @@ window.APP = window.APP || {};
         : '暂时不能出门';
       return { ok: false, msg: msg };
     }
+    // 演示账号白玩：不扣球/券、不写次数，资源永不耗尽
+    if (gate.demo) return { ok: true, tickets: 99, left: 0, demo: true };
     beginWrite();
     var s = load();
     if (!s.wallet) s.wallet = {};
@@ -8015,6 +8021,13 @@ window.APP = window.APP || {};
 
   function role() { var s = session(); return s ? s.role : null; }
 
+  // 演示账号：全站唯一一处判定，只有它跳过捕捉/战斗/训练/玩耍的次数与时间门槛。
+  // 普通账号一律走原规则，别的地方要用都调这个函数，不要自己比对账号名。
+  function isDemo() {
+    var s = session();
+    return !!(s && s.accountId === 'OAOpkm');
+  }
+
   // 只校验家长密码是否正确：不写会话、不切换身份、不落本地存储。
   // 家长后台入口每次都要重新输密码（不能登录一次就长期放行），用这个而不是 login()，
   // 否则孩子输对一次家长密码后，login() 会把会话覆盖成 parent 角色，之后就免密直进了。
@@ -8057,6 +8070,7 @@ window.APP = window.APP || {};
   APP.auth = {
     session: session,
     role: role,
+    isDemo: isDemo,
     verifyParent: verifyParent,
     needLogin: needLogin,
     lastAccount: lastAccount,
@@ -8859,7 +8873,7 @@ window.APP = window.APP || {};
     applyMode(el, mode);
 
     var prog = APP.store.levelProgress();
-    var art = '<div class="statusbar__art"><img src="assets/pokemon/' + APP.pad3(p.dexNo) + '.png" alt=""></div>';
+    var art = '<div class="statusbar__art"><img src="assets/pokemon/' + APP.pad3(p.dexNo) + '.webp" alt=""></div>';
     var nameRow = '<div class="statusbar__row">' +
       '<span class="statusbar__name">' + p.nickname + '</span>' +
       '<span class="statusbar__lv">Lv.' + p.level + (prog.maxed ? ' 满级' : '') + '</span>' +
@@ -9289,7 +9303,7 @@ window.APP = window.APP || {};
   }
 
   function art(dexNo) {
-    return 'assets/pokemon/' + APP.pad3(dexNo) + '.png';
+    return 'assets/pokemon/' + APP.pad3(dexNo) + '.webp';
   }
 
   function sortEvents(list) {
@@ -10746,7 +10760,7 @@ window.APP = window.APP || {};
       }
     }
     return '<div class="dbg__cur">' +
-      '<img class="dbg__art" src="assets/pokemon/' + APP.pad3(p.dexNo) + '.png" alt="">' +
+      '<img class="dbg__art" src="assets/pokemon/' + APP.pad3(p.dexNo) + '.webp" alt="">' +
       '<div class="dbg__info">' +
         '<div class="dbg__line"><strong>' + esc(p.nickname) + '</strong>' +
           '<span class="badge">' + APP.pad3(p.dexNo) + '</span>' +
@@ -10844,7 +10858,7 @@ window.APP = window.APP || {};
     for (var i = 0; i < list.length; i++) {
       if (list[i].dexNo === n) owned = list[i];
     }
-    el.innerHTML = '<img class="dbg__thumb" src="assets/pokemon/' + APP.pad3(n) + '.png" alt="">' +
+    el.innerHTML = '<img class="dbg__thumb" src="assets/pokemon/' + APP.pad3(n) + '.webp" alt="">' +
       '<span class="dbg__name">' + esc(info.name) + '</span>' +
       '<span class="dbg__no">' + APP.pad3(n) + '</span>' +
       (owned ? '<span class="badge">' + (owned.slot !== 'box' ? '队伍中' : '已拥有') + '</span>' : '');
@@ -12070,7 +12084,7 @@ window.APP = window.APP || {};
 
   function frontSrc(dex) { return 'assets/pokemon/animated/' + pads(dex) + '.gif'; }
   function backSrc(dex) { return 'assets/pokemon/animated/back/' + pads(dex) + '.gif'; }
-  function stillSrc(dex) { return 'assets/pokemon/' + pads(dex) + '.png'; } // 兜底：官方静态立绘一定存在
+  function stillSrc(dex) { return 'assets/pokemon/' + pads(dex) + '.webp'; } // 兜底：官方静态立绘一定存在
   function nameOf(p) {
     if (p.nickname) return p.nickname;
     var info = APP.evo && APP.evo.get ? APP.evo.get(p.dexNo) : null;
@@ -12200,23 +12214,32 @@ window.APP = window.APP || {};
     var playOpen = featureOpen('play');
 
     // 训练：今天还剩几项没做（读当天 trainingPlays.games，4 个小游戏各算 1 项）
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
     if (trainOpen) {
-      var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
-      var tn = 0; for (i = 0; i < GAME_LABELS.length; i++) if (games[GAME_LABELS[i].k]) tn++;
-      var tLeft = GAME_LABELS.length - tn;
-      if (tLeft <= 0) out.push('今天四项训练全做完了，明天再来挑战吧。');
-      else out.push('今天还剩 ' + tLeft + ' 项训练没做，点「训练」接着做吧。');
-      if (p && p.stats && p.stats.food < 30) out.push('宝可梦饿着肚子没法训练，先给它喂一颗树果吧。');
-      else if (p && p.perfectToday) out.push('今天宝可梦元气满满，训练能多拿 10% 经验呢。');
+      if (demo) {
+        out.push('演示模式，训练随时都能练，想练几次就练几次。');
+      } else {
+        var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
+        var tn = 0; for (i = 0; i < GAME_LABELS.length; i++) if (games[GAME_LABELS[i].k]) tn++;
+        var tLeft = GAME_LABELS.length - tn;
+        if (tLeft <= 0) out.push('今天四项训练全做完了，明天再来挑战吧。');
+        else out.push('今天还剩 ' + tLeft + ' 项训练没做，点「训练」接着做吧。');
+        if (p && p.stats && p.stats.food < 30) out.push('宝可梦饿着肚子没法训练，先给它喂一颗树果吧。');
+        else if (p && p.perfectToday) out.push('今天宝可梦元气满满，训练能多拿 10% 经验呢。');
+      }
     }
 
     // 玩耍：拼音 / 英语各算 1 项
     if (playOpen) {
-      var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
-      var pd = 0; if (packs.pinyin) pd++; if (packs.english) pd++;
-      var pLeft = 2 - pd;
-      if (pLeft <= 0) out.push('今天的拼音和英语翻牌都玩过了，明天再来吧。');
-      else out.push('今天还剩 ' + pLeft + ' 项翻牌没玩，点「玩耍」接着玩吧。');
+      if (demo) {
+        out.push('演示模式，拼音和英语翻牌想玩几次都可以。');
+      } else {
+        var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
+        var pd = 0; if (packs.pinyin) pd++; if (packs.english) pd++;
+        var pLeft = 2 - pd;
+        if (pLeft <= 0) out.push('今天的拼音和英语翻牌都玩过了，明天再来吧。');
+        else out.push('今天还剩 ' + pLeft + ' 项翻牌没玩，点「玩耍」接着玩吧。');
+      }
     }
 
     // 最近一次成长：整句播报，不再拼名字前缀
@@ -13097,6 +13120,8 @@ window.APP = window.APP || {};
     return entry;
   }
   function playedToday(pack) {
+    // 演示账号：拼音包 / 英语包都能反复玩，记录照写但不作数
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) return false;
     return todayEntry().packs[pack] === true;
   }
   function markPlayed(pack, levelKey) {
@@ -13378,12 +13403,13 @@ window.APP = window.APP || {};
   }
 
   function renderChooser(container) {
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
     var html =
       '<section class="card mem-hero">' +
         '<div class="mem-hero__t"><span class="mem-hero__ico">🎮</span>玩耍' +
           '<button type="button" class="mem-rules-btn" data-rules="1">ⓘ 规则</button></div>' +
         '<div class="mem-hero__chips">' +
-          '<span>每天各玩 1 次</span>' +
+          '<span>' + (demo ? '演示模式 · 不限次' : '每天各玩 1 次') + '</span>' +
           '<span>次数用完按进度给奖</span>' +
         '</div>' +
       '</section>' +
@@ -13613,6 +13639,8 @@ window.APP = window.APP || {};
     return e;
   }
   function playedToday(game) {
+    // 演示账号可反复练同一个玩法，次数记录照写但这里视而不见
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) return false;
     var e = dayEntry(false);
     return !!(e && e.games && e.games[game]);
   }
@@ -13983,18 +14011,20 @@ window.APP = window.APP || {};
   // ===== 训练中心 =====
   function renderChooser() {
     var food = statOf('food');
-    var canGo = food >= FOOD_GATE;
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
+    var canGo = demo || food >= FOOD_GATE;
     var h =
       '<section class="card tr-hero">' +
         '<div class="tr-hero__hd"><div><div class="tr-hero__t">💪 训练中心</div>' +
-          '<div class="tr-hero__s">每节课约 3 分钟 · 每个玩法每天各 1 次</div></div>' +
-          '<span class="tr-hero__count">今日 ' + playedCount() + ' / 4</span></div>' +
+          '<div class="tr-hero__s">' + (demo ? '演示模式 · 不限时不限次' : '每节课约 3 分钟 · 每个玩法每天各 1 次') + '</div></div>' +
+          '<span class="tr-hero__count">' + (demo ? '不限次' : '今日 ' + playedCount() + ' / 4') + '</span></div>' +
         '<div class="tr-cost">参与消耗　体力 −10 · 饱腹 −10<br>' +
           '全对「完美」+6 经验 +10 心情 · 45% 概率 +1 碎片<br>' +
           '达标「优秀」+5 经验 +8 心情 · 36% 概率 +1 碎片<br>' +
           '未达标「加油」+3 经验 +5 心情 · 无碎片</div>' +
-        (canGo ? '<div class="tr-gate is-ok">饱腹 ' + food + ' · 可以开始训练</div>'
-               : '<div class="tr-gate is-no">饱腹 ' + food + ' 低于 30，先喂点东西再来吧</div>') +
+        (demo ? '<div class="tr-gate is-ok">演示模式 · 随时可以开始训练</div>'
+              : (canGo ? '<div class="tr-gate is-ok">饱腹 ' + food + ' · 可以开始训练</div>'
+                       : '<div class="tr-gate is-no">饱腹 ' + food + ' 低于 30，先喂点东西再来吧</div>')) +
         (notice ? '<div class="tr-notice">' + esc(notice) + '</div>' : '') +
       '</section>' +
       '<section class="tr-grid">';
@@ -14027,8 +14057,9 @@ window.APP = window.APP || {};
     var p = APP.store.activePokemon();
     if (!p) return '还没有主力宝可梦，去家长后台添加一只吧';
     if (!p.stats) p.stats = { food: 80, mood: 80, energy: 80 };
-    if (p.stats.food < FOOD_GATE) return '饱腹感低于 30，先喂点东西再来训练吧～';
-    if (playedToday(game)) return '今天这个玩法已经练过啦，明天再来～';
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
+    if (!demo && p.stats.food < FOOD_GATE) return '饱腹感低于 30，先喂点东西再来训练吧～';
+    if (!demo && playedToday(game)) return '今天这个玩法已经练过啦，明天再来～';
     return '';
   }
 
@@ -14115,15 +14146,16 @@ window.APP = window.APP || {};
     var st = document.getElementById('trStep');
     var bar = document.getElementById('trStepBar');
     var sec = document.getElementById('trStepSec');
-    if (c) c.textContent = mmss(session.totalLeft);
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
+    if (c) c.textContent = demo ? '不限时' : mmss(session.totalLeft);
     if (st) st.textContent = session.def.stepLabel(session);
     if (bar) {
-      bar.style.width = Math.max(0, session.stepLeft / STEP_SEC * 100) + '%';
-      bar.className = session.stepLeft <= 3 ? 'is-urgent' : '';
+      bar.style.width = demo ? '100%' : Math.max(0, session.stepLeft / STEP_SEC * 100) + '%';
+      bar.className = !demo && session.stepLeft <= 3 ? 'is-urgent' : '';
     }
     if (sec) {
-      sec.textContent = session.paused ? '动画中 · 计时暂停' : '本步 ' + session.stepLeft + ' 秒';
-      sec.className = !session.paused && session.stepLeft <= 3 ? 'is-urgent' : '';
+      sec.textContent = demo ? '演示模式 · 不限时' : (session.paused ? '动画中 · 计时暂停' : '本步 ' + session.stepLeft + ' 秒');
+      sec.className = !demo && !session.paused && session.stepLeft <= 3 ? 'is-urgent' : '';
     }
   }
 
@@ -14162,6 +14194,8 @@ window.APP = window.APP || {};
 
   function tick() {
     if (!session || session.finished || session.paused) return;
+    // 演示账号不限时：3 分钟全局倒计时和每题 10 秒都不走
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) { updateHud(); return; }
     session.totalLeft--;
     session.stepLeft--;
     if (session.totalLeft <= 0) {
@@ -14319,7 +14353,7 @@ window.APP = window.APP || {};
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
   function gifSrc(dex) { return 'assets/pokemon/animated/' + APP.pad3(dex) + '.gif'; }
-  function stillSrc(dex) { return 'assets/pokemon/' + APP.pad3(dex) + '.png'; }
+  function stillSrc(dex) { return 'assets/pokemon/' + APP.pad3(dex) + '.webp'; }
   function nameOf(p) {
     if (p.nickname) return p.nickname;
     var info = APP.evo && APP.evo.get ? APP.evo.get(p.dexNo) : null;
@@ -15477,7 +15511,7 @@ window.APP = window.APP || {};
         '<span class="dex-card__no">' + pad(f.id) + '</span>' +
         '<span class="dex-card__st' + stCls + '">' + stTxt + '</span>' +
         '<img class="dex-card__img' + (lit2 ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(f.id) + '.png" alt="" loading="lazy">' +
+          '" src="assets/pokemon/' + pad(f.id) + '.webp" alt="" loading="lazy">' +
         '<div class="dex-card__nm' + (lit2 || S.showName ? '' : ' is-hide') + '">' + esc(nm) + '</div>' +
         '<div class="dex-tps">' + badges(f.types) + '</div>' +
         '<div class="dex-card__dots">' + dots + '</div></div>';
@@ -15499,7 +15533,7 @@ window.APP = window.APP || {};
       chain += '<div class="' + cls +
         '" data-act="form" data-fi="' + i + '">' +
         '<img class="dex-fnode__img' + (own[x.id] || se[x.id] ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(x.id) + '.png" alt="">' +
+          '" src="assets/pokemon/' + pad(x.id) + '.webp" alt="">' +
         '<div class="dex-fnode__zh">' + pad(x.id) + ' ' + x.zh + '</div>' +
         (!cur && crossGen && gx ? '<div class="dex-fnode__gen">' + genShort(gx) + '</div>' : '') +
         (x.cond ? '<div class="dex-fnode__cond">' + esc(x.cond) + '</div>' : '') + '</div>';
@@ -15512,7 +15546,7 @@ window.APP = window.APP || {};
       '<button type="button" class="dex-modal__x" data-act="close" aria-label="关闭">×</button>' +
       '<div class="dex-mhead">' +
         '<img class="dex-mhead__img' + (litP ? '' : ' is-sil') +
-          '" src="assets/pokemon/' + pad(p.id) + '.png" alt="">' +
+          '" src="assets/pokemon/' + pad(p.id) + '.webp" alt="">' +
         '<h2>' + esc(p.zh) + '</h2>' +
         '<div class="dex-mhead__no">No.' + pad(p.id) + '　' + esc(e.g) + '　' +
           (om ? '已拥有' : sm ? '已发现' : '未点亮') + '</div>' +
@@ -15726,13 +15760,13 @@ window.APP = window.APP || {};
   // 7 个场景主题：每个主题对应一张背景图 + 3 个宝可梦躲藏点（透明精灵）。
   // 每轮随机抽一个主题，3 个躲藏点再随机摆放到 3 个槽位（纯视觉、不绑定稀有度）。
   var THEMES = [
-    { key:'marsh',  name:'湿地', scene:'assets/catch/scenes/marsh.png',  hides:['assets/catch/hides/marsh-1.png','assets/catch/hides/marsh-2.png','assets/catch/hides/marsh-3.png'] },
-    { key:'volcano',name:'火山', scene:'assets/catch/scenes/volcano.png', hides:['assets/catch/hides/volcano-1.png','assets/catch/hides/volcano-2.png','assets/catch/hides/volcano-3.png'] },
-    { key:'bamboo', name:'竹林', scene:'assets/catch/scenes/bamboo.png', hides:['assets/catch/hides/bamboo-1.png','assets/catch/hides/bamboo-2.png','assets/catch/hides/bamboo-3.png'] },
-    { key:'desert', name:'沙漠', scene:'assets/catch/scenes/desert.png', hides:['assets/catch/hides/desert-1.png','assets/catch/hides/desert-2.png','assets/catch/hides/desert-3.png'] },
-    { key:'beach',  name:'海滩', scene:'assets/catch/scenes/beach.png',  hides:['assets/catch/hides/beach-1.png','assets/catch/hides/beach-2.png','assets/catch/hides/beach-3.png'] },
-    { key:'cave',   name:'洞窟', scene:'assets/catch/scenes/cave.png',   hides:['assets/catch/hides/cave-1.png','assets/catch/hides/cave-2.png','assets/catch/hides/cave-3.png'] },
-    { key:'snow',   name:'雪山', scene:'assets/catch/scenes/snow.png',   hides:['assets/catch/hides/snow-1.png','assets/catch/hides/snow-2.png','assets/catch/hides/snow-3.png'] }
+    { key:'marsh',  name:'湿地', scene:'assets/catch/scenes/marsh.webp',  hides:['assets/catch/hides/marsh-1.webp','assets/catch/hides/marsh-2.webp','assets/catch/hides/marsh-3.webp'] },
+    { key:'volcano',name:'火山', scene:'assets/catch/scenes/volcano.webp', hides:['assets/catch/hides/volcano-1.webp','assets/catch/hides/volcano-2.webp','assets/catch/hides/volcano-3.webp'] },
+    { key:'bamboo', name:'竹林', scene:'assets/catch/scenes/bamboo.webp', hides:['assets/catch/hides/bamboo-1.webp','assets/catch/hides/bamboo-2.webp','assets/catch/hides/bamboo-3.webp'] },
+    { key:'desert', name:'沙漠', scene:'assets/catch/scenes/desert.webp', hides:['assets/catch/hides/desert-1.webp','assets/catch/hides/desert-2.webp','assets/catch/hides/desert-3.webp'] },
+    { key:'beach',  name:'海滩', scene:'assets/catch/scenes/beach.webp',  hides:['assets/catch/hides/beach-1.webp','assets/catch/hides/beach-2.webp','assets/catch/hides/beach-3.webp'] },
+    { key:'cave',   name:'洞窟', scene:'assets/catch/scenes/cave.webp',   hides:['assets/catch/hides/cave-1.webp','assets/catch/hides/cave-2.webp','assets/catch/hides/cave-3.webp'] },
+    { key:'snow',   name:'雪山', scene:'assets/catch/scenes/snow.webp',   hides:['assets/catch/hides/snow-1.webp','assets/catch/hides/snow-2.webp','assets/catch/hides/snow-3.webp'] }
   ];
 
   // 第 6 轮：编号改用普通数字，圆圈由 .b3-hide__num 用 CSS 绘制，避免字体基线漂移
@@ -16434,7 +16468,7 @@ window.APP = window.APP || {};
     var tk = (s.wallet && s.wallet.tickets && s.wallet.tickets.battle) || 0;
     var g = APP.store.canPlay('battle');
     var gate = g.ok
-      ? (g.left ? '剩余战斗次数 ' + g.left + ' 次' : '今日可入场')
+      ? (g.demo ? '演示模式 · 不限次数' : (g.left ? '剩余战斗次数 ' + g.left + ' 次' : '今日可入场'))
       : gateToast(g);
     say('要出门对战吗？');
     menuHtml([{ info: '⚔️<br>外出战斗' }], 'is-single');
@@ -16477,7 +16511,7 @@ window.APP = window.APP || {};
     var s = APP.store.get();
     var tk = (s.wallet && s.wallet.tickets && s.wallet.tickets.battle) || 0;
     var g = APP.store.canPlay('battle');
-    if (tk < 1) { toast('你目前没有战斗券，请先前往兑换', true); return; }
+    if (!g.demo && tk < 1) { toast('你目前没有战斗券，请先前往兑换', true); return; }
     if (!g.ok) { toast(gateToast(g), true); return; }
     center('要消耗 1 张战斗券吗？',
       '去会一会野外的对手。<br>消耗 <b>1 张战斗券 + 1 次入场机会</b>，打赢有经验和碎片。',
@@ -17240,7 +17274,7 @@ window.APP = window.APP || {};
     return (APP.HERO_BUST_ART && APP.HERO_BUST_ART[base])
       ? APP.HERO_BUST_ART[base] : 'assets/npc-v6/' + base + '-bust.png';
   }
-  function bgFor(i) { return 'assets/pic/' + ((((i % BG_COUNT) + BG_COUNT) % BG_COUNT) + 1) + '.png'; }
+  function bgFor(i) { return 'assets/pic/' + ((((i % BG_COUNT) + BG_COUNT) % BG_COUNT) + 1) + '.webp'; }
   function timeSlot() {
     var d = new Date();
     var slot = Math.floor(d.getHours() / SLOT_HOURS);
@@ -17291,6 +17325,7 @@ window.APP = window.APP || {};
       return g.reason === 'cooldown' ? '今日休息，<b>' + g.waitDays + '</b> 天后可进行对战'
         : g.reason === 'holidayLimit' ? '今天次数用完' : '暂时不能出门';
     }
+    if (g.demo) return '演示模式 · 不限次数';
     return g.left ? '剩余战斗次数 <b>' + g.left + '</b> 次' : '今日可入场';
   }
   function renderIntroHud() {
@@ -17367,8 +17402,8 @@ window.APP = window.APP || {};
     var s = APP.store.get();
     var tk = (s.wallet && s.wallet.tickets && s.wallet.tickets.battle) || 0;
     var gate = APP.store.canPlay('battle');
-    var ok = tk >= 1 && gate.ok;
-    var why = tk < 1 ? '你目前没有战斗券，请先前往兑换' : (gate.ok ? '' : gateMsg(gate));
+    var ok = (gate.demo || tk >= 1) && gate.ok;
+    var why = gate.demo ? '' : (tk < 1 ? '你目前没有战斗券，请先前往兑换' : (gate.ok ? '' : gateMsg(gate)));
     // 门禁不满足时，提醒由 NPC 直接说出口（卡片上方台词），不再放卡片底部红字；
     // 只有能开战时才显示消耗信息，避免「不能打」却还挂着「消耗 1 张战斗券」。
     var line = why || '要来一决高下吗？';
@@ -18051,6 +18086,7 @@ window.APP = window.APP || {};
       if (g.reason === 'holidayLimit') return '今天次数用完';
       return '暂时不能出门';
     }
+    if (g.demo) return '演示模式 · 不限次数';
     return g.left ? '剩余捕捉次数 ' + g.left + ' 次' : '今日可入场';
   }
 
@@ -18069,6 +18105,7 @@ window.APP = window.APP || {};
   // 场景中央「无法捕捉」提示：固定「向导」+ 黄衣少年半身像，三态各一句台词。
   // 返回台词 HTML；可捕捉时返回空串（隐藏）。
   function restHintLine(g, tk) {
+    if (g.demo) return '';
     if (tk < 1) return '<b>向导</b>：你目前没有精灵球，请先前往兑换';
     if (!g.ok) {
       if (g.reason === 'cooldown') {
@@ -18203,7 +18240,7 @@ window.APP = window.APP || {};
     var s = APP.store.get();
     var tk = (s.wallet && s.wallet.tickets && s.wallet.tickets.capture) || 0;
     var g = APP.store.canPlay('capture');
-    if (tk < 1) { toast('精灵球不够啦，先去兑换中心', true); return; }
+    if (!g.demo && tk < 1) { toast('精灵球不够啦，先去兑换中心', true); return; }
     if (!g.ok) { toast(gateToast(g), true); return; }
     slotPick = slot || null;
     dialog('探索宝可梦躲藏点？',
@@ -18853,6 +18890,8 @@ window.APP = window.APP || {};
 
   // 是否解锁（true=已解锁）。支持 ranch/catch/exchange/dex/battle/gym
   function gate(id) {
+    // 演示账号全功能常开：进页面即可体验，不打卡也不弹解锁引导
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) return true;
     var res = evalState();
     return !!(res.st[id]);
   }
@@ -19422,7 +19461,7 @@ window.APP = window.APP || {};
   // 首登专用 128px 内联小图；常量表缺失时回退到图鉴原图，不至于开天窗
   function starterArt(d) {
     if (APP.STARTER_ART && APP.STARTER_ART[d]) return APP.STARTER_ART[d];
-    return 'assets/pokemon/' + pad(d) + '.png';
+    return 'assets/pokemon/' + pad(d) + '.webp';
   }
   // 主角形象：选择格只有 64px，用 160px 内联小图；常量表缺失时回退到原始立绘
   function heroArt(base) {
@@ -19914,6 +19953,112 @@ window.APP = window.APP || {};
 
 ;
 
+/* ===== js/preload.js ===== */
+window.APP = window.APP || {};
+
+(function (APP) {
+  'use strict';
+
+  // ===== 后台静默预加载 =====
+  //
+  // 目的：还没解锁的玩法要用的图（捕捉场景 / 战斗擂台 / 图鉴立绘）体积大，
+  // 等玩家真的点进去才现下载就会卡一下。这里在玩家完成新手流程进入主界面后，
+  // 趁空闲先把它们悄悄下载好，之后进那个功能直接读缓存，不等网络。
+  //
+  // 三条纪律：
+  //   1. 不抢首屏 —— 只有登录后、选好主力宝可梦（新手流程走完）才启动，还延后 1.5 秒；
+  //   2. 不重复下载 —— 内存 Set 去重，且 Service Worker 对图片是 cache-first，
+  //      预加载过的图页面再取时零网络；
+  //   3. 不阻塞界面 —— requestIdleCallback 空档里一张一张下，单张失败静默跳过。
+
+  var started = false;
+  var grabbed = Object.create(null);
+
+  function idle(fn, timeout) {
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(fn, { timeout: timeout || 2000 });
+    } else {
+      setTimeout(fn, 150);
+    }
+  }
+
+  // 取一张图：不进 DOM，只让浏览器把它读进缓存
+  function grab(url) {
+    if (!url || grabbed[url]) return;
+    grabbed[url] = 1;
+    try {
+      var img = new Image();
+      img.onload = function () { if (img.decode) { try { img.decode(); } catch (e) {} } };
+      img.onerror = function () {};
+      img.src = url;
+    } catch (e) {}
+  }
+
+  // 捕捉页：7 张场景背景 + 21 张躲藏点
+  function sceneList() {
+    var out = [];
+    var themes = (APP.catchData && APP.catchData.THEMES) || [];
+    for (var i = 0; i < themes.length; i++) {
+      out.push(themes[i].scene);
+      var hides = themes[i].hides || [];
+      for (var j = 0; j < hides.length; j++) out.push(hides[j]);
+    }
+    return out;
+  }
+
+  // 战斗页：9 张擂台背景
+  function battleList() {
+    var out = [];
+    for (var i = 1; i <= 9; i++) out.push('assets/pic/' + i + '.webp');
+    return out;
+  }
+
+  // 图鉴 / 状态栏：已拥有的宝可梦立绘（最多 40 张，编号小的先下）
+  function ownedList() {
+    var out = [];
+    try {
+      var s = APP.store.get() || {};
+      var ids = Object.create(null), i;
+      var cs = s.catches || [], ps = s.pokemon || [];
+      for (i = 0; i < cs.length; i++) ids[Number(cs[i].dexNo)] = 1;
+      for (i = 0; i < ps.length; i++) ids[Number(ps[i].dexNo)] = 1;
+      var keys = Object.keys(ids).map(Number).sort(function (a, b) { return a - b; });
+      for (i = 0; i < keys.length && i < 40; i++) {
+        out.push('assets/pokemon/' + APP.pad3(keys[i]) + '.webp');
+      }
+    } catch (e) {}
+    return out;
+  }
+
+  // 一张一张来：每张之间让出主线程，界面始终可操作
+  function drain(list) {
+    var i = 0;
+    function next() {
+      if (i >= list.length) return;
+      grab(list[i++]);
+      idle(next);
+    }
+    idle(next);
+  }
+
+  function maybeStart() {
+    if (started) return;
+    if (APP.auth && APP.auth.needLogin && APP.auth.needLogin()) return;
+    if (APP.onboarding && APP.onboarding.active && APP.onboarding.active()) return;
+    var p = null;
+    try { p = APP.store.activePokemon(); } catch (e) {}
+    if (!p) return; // 还没选宝可梦：新手流程没走完，先不预热
+    started = true;
+    setTimeout(function () {
+      drain(sceneList().concat(battleList(), ownedList()));
+    }, 1500);
+  }
+
+  APP.preload = { maybeStart: maybeStart };
+})(window.APP);
+
+;
+
 /* ===== js/app.js ===== */
 (function () {
   'use strict';
@@ -20240,6 +20385,8 @@ window.APP = window.APP || {};
     }
     // 保证跨天看守在跑（内部防重）
     startDateGuard();
+    // 新手流程走完、进了主界面之后，才在后台静默预热还没解锁的玩法要用的图
+    if (APP.preload && APP.preload.maybeStart) APP.preload.maybeStart();
   }
 
   APP.refresh = function () {
@@ -20401,6 +20548,7 @@ window.APP = window.APP || {};
 })();
 
 </script>
+
 
 
 

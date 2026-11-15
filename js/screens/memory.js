@@ -107,6 +107,8 @@ window.APP = window.APP || {};
     return entry;
   }
   function playedToday(pack) {
+    // 演示账号：拼音包 / 英语包都能反复玩，记录照写但不作数
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) return false;
     return todayEntry().packs[pack] === true;
   }
   function markPlayed(pack, levelKey) {
@@ -388,12 +390,13 @@ window.APP = window.APP || {};
   }
 
   function renderChooser(container) {
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
     var html =
       '<section class="card mem-hero">' +
         '<div class="mem-hero__t"><span class="mem-hero__ico">🎮</span>玩耍' +
           '<button type="button" class="mem-rules-btn" data-rules="1">ⓘ 规则</button></div>' +
         '<div class="mem-hero__chips">' +
-          '<span>每天各玩 1 次</span>' +
+          '<span>' + (demo ? '演示模式 · 不限次' : '每天各玩 1 次') + '</span>' +
           '<span>次数用完按进度给奖</span>' +
         '</div>' +
       '</section>' +

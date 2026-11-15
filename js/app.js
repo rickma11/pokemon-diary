@@ -323,6 +323,8 @@
     }
     // 保证跨天看守在跑（内部防重）
     startDateGuard();
+    // 新手流程走完、进了主界面之后，才在后台静默预热还没解锁的玩法要用的图
+    if (APP.preload && APP.preload.maybeStart) APP.preload.maybeStart();
   }
 
   APP.refresh = function () {

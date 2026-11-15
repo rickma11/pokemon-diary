@@ -11,7 +11,7 @@ window.APP = window.APP || {};
 
   function frontSrc(dex) { return 'assets/pokemon/animated/' + pads(dex) + '.gif'; }
   function backSrc(dex) { return 'assets/pokemon/animated/back/' + pads(dex) + '.gif'; }
-  function stillSrc(dex) { return 'assets/pokemon/' + pads(dex) + '.png'; } // 兜底：官方静态立绘一定存在
+  function stillSrc(dex) { return 'assets/pokemon/' + pads(dex) + '.webp'; } // 兜底：官方静态立绘一定存在
   function nameOf(p) {
     if (p.nickname) return p.nickname;
     var info = APP.evo && APP.evo.get ? APP.evo.get(p.dexNo) : null;
@@ -141,23 +141,32 @@ window.APP = window.APP || {};
     var playOpen = featureOpen('play');
 
     // 训练：今天还剩几项没做（读当天 trainingPlays.games，4 个小游戏各算 1 项）
+    var demo = APP.auth && APP.auth.isDemo && APP.auth.isDemo();
     if (trainOpen) {
-      var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
-      var tn = 0; for (i = 0; i < GAME_LABELS.length; i++) if (games[GAME_LABELS[i].k]) tn++;
-      var tLeft = GAME_LABELS.length - tn;
-      if (tLeft <= 0) out.push('今天四项训练全做完了，明天再来挑战吧。');
-      else out.push('今天还剩 ' + tLeft + ' 项训练没做，点「训练」接着做吧。');
-      if (p && p.stats && p.stats.food < 30) out.push('宝可梦饿着肚子没法训练，先给它喂一颗树果吧。');
-      else if (p && p.perfectToday) out.push('今天宝可梦元气满满，训练能多拿 10% 经验呢。');
+      if (demo) {
+        out.push('演示模式，训练随时都能练，想练几次就练几次。');
+      } else {
+        var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
+        var tn = 0; for (i = 0; i < GAME_LABELS.length; i++) if (games[GAME_LABELS[i].k]) tn++;
+        var tLeft = GAME_LABELS.length - tn;
+        if (tLeft <= 0) out.push('今天四项训练全做完了，明天再来挑战吧。');
+        else out.push('今天还剩 ' + tLeft + ' 项训练没做，点「训练」接着做吧。');
+        if (p && p.stats && p.stats.food < 30) out.push('宝可梦饿着肚子没法训练，先给它喂一颗树果吧。');
+        else if (p && p.perfectToday) out.push('今天宝可梦元气满满，训练能多拿 10% 经验呢。');
+      }
     }
 
     // 玩耍：拼音 / 英语各算 1 项
     if (playOpen) {
-      var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
-      var pd = 0; if (packs.pinyin) pd++; if (packs.english) pd++;
-      var pLeft = 2 - pd;
-      if (pLeft <= 0) out.push('今天的拼音和英语翻牌都玩过了，明天再来吧。');
-      else out.push('今天还剩 ' + pLeft + ' 项翻牌没玩，点「玩耍」接着玩吧。');
+      if (demo) {
+        out.push('演示模式，拼音和英语翻牌想玩几次都可以。');
+      } else {
+        var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
+        var pd = 0; if (packs.pinyin) pd++; if (packs.english) pd++;
+        var pLeft = 2 - pd;
+        if (pLeft <= 0) out.push('今天的拼音和英语翻牌都玩过了，明天再来吧。');
+        else out.push('今天还剩 ' + pLeft + ' 项翻牌没玩，点「玩耍」接着玩吧。');
+      }
     }
 
     // 最近一次成长：整句播报，不再拼名字前缀

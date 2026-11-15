@@ -262,6 +262,13 @@ window.APP = window.APP || {};
 
   function role() { var s = session(); return s ? s.role : null; }
 
+  // 演示账号：全站唯一一处判定，只有它跳过捕捉/战斗/训练/玩耍的次数与时间门槛。
+  // 普通账号一律走原规则，别的地方要用都调这个函数，不要自己比对账号名。
+  function isDemo() {
+    var s = session();
+    return !!(s && s.accountId === 'OAOpkm');
+  }
+
   // 只校验家长密码是否正确：不写会话、不切换身份、不落本地存储。
   // 家长后台入口每次都要重新输密码（不能登录一次就长期放行），用这个而不是 login()，
   // 否则孩子输对一次家长密码后，login() 会把会话覆盖成 parent 角色，之后就免密直进了。
@@ -304,6 +311,7 @@ window.APP = window.APP || {};
   APP.auth = {
     session: session,
     role: role,
+    isDemo: isDemo,
     verifyParent: verifyParent,
     needLogin: needLogin,
     lastAccount: lastAccount,

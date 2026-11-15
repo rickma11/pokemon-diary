@@ -241,6 +241,7 @@
       if (g.reason === 'holidayLimit') return '今天次数用完';
       return '暂时不能出门';
     }
+    if (g.demo) return '演示模式 · 不限次数';
     return g.left ? '剩余捕捉次数 ' + g.left + ' 次' : '今日可入场';
   }
 
@@ -259,6 +260,7 @@
   // 场景中央「无法捕捉」提示：固定「向导」+ 黄衣少年半身像，三态各一句台词。
   // 返回台词 HTML；可捕捉时返回空串（隐藏）。
   function restHintLine(g, tk) {
+    if (g.demo) return '';
     if (tk < 1) return '<b>向导</b>：你目前没有精灵球，请先前往兑换';
     if (!g.ok) {
       if (g.reason === 'cooldown') {
@@ -393,7 +395,7 @@
     var s = APP.store.get();
     var tk = (s.wallet && s.wallet.tickets && s.wallet.tickets.capture) || 0;
     var g = APP.store.canPlay('capture');
-    if (tk < 1) { toast('精灵球不够啦，先去兑换中心', true); return; }
+    if (!g.demo && tk < 1) { toast('精灵球不够啦，先去兑换中心', true); return; }
     if (!g.ok) { toast(gateToast(g), true); return; }
     slotPick = slot || null;
     dialog('探索宝可梦躲藏点？',

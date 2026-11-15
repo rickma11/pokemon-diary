@@ -21,13 +21,13 @@ window.APP = window.APP || {};
   // 7 个场景主题：每个主题对应一张背景图 + 3 个宝可梦躲藏点（透明精灵）。
   // 每轮随机抽一个主题，3 个躲藏点再随机摆放到 3 个槽位（纯视觉、不绑定稀有度）。
   var THEMES = [
-    { key:'marsh',  name:'湿地', scene:'assets/catch/scenes/marsh.png',  hides:['assets/catch/hides/marsh-1.png','assets/catch/hides/marsh-2.png','assets/catch/hides/marsh-3.png'] },
-    { key:'volcano',name:'火山', scene:'assets/catch/scenes/volcano.png', hides:['assets/catch/hides/volcano-1.png','assets/catch/hides/volcano-2.png','assets/catch/hides/volcano-3.png'] },
-    { key:'bamboo', name:'竹林', scene:'assets/catch/scenes/bamboo.png', hides:['assets/catch/hides/bamboo-1.png','assets/catch/hides/bamboo-2.png','assets/catch/hides/bamboo-3.png'] },
-    { key:'desert', name:'沙漠', scene:'assets/catch/scenes/desert.png', hides:['assets/catch/hides/desert-1.png','assets/catch/hides/desert-2.png','assets/catch/hides/desert-3.png'] },
-    { key:'beach',  name:'海滩', scene:'assets/catch/scenes/beach.png',  hides:['assets/catch/hides/beach-1.png','assets/catch/hides/beach-2.png','assets/catch/hides/beach-3.png'] },
-    { key:'cave',   name:'洞窟', scene:'assets/catch/scenes/cave.png',   hides:['assets/catch/hides/cave-1.png','assets/catch/hides/cave-2.png','assets/catch/hides/cave-3.png'] },
-    { key:'snow',   name:'雪山', scene:'assets/catch/scenes/snow.png',   hides:['assets/catch/hides/snow-1.png','assets/catch/hides/snow-2.png','assets/catch/hides/snow-3.png'] }
+    { key:'marsh',  name:'湿地', scene:'assets/catch/scenes/marsh.webp',  hides:['assets/catch/hides/marsh-1.webp','assets/catch/hides/marsh-2.webp','assets/catch/hides/marsh-3.webp'] },
+    { key:'volcano',name:'火山', scene:'assets/catch/scenes/volcano.webp', hides:['assets/catch/hides/volcano-1.webp','assets/catch/hides/volcano-2.webp','assets/catch/hides/volcano-3.webp'] },
+    { key:'bamboo', name:'竹林', scene:'assets/catch/scenes/bamboo.webp', hides:['assets/catch/hides/bamboo-1.webp','assets/catch/hides/bamboo-2.webp','assets/catch/hides/bamboo-3.webp'] },
+    { key:'desert', name:'沙漠', scene:'assets/catch/scenes/desert.webp', hides:['assets/catch/hides/desert-1.webp','assets/catch/hides/desert-2.webp','assets/catch/hides/desert-3.webp'] },
+    { key:'beach',  name:'海滩', scene:'assets/catch/scenes/beach.webp',  hides:['assets/catch/hides/beach-1.webp','assets/catch/hides/beach-2.webp','assets/catch/hides/beach-3.webp'] },
+    { key:'cave',   name:'洞窟', scene:'assets/catch/scenes/cave.webp',   hides:['assets/catch/hides/cave-1.webp','assets/catch/hides/cave-2.webp','assets/catch/hides/cave-3.webp'] },
+    { key:'snow',   name:'雪山', scene:'assets/catch/scenes/snow.webp',   hides:['assets/catch/hides/snow-1.webp','assets/catch/hides/snow-2.webp','assets/catch/hides/snow-3.webp'] }
   ];
 
   // 第 6 轮：编号改用普通数字，圆圈由 .b3-hide__num 用 CSS 绘制，避免字体基线漂移

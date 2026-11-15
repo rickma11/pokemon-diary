@@ -360,7 +360,7 @@ window.APP = window.APP || {};
       }
     }
     return '<div class="dbg__cur">' +
-      '<img class="dbg__art" src="assets/pokemon/' + APP.pad3(p.dexNo) + '.png" alt="">' +
+      '<img class="dbg__art" src="assets/pokemon/' + APP.pad3(p.dexNo) + '.webp" alt="">' +
       '<div class="dbg__info">' +
         '<div class="dbg__line"><strong>' + esc(p.nickname) + '</strong>' +
           '<span class="badge">' + APP.pad3(p.dexNo) + '</span>' +
@@ -458,7 +458,7 @@ window.APP = window.APP || {};
     for (var i = 0; i < list.length; i++) {
       if (list[i].dexNo === n) owned = list[i];
     }
-    el.innerHTML = '<img class="dbg__thumb" src="assets/pokemon/' + APP.pad3(n) + '.png" alt="">' +
+    el.innerHTML = '<img class="dbg__thumb" src="assets/pokemon/' + APP.pad3(n) + '.webp" alt="">' +
       '<span class="dbg__name">' + esc(info.name) + '</span>' +
       '<span class="dbg__no">' + APP.pad3(n) + '</span>' +
       (owned ? '<span class="badge">' + (owned.slot !== 'box' ? '队伍中' : '已拥有') + '</span>' : '');

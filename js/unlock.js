@@ -196,6 +196,8 @@ window.APP = window.APP || {};
 
   // 是否解锁（true=已解锁）。支持 ranch/catch/exchange/dex/battle/gym
   function gate(id) {
+    // 演示账号全功能常开：进页面即可体验，不打卡也不弹解锁引导
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) return true;
     var res = evalState();
     return !!(res.st[id]);
   }

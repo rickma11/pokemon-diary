@@ -270,3 +270,46 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 - README 演示账号小节已同步新内容描述。
 **验证**：VM 重放三场景（干净设备 / 先有马一一进度再切账号 / 槽位残留旧空档）全部正确采纳（lv25 shards520 onboarded=true）；端到端读回仓库解密一致。
 **事实记录**：该账号孩子密码实测为 `123456`（README 口径）；家长密码 `jpw664458` 当前**解不开 parent 包裹**（生成脚本历史问题），家长身份登录此演示账号会报密码错误——用户表示密码问题自行处理，未动账号文件。若日后要修：用任一可用密码解开 vaultKey 后按 `auth.js changeParentPwd` 的 rewrap 逻辑重裹 parent 包裹并 PUT 账号文件即可，存档不受影响。
+
+## 16. 2026-11-15 图片瘦身 + 后台预加载 + 演示账号无限体验（v85）
+
+### 16.1 图片全部转 WebP（体积 -95%）
+| 位置 | 数量 | 原 PNG | 现在 WebP | 说明 |
+|---|---|---|---|---|
+| `assets/catch/scenes/` | 7 | ~36MB | ~1.4MB | 捕捉场景背景，原始分辨率不缩 |
+| `assets/catch/hides/` | 21 | ~18MB | ~1.1MB | 躲藏点，**保留 alpha 透明** |
+| `assets/pic/` | 9 | ~32MB | ~1.6MB | 战斗擂台背景 |
+| `assets/pokemon/` | 386 | ~50MB | ~7.4MB | 图鉴 / 状态栏 / 养成页立绘，**保留 alpha** |
+
+- **原 PNG 全部保留在仓库里**（页面已不再引用），想回退只要把引用改回 `.png` 即可；
+- 引用点共改 12 处：`js/data/catch-pools.js`（THEMES）、`js/screens/battle.js`（`bgFor()`）、`js/screens/dex.js`（3 处）、`js/events.js`、`js/onboarding.js`、`js/statusbar.js`、`js/screens/care.js`（`stillSrc`）、`js/screens/parent.js`（2 处）、`js/screens/ranch.js`（`stillSrc`）；
+- **注意**：`assets/pokemon/animated/*.gif`（动图）没有转，仍是 GIF；`assets/npc-v6/` 战斗全身立绘也没转；
+- 重新生成 WebP 的脚本本轮用完已删（用 sharp 批量转即可，需要时再写）。
+
+### 16.2 后台静默预加载（`js/preload.js`，新增文件）
+- 触发时机：`js/app.js` 的 `render()` 末尾调用 `APP.preload.maybeStart()`，**只有登录后 + 选好主力宝可梦（新手流程走完）+ 不在引导浮层**才启动；
+- 延后 1.5 秒启动，用 `requestIdleCallback`（不支持时退化为 `setTimeout`）**一张一张**下载，绝不抢首屏；
+- 预加载清单：7 张场景背景 + 21 张躲藏点 → 9 张战斗背景 → 最多 40 张自己已拥有的宝可梦立绘；
+- 去重靠内存 `grabbed` Set + Service Worker 的 cache-first；页面再取同一张图零网络；
+- `index.src.html` 里脚本顺序：`js/preload.js` 放在 `js/app.js` 前面（`build.js` 会自动内联进 `index.html`）。
+
+### 16.3 演示账号 `OAOpkm` 无限体验
+- 新增唯一判定入口：**`APP.auth.isDemo()`**（`js/auth.js`，内部比对 `session().accountId === 'OAOpkm'`）。
+  **其他任何地方都调这个函数，不要自己写账号名比对**；
+- 放开点（全部用 `APP.auth.isDemo()` 守卫，普通账号走原规则，一行没改）：
+  | 位置 | 改动 |
+  |---|---|
+  | `js/unlock.js` `gate()` | 直接返回 true，全功能常开 |
+  | `js/store.js` `canPlay()` | 返回 `{ok:true,left:0,demo:true}`，不写次数 |
+  | `js/store.js` `spendTicket()` | `gate.demo` 时不扣球/券、不写存档 |
+  | `js/screens/training.js` | `playedToday()` 恒 false；`canStart()` 跳过饱腹门槛；`tick()` 不再递减倒计时；`updateHud()` 显示「不限时」 |
+  | `js/screens/memory.js` | `playedToday()` 恒 false（拼音/英语都能反复玩） |
+  | `js/screens/catch.js` / `battle.js` | 显示「演示模式 · 不限次数」；不再拦「精灵球/战斗券不够」 |
+  | `js/screens/care.js` | 提示语改成「演示模式，随时都能练」 |
+
+- **道馆挑战没有放开**（用户没勾选），维持原来的每周次数与冷却。
+
+### 16.4 本轮发布要点
+- SW 版本 `pokedex-checkin-v84` → **v85**（清掉手机里旧 PNG 缓存，图片路径也变了必须升）；
+- 重新 `node build.js` 生成 `index.html`；
+- 临时脚本 `tools/_probe_img.js`、`tools/_probe_alpha.js`、`tools/_webp_*.js`、`tools/_patch_webp_refs.js` 已全部删除（`tools/_src/` 是既有素材目录，别删）。

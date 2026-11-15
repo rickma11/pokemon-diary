@@ -221,7 +221,7 @@
     var tk = (s.wallet && s.wallet.tickets && s.wallet.tickets.battle) || 0;
     var g = APP.store.canPlay('battle');
     var gate = g.ok
-      ? (g.left ? '剩余战斗次数 ' + g.left + ' 次' : '今日可入场')
+      ? (g.demo ? '演示模式 · 不限次数' : (g.left ? '剩余战斗次数 ' + g.left + ' 次' : '今日可入场'))
       : gateToast(g);
     say('要出门对战吗？');
     menuHtml([{ info: '⚔️<br>外出战斗' }], 'is-single');
@@ -264,7 +264,7 @@
     var s = APP.store.get();
     var tk = (s.wallet && s.wallet.tickets && s.wallet.tickets.battle) || 0;
     var g = APP.store.canPlay('battle');
-    if (tk < 1) { toast('你目前没有战斗券，请先前往兑换', true); return; }
+    if (!g.demo && tk < 1) { toast('你目前没有战斗券，请先前往兑换', true); return; }
     if (!g.ok) { toast(gateToast(g), true); return; }
     center('要消耗 1 张战斗券吗？',
       '去会一会野外的对手。<br>消耗 <b>1 张战斗券 + 1 次入场机会</b>，打赢有经验和碎片。',
@@ -1027,7 +1027,7 @@
     return (APP.HERO_BUST_ART && APP.HERO_BUST_ART[base])
       ? APP.HERO_BUST_ART[base] : 'assets/npc-v6/' + base + '-bust.png';
   }
-  function bgFor(i) { return 'assets/pic/' + ((((i % BG_COUNT) + BG_COUNT) % BG_COUNT) + 1) + '.png'; }
+  function bgFor(i) { return 'assets/pic/' + ((((i % BG_COUNT) + BG_COUNT) % BG_COUNT) + 1) + '.webp'; }
   function timeSlot() {
     var d = new Date();
     var slot = Math.floor(d.getHours() / SLOT_HOURS);
@@ -1078,6 +1078,7 @@
       return g.reason === 'cooldown' ? '今日休息，<b>' + g.waitDays + '</b> 天后可进行对战'
         : g.reason === 'holidayLimit' ? '今天次数用完' : '暂时不能出门';
     }
+    if (g.demo) return '演示模式 · 不限次数';
     return g.left ? '剩余战斗次数 <b>' + g.left + '</b> 次' : '今日可入场';
   }
   function renderIntroHud() {
@@ -1154,8 +1155,8 @@
     var s = APP.store.get();
     var tk = (s.wallet && s.wallet.tickets && s.wallet.tickets.battle) || 0;
     var gate = APP.store.canPlay('battle');
-    var ok = tk >= 1 && gate.ok;
-    var why = tk < 1 ? '你目前没有战斗券，请先前往兑换' : (gate.ok ? '' : gateMsg(gate));
+    var ok = (gate.demo || tk >= 1) && gate.ok;
+    var why = gate.demo ? '' : (tk < 1 ? '你目前没有战斗券，请先前往兑换' : (gate.ok ? '' : gateMsg(gate)));
     // 门禁不满足时，提醒由 NPC 直接说出口（卡片上方台词），不再放卡片底部红字；
     // 只有能开战时才显示消耗信息，避免「不能打」却还挂着「消耗 1 张战斗券」。
     var line = why || '要来一决高下吗？';

@@ -1307,6 +1307,10 @@ window.APP = window.APP || {};
   // 节假日：每天最多 holidayPerDay 次（按 countToday 计）。
   // 返回 { ok, reason?, left?, waitDays? }
   function canPlay(kind) {
+    // 演示账号：不受冷却 / 每日次数限制，也不产生任何次数记录
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) {
+      return { ok: true, left: 0, demo: true };
+    }
     beginWrite();
     var s = load();
     var cap = s.playCaps && s.playCaps[kind];
@@ -1353,6 +1357,8 @@ window.APP = window.APP || {};
         : '暂时不能出门';
       return { ok: false, msg: msg };
     }
+    // 演示账号白玩：不扣球/券、不写次数，资源永不耗尽
+    if (gate.demo) return { ok: true, tickets: 99, left: 0, demo: true };
     beginWrite();
     var s = load();
     if (!s.wallet) s.wallet = {};

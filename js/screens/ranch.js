@@ -15,7 +15,7 @@ window.APP = window.APP || {};
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
   function gifSrc(dex) { return 'assets/pokemon/animated/' + APP.pad3(dex) + '.gif'; }
-  function stillSrc(dex) { return 'assets/pokemon/' + APP.pad3(dex) + '.png'; }
+  function stillSrc(dex) { return 'assets/pokemon/' + APP.pad3(dex) + '.webp'; }
   function nameOf(p) {
     if (p.nickname) return p.nickname;
     var info = APP.evo && APP.evo.get ? APP.evo.get(p.dexNo) : null;
