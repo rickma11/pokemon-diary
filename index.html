@@ -18885,6 +18885,12 @@ window.APP = window.APP || {};
         if (Object.prototype.hasOwnProperty.call(UNLOCK_REQ, ck) && (seenKeep[ck] || claimedKeep[ck])) st[ck] = true;
       }
     }
+    // 演示账号：所有档位直接算已解锁——解锁任务面板全打钩，也不再弹「还没解锁」的博士讲解。
+    // 普通账号完全不受影响。
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) {
+      st.play = true; st.train = true; st.ranch = true; st.exchange = true;
+      st.dex = true; st.catch = true; st.battle = true; st.gym = true;
+    }
     return { st: st, level: level, tasksDone: tasksDone, loginDays: activeDays, crossedDay: crossedDay, isFreshAccount: isFreshAccount, bond: bond, careCount: careCount };
   }
 
@@ -19087,6 +19093,9 @@ window.APP = window.APP || {};
   // ===== 解锁检查：评估各档位，对新解锁的触发博士引导 + 发放奖励 =====
   function check() {
     if (!APP.store || !APP.store.get || !APP.store.unlock || !APP.store.setUnlock) return;
+    // 演示账号：所有档位本来就常开，不播「刚解锁」讲解、也不发解锁奖励——
+    // 否则每次打开都会连着弹一串博士浮层，还会去改共享存档。
+    if (APP.auth && APP.auth.isDemo && APP.auth.isDemo()) return;
     var res = evalState();
     var u = APP.store.unlock();
     var seen = u.seen || {};
