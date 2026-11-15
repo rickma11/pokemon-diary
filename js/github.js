@@ -102,8 +102,9 @@ window.APP = window.APP || {};
   }
 
   // 测试连接：GET 仓库元信息，返回 { ok, status, message }
-  function ping() {
-    var cfg = config();
+  // override 可传 { owner, repo, token } 用于「不保存、只测试」的场景
+  function ping(override) {
+    var cfg = override || config();
     if (!cfg) return Promise.resolve({ ok: false, status: 0, message: '未配置 GitHub 同步' });
     return window.fetch(API + '/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo), {
       method: 'GET',
@@ -116,6 +117,24 @@ window.APP = window.APP || {};
     })['catch'](function (e) {
       return { ok: false, status: 0, message: (e && e.message) || '网络错误' };
     });
+  }
+
+  // 列出 accounts/ 下所有账号 id：供「昵称 / 短码」登录时解析真实账号码。
+  // 目录不存在（还没人注册）或读取失败都降级为空数组，不阻塞登录。
+  function listAccounts() {
+    return api('accounts').then(function (r) {
+      if (r.status === 404 || !r.ok) return [];
+      return r.json()['catch'](function () { return null; });
+    }).then(function (j) {
+      if (!Array.isArray(j)) return [];
+      var out = [];
+      for (var i = 0; i < j.length; i++) {
+        if (j[i] && j[i].type === 'file' && /\.json$/.test(j[i].name)) {
+          out.push(j[i].name.replace(/\.json$/, ''));
+        }
+      }
+      return out;
+    })['catch'](function () { return []; });
   }
 
   // —— 客户端加密（AES-GCM，密钥由密码经 PBKDF2 派生）——
@@ -196,7 +215,8 @@ window.APP = window.APP || {};
     api: api,
     getFile: getFile,
     putFile: putFile,
-    ping: ping
+    ping: ping,
+    listAccounts: listAccounts
   };
 
   // —— 共享的「GitHub 同步」设置卡：我的数据页与家长后台设置页都用它 ——
@@ -218,55 +238,137 @@ window.APP = window.APP || {};
       escHtml(ghMsgState.text) + '</p>';
   }
 
+  // —— 共享「GitHub 同步」卡：按权限分两级 ——
+  // fullCardHtml()    含 owner/repo/branch/PAT 输入框 → 登录页（首次配置 / 展开）、家长后台设置页
+  // compactCardHtml() 只有「存档同步」按钮 + 状态 + 规则 → 「我的数据」页（所有人，含小孩）、登录页折叠态
+  // cardHtml()        兼容旧调用点，等价于 fullCardHtml()
+  var ghBusy = false;
+
+  function statusText() {
+    var st = (APP.sync && APP.sync.status) ? APP.sync.status() : null;
+    if (!st) return '尚未登录账号';
+    if (st.syncing) return '同步中…';
+    if (st.offline) return '离线 · 未同步 ' + st.pending + ' 项（联网后自动补传）';
+    if (st.pending > 0) return '未同步 ' + st.pending + ' 项';
+    if (st.lastSyncAt) {
+      var d = new Date(st.lastSyncAt);
+      return '已同步 · 上次 ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+    }
+    return '已连接，等待首次同步';
+  }
+  function updateStateText() {
+    var el = (typeof document !== 'undefined') ? document.getElementById('ghState') : null;
+    if (el) el.textContent = '当前状态：' + statusText();
+  }
+  // 规则说明按 sync.js 的真实实现写：防抖 2 秒上传 / 启动+每 5 分钟拉取 / online 补传 /
+  // savedAt 最后写入者胜出 / 每次 PUT 都是一次 commit / 照片只存本机 / 手动同步 = push + pull
+  function rulesHtml(open) {
+    return '<details class="gh-rules"' + (open ? ' open' : '') + '>' +
+      '<summary>存档保存规则：改动 2 秒上传 · 每 5 分钟拉取 · 断网自动补传（点开看全部）</summary>' +
+      '<ul>' +
+        '<li>打卡或改动后 <b>2 秒</b>自动上传；打开页面自动拉取一次，之后每 <b>5 分钟</b>自动拉取一次。</li>' +
+        '<li>断网也能照常打卡，联网后自动补传。</li>' +
+        '<li>多台设备同时改动，按「最后修改时间」取最新的一份。</li>' +
+        '<li>每次上传都会在 GitHub 仓库留下一条提交记录，历史版本可回溯。</li>' +
+        '<li>作业照片只存这台设备，<b>不进仓库</b>（换设备看不到照片）。</li>' +
+        '<li>点「存档同步」= 立刻上传 + 拉取一次，并回报结果。</li>' +
+      '</ul></details>';
+  }
+  function syncButtonsHtml(expandButton) {
+    return '<div class="row" style="flex-wrap:wrap">' +
+      '<button type="button" class="btn btn--primary" data-act="gh-sync">存档同步</button>' +
+      (expandButton ? '<button type="button" class="btn btn--sm" data-act="gh-expand">修改连接设置</button>' : '') +
+      '</div>' +
+      '<p class="field__hint" id="ghState">当前状态：' + escHtml(statusText()) + '</p>' +
+      ghMsgHtml();
+  }
+
+  function compactCardHtml(opts) {
+    if (!APP.gh) return '';
+    opts = opts || {};
+    var ok = APP.gh.hasConfig();
+    return '<section class="card" id="ghCard"><h2>存档同步<span class="card__side">' +
+      (ok ? '已连接' : '未配置') + '</span></h2>' +
+      '<p>打卡记录会自动存进你的 GitHub 仓库，换设备登录同一账号即可看到同一份数据。</p>' +
+      syncButtonsHtml(!!opts.expandButton) +
+      rulesHtml(false) +
+      '</section>';
+  }
+
+  function fullCardHtml() {
+    if (!APP.gh) return '';
+    var cfg = APP.gh.config() || {};
+    var ok = APP.gh.hasConfig();
+    return '<section class="card" id="ghCard"><h2>GitHub 同步设置<span class="card__side">' +
+      (ok ? '已配置' : '未配置') + '</span></h2>' +
+      '<p>数据存到你的 GitHub 仓库：换设备、在手机上登录同一账号码即可看到同一份数据。每台设备填一次。</p>' +
+      '<p class="field__hint">存档与账号密码均以 <b>AES-GCM 加密</b>后存入仓库，文件名是随机账号码；' +
+        '即使仓库公开，别人也只能看到密文，无法读取或冒充你的记录。连接信息只存这台设备。</p>' +
+      '<label class="field"><span>仓库所有者 (owner)</span>' +
+        '<input id="gh_owner" type="text" value="' + escHtml(cfg.owner || '') + '" autocomplete="off" placeholder="如：your-github-id"></label>' +
+      '<label class="field"><span>仓库名 (repo)</span>' +
+        '<input id="gh_repo" type="text" value="' + escHtml(cfg.repo || '') + '" autocomplete="off" placeholder="如：pokemon-checkin-data"></label>' +
+      '<label class="field"><span>分支 (branch)</span>' +
+        '<input id="gh_branch" type="text" value="' + escHtml(cfg.branch || 'main') + '" autocomplete="off" placeholder="main"></label>' +
+      '<label class="field"><span>访问令牌 (PAT)</span>' +
+        '<input id="gh_token" type="password" value="' + escHtml(cfg.token || '') + '" autocomplete="off" placeholder="ghp_… 需 repo 权限"></label>' +
+      '<p class="field__hint">PAT 只存在这台设备，不会上传。在 GitHub → Settings → Developer settings → Personal access tokens 里生成一个有 <b>repo</b> 权限的令牌。</p>' +
+      '<div class="row" style="flex-wrap:wrap">' +
+        '<button type="button" class="btn btn--primary" data-act="gh-save">保存设置</button>' +
+        '<button type="button" class="btn" data-act="gh-test">测试连接</button>' +
+        '<button type="button" class="btn" data-act="gh-sync">存档同步</button>' +
+      '</div>' +
+      ghMsgHtml() +
+      '<p class="field__hint" id="ghState">当前状态：' + escHtml(statusText()) + '</p>' +
+      rulesHtml(true) +
+      '</section>';
+  }
+
   APP.ghui = {
-    // 返回设置卡 HTML（含一个 id=ghMsg 的提示占位）
-    cardHtml: function () {
-      if (!APP.gh) return '';
-      var cfg = APP.gh.config() || {};
-      var ok = APP.gh.hasConfig();
-      return '<section class="card" id="ghCard"><h2>GitHub 同步<span class="card__side">' +
-        (ok ? '已配置' : '未配置') + '</span></h2>' +
-        '<p>数据存到你的 GitHub 仓库：换设备、在手机上登录同一账号码即可看到同一份数据。每台设备填一次。</p>' +
-        '<p class="field__hint">存档与账号密码均以 <b>AES-GCM 加密</b>后存入仓库，文件名是随机账号码；' +
-          '即使仓库公开，别人也只能看到密文，无法读取或冒充你的记录。连接信息只存这台设备。</p>' +
-        '<label class="field"><span>仓库所有者 (owner)</span>' +
-          '<input id="gh_owner" type="text" value="' + escHtml(cfg.owner || '') + '" autocomplete="off" placeholder="如：your-github-id"></label>' +
-        '<label class="field"><span>仓库名 (repo)</span>' +
-          '<input id="gh_repo" type="text" value="' + escHtml(cfg.repo || '') + '" autocomplete="off" placeholder="如：pokemon-checkin-data"></label>' +
-        '<label class="field"><span>分支 (branch)</span>' +
-          '<input id="gh_branch" type="text" value="' + escHtml(cfg.branch || 'main') + '" autocomplete="off" placeholder="main"></label>' +
-        '<label class="field"><span>访问令牌 (PAT)</span>' +
-          '<input id="gh_token" type="password" value="' + escHtml(cfg.token || '') + '" autocomplete="off" placeholder="ghp_… 需 repo 权限"></label>' +
-        '<p class="field__hint">PAT 只存在这台设备，不会上传。在 GitHub → Settings → Developer settings → Personal access tokens 里生成一个有 <b>repo</b> 权限的令牌。</p>' +
-        '<div class="row" style="flex-wrap:wrap">' +
-          '<button type="button" class="btn btn--primary" data-act="gh-save">保存设置</button>' +
-          '<button type="button" class="btn" data-act="gh-test">测试连接</button>' +
-          '<button type="button" class="btn" data-act="gh-sync">立即同步</button>' +
-        '</div>' +
-        ghMsgHtml() +
-        '</section>';
-    },
+    fullCardHtml: fullCardHtml,
+    compactCardHtml: compactCardHtml,
+    cardHtml: fullCardHtml, // 兼容旧调用点
     // 在各自 screen 的 onClick 里调用：处理 gh-save / gh-test / gh-sync；返回 true 表示已处理
     handle: function (act) {
       if (act !== 'gh-save' && act !== 'gh-test' && act !== 'gh-sync') return false;
       if (act === 'gh-save') {
-        var owner = (document.getElementById('gh_owner') || {}).value || '';
-        var repo = (document.getElementById('gh_repo') || {}).value || '';
-        var branch = (document.getElementById('gh_branch') || {}).value || 'main';
-        var token = (document.getElementById('gh_token') || {}).value || '';
+        var owner = String((document.getElementById('gh_owner') || {}).value || '').trim();
+        var repo = String((document.getElementById('gh_repo') || {}).value || '').trim();
+        var branch = String((document.getElementById('gh_branch') || {}).value || 'main').trim() || 'main';
+        var token = String((document.getElementById('gh_token') || {}).value || '').trim();
         if (!owner || !repo || !token) { setGhMsg(false, 'owner、repo、token 都要填'); return true; }
         if (!APP.gh.saveConfig({ owner: owner, repo: repo, branch: branch, token: token })) {
-          setGhMsg(false, '保存失败'); return true;
+          setGhMsg(false, '保存失败：浏览器不允许写入本地存储'); return true;
         }
-        setGhMsg(true, '已保存，正在连接同步…');
-        if (APP.refresh) APP.refresh(); // 统一由本模块刷新，避免调用方各自 refresh 冲掉未保存的输入
-        if (APP.sync && APP.sync.start) APP.sync.start();
+        // 保存即验证：成功才刷新（进入第二步 / 折叠），失败保持展开让用户就地改。
+        setGhMsg(true, '设置已保存，正在验证连接…');
+        APP.gh.ping().then(function (r) {
+          if (r.ok) {
+            setGhMsg(true, '连接成功，可以创建 / 登录账号了');
+            if (APP.refresh) APP.refresh();
+            if (APP.sync && APP.sync.start) APP.sync.start();
+          } else {
+            var why = r.status === 401 ? '令牌无效或已过期（401）'
+              : r.status === 404 ? '仓库不存在，或令牌没有该仓库权限（404）'
+              : (r.message || ('HTTP ' + r.status));
+            setGhMsg(false, '连接失败：' + why + '。设置已保存，请修改后重试');
+            updateStateText();
+          }
+        })['catch'](function (e) {
+          setGhMsg(false, '连接失败：' + ((e && e.message) || '网络错误') + '。设置已保存，可稍后重试');
+          updateStateText();
+        });
         return true;
       }
       if (act === 'gh-test') {
-        if (!APP.gh.hasConfig()) { setGhMsg(false, '请先填好并保存设置'); return true; }
-        setGhMsg(true, '正在连接…');
-        APP.gh.ping().then(function (r) {
+        // 用输入框里当前的值临时验证（不改动已保存设置），任意先后顺序都能测
+        var cfg = APP.gh.config() || {};
+        var o = String((document.getElementById('gh_owner') || {}).value || cfg.owner || '').trim();
+        var rp = String((document.getElementById('gh_repo') || {}).value || cfg.repo || '').trim();
+        var tk = String((document.getElementById('gh_token') || {}).value || cfg.token || '').trim();
+        if (!o || !rp || !tk) { setGhMsg(false, '请先填写仓库与访问令牌'); return true; }
+        setGhMsg(true, '正在测试连接…');
+        APP.gh.ping({ owner: o, repo: rp, token: tk }).then(function (r) {
           if (r.ok) setGhMsg(true, '连接成功：仓库可访问');
           else setGhMsg(false, '连接失败：' + (r.message || ('HTTP ' + r.status)));
         });
@@ -275,9 +377,21 @@ window.APP = window.APP || {};
       if (act === 'gh-sync') {
         if (!APP.gh.hasConfig()) { setGhMsg(false, '请先填写 GitHub 同步设置'); return true; }
         if (!APP.auth.session()) { setGhMsg(false, '请先登录账号'); return true; }
-        if (APP.sync && APP.sync.flushPush) APP.sync.flushPush();
-        if (APP.sync && APP.sync.pull) APP.sync.pull();
-        setGhMsg(true, '已触发同步');
+        if (ghBusy) return true;
+        ghBusy = true;
+        setGhMsg(true, '正在同步…');
+        var p = (APP.sync && APP.sync.flushPush) ? APP.sync.flushPush() : Promise.resolve(false);
+        Promise.resolve(p).then(function () {
+          return (APP.sync && APP.sync.pull) ? APP.sync.pull() : false;
+        }).then(function () {
+          ghBusy = false;
+          setGhMsg(true, '同步完成');
+          updateStateText();
+        })['catch'](function (e) {
+          ghBusy = false;
+          setGhMsg(false, '同步失败：' + ((e && e.message) || '请检查网络与仓库设置'));
+          updateStateText();
+        });
         return true;
       }
       return true;

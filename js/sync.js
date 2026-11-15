@@ -1,7 +1,7 @@
-// 同步层（T4）
-// 职责：本地落盘 → 防抖 2 秒上传；启动/每 5 分钟/网络恢复 → 拉取云端；savedAt 三方比对；
-//       顶部「未同步 N 项」角标；服务器不可达时进本地模式（离线优先，孩子照常打卡）。
-// 设计原则：与现有 beginWrite「写入前合并外部最新存档」同一套合并内核，云端同步只是它的延伸。
+// 同步层（T4 / 纯静态 GitHub 版）
+// 职责：本地落盘 → 防抖 2 秒上传；启动 / 每 5 分钟 / 网络恢复 → 拉取云端；savedAt 最后写入者胜出；顶部角标。
+// v2：不再有「本机模式」，也不再弹「用哪份记录继续」二选一 —— 本机旧记录只留独立槽，
+//     需要时由家长后台「导入本机旧记录」单向导入（云端为空才可用、导入前备份）。
 window.APP = window.APP || {};
 
 (function (APP) {
@@ -54,8 +54,9 @@ window.APP = window.APP || {};
     return out;
   }
 
-  // —— 分叉二选一：登录到另一个账号、本机还有一份旧记录时，由用户自己选用哪份 ——
-  // 决策前冻结 adopt / push / 首登，任何一边都不会被悄悄覆盖；两边数据都完整保留。
+  // —— 分叉状态（v2 已停用）——
+  // 老版本在「登录到另一个账号、本机还有旧记录」时会冻结同步并弹二选一。
+  // v2 起 fork 永远保持 null：这些变量/函数只保留接口兼容，pull / push 里相关分支不会命中。
   var FORK_ASK_PREFIX = 'pokedex-checkin-fork-asked:';
   var FORK_PENDING_KEY = 'pokedex-checkin-fork-pending';
   var fork = null;                // { target, from, oldState, accountState, cloud, shown, offline }
@@ -72,16 +73,9 @@ window.APP = window.APP || {};
     lsSet(FORK_PENDING_KEY, JSON.stringify({ target: fork.target, from: fork.from }));
   }
   function restoreForkState() {
-    if (fork) return;
-    var raw = parseRaw(lsGet(FORK_PENDING_KEY));
-    if (!raw || !raw.target || forkAsked(raw.target)) { lsRemove(FORK_PENDING_KEY); return; }
-    var old = parseRaw(slotRaw(raw.from || 'local'));
-    if (!old) { lsRemove(FORK_PENDING_KEY); return; }
-    fork = {
-      target: raw.target, from: raw.from || 'local', oldState: old,
-      accountState: parseRaw(slotRaw(raw.target)),
-      cloud: null, shown: false, offline: false
-    };
+    // v2 已移除二选一：把旧版本遗留的「待选」标记直接清掉，
+    // 否则用户刷新页面后还会被旧弹窗拦住（fork 不再被创建，也不会再弹）。
+    lsRemove(FORK_PENDING_KEY);
   }
 
   function escHtml(t) {
@@ -173,52 +167,11 @@ window.APP = window.APP || {};
     if (el) { el.innerHTML = ''; el.onclick = null; el.style.display = 'none'; }
   }
 
-  function showFork() {
-    if (!fork || fork.shown || typeof document === 'undefined') return;
-    fork.shown = true;
-    injectForkCss();
-    var el = document.getElementById('forkOverlay');
-    if (!el) { el = document.createElement('div'); el.id = 'forkOverlay'; document.body.appendChild(el); }
-    var acc = stateSummary(fork.cloud || fork.accountState);
-    var loc = stateSummary(fork.oldState);
-    var accReal = !!(acc && acc.real);
-    var offlineTip = fork.offline
-      ? '<br>暂时连不上账号云端，下面显示的是这台设备上保存的账号记录。'
-      : '';
-    var lead = accReal
-      ? '这台设备上有一份之前的记录，账号 ' + escHtml(fork.target) + ' 里也有一份，两边内容不一样。'
-      : '这台设备上有一份之前的记录，而账号 ' + escHtml(fork.target) + ' 还是全新的（还没有打卡记录）。';
-    var accNote = accReal
-      ? '换设备、在手机上查看，用的都是这份。本机旧记录留在这台设备里，不删除。'
-      : '这个账号从零开始，会先走一遍「选择第一支宝可梦」的新手流程。本机旧记录留在这台设备里，不删除。';
-    el.style.display = 'block';
-    el.innerHTML =
-      '<div class="fk-bg"></div>' +
-      '<div class="fk-modal" role="dialog" aria-label="选择用哪份记录">' +
-        '<div class="fk-title">用哪一份记录继续？</div>' +
-        '<div class="fk-lead">' + lead +
-          '请自己选一份继续用：没选中的那份会完整留着，在「我的数据 → 数据存档」里随时能换回来。' +
-          offlineTip + '</div>' +
-        '<button type="button" class="fk-opt" data-fork="account">' +
-          '<div class="fk-opt__t"><i>1</i>用这个账号的记录</div>' +
-          '<div class="fk-opt__s">' + summaryText(acc) + '</div>' +
-          '<div class="fk-opt__n">' + accNote + '</div>' +
-        '</button>' +
-        '<button type="button" class="fk-opt" data-fork="local">' +
-          '<div class="fk-opt__t"><i>2</i>用这台设备上的旧记录</div>' +
-          '<div class="fk-opt__s">' + summaryText(loc) + '</div>' +
-          '<div class="fk-opt__n">把以前的打卡记录搬到这个账号，会覆盖账号里原来的记录；覆盖前会先留一份备份。</div>' +
-        '</button>' +
-        '<div class="fk-foot">两份记录不会自动合并，只能二选一。之后仍可随时重新选择。</div>' +
-      '</div>';
-    // 点背景不关闭：必须明确选一个，避免「手一滑」等于默认选了某一份
-    el.onclick = function (e) {
-      var t = e.target;
-      while (t && t !== el && !(t.getAttribute && t.getAttribute('data-fork'))) t = t.parentNode;
-      if (!t || t === el) return;
-      chooseFork(t.getAttribute('data-fork'));
-    };
-  }
+  // v2 起彻底停用「用哪份记录继续」二选一弹窗：
+  // 登录一律直接用账号云端那份，本机旧记录完整收进独立槽（不删除），
+  // 需要时由家长后台「导入本机旧记录」单向导入（云端为空才可用、导入前备份）。
+  // 保留空函数供历史调用点（pull / start）安全调用，不再显示任何 UI。
+  function showFork() { return; }
 
   function chooseFork(which) {
     if (!fork) return;
@@ -253,20 +206,8 @@ window.APP = window.APP || {};
     if (APP.refresh) APP.refresh();
   }
 
-  // 「我的数据 → 数据存档」里手动重开这次选择（改主意 / 验证流程都用它）
-  function reopenFork(slotId) {
-    var id = slotId || 'local';
-    var other = parseRaw(slotRaw(id));
-    if (!other) return false;
-    var now = (APP.store && APP.store.get) ? APP.store.get() : null;
-    fork = {
-      target: slotOwner(), from: id, oldState: other,
-      accountState: now, cloud: now, shown: false, offline: false
-    };
-    saveForkState();
-    showFork();
-    return true;
-  }
+  // v2：不再支持手动重开二选一（我的数据页已移除该入口），保留接口返回 false 即可
+  function reopenFork() { return false; }
 
   // 把当前活跃存档收进它自己的槽（只增不删），再载入目标槽；全程静默，不触发 push。
   function applySlot(target) {
@@ -274,22 +215,14 @@ window.APP = window.APP || {};
     if (fork) { closeFork(); fork = null; saveForkState(); }
     var from = savedOwner() || 'local';
     var raw = lsGet(SAVE_KEY);
-    var before = parseRaw(raw);
     if (raw) lsSet(SLOT_PREFIX + from, raw);
     var next = parseRaw(slotRaw(target));
     adopting = true; // 切槽期间 migrate 可能触发 save()，绝不能让旧槽数据回推
     if (APP.store && APP.store.replaceState) APP.store.replaceState(next);
     adopting = false;
     lsSet(OWNER_KEY, target);
-    // 登录到另一个账号、且切换前那份是真实记录 → 进入「等用户二选一」状态。
-    // 登出回本机（target === 'local'）或该账号已经选过，都不再打扰。
-    if (target !== 'local' && target !== from && !forkAsked(target) && stateRealData(before)) {
-      fork = {
-        target: target, from: from, oldState: before,
-        accountState: next, cloud: null, shown: false, offline: false
-      };
-      saveForkState();
-    }
+    // v2：不再因「本机有一份旧记录」而进入二选一冻结。旧记录已完整留在独立槽里（不删除），
+    // 当前账号直接用自己云端那份；需要旧记录时由家长后台「导入本机旧记录」单向导入。
     stop(); // 让 render() 里的 start() 按新归属重新拉一次云端
     return true;
   }
@@ -385,7 +318,36 @@ window.APP = window.APP || {};
     });
   }
 
-  function importLocalToAccount() { return importSlot('local'); }
+  // 家长后台单向导入本机旧记录（v2）：
+  // ① 必须已登录；② 本机槽里得有真实打卡数据；③ 当前账号必须还是全新（云端那份无真实数据），
+  //    否则拒绝，避免把家里已有记录覆盖掉；④ 覆盖前给当前账号留一份独立槽备份。
+  function importLocalToAccount() {
+    if (!canSync()) return Promise.resolve({ ok: false, error: '请先登录账号' });
+    var old = parseRaw(slotRaw('local'));
+    if (!old || !stateRealData(old)) {
+      return Promise.resolve({ ok: false, error: '这台设备没有可导入的本机旧记录' });
+    }
+    var now = (APP.store && APP.store.get) ? APP.store.get() : null;
+    if (stateRealData(now)) {
+      return Promise.resolve({ ok: false, error: '当前账号已有打卡记录，为避免覆盖，不能导入本机旧记录' });
+    }
+    var msg = '把这台设备上的旧记录导入当前账号？导入前会先给当前账号留一份备份，之后仍可恢复。';
+    var ask = (APP.ui && APP.ui.confirm)
+      ? APP.ui.confirm(msg, '导入并覆盖', '取消', '导入本机旧记录')
+      : Promise.resolve(false);
+    return ask.then(function (ok) {
+      if (!ok) return { ok: false };
+      lsSet(SLOT_PREFIX + slotOwner() + '.beforeimport', JSON.stringify(now));
+      adopting = true;
+      APP.store.replaceState(old);
+      adopting = false;
+      APP.store.save(); // 刷新 savedAt，保证能盖掉云端空档
+      return flushPush().then(function (pushed) {
+        if (APP.refresh) APP.refresh();
+        return { ok: !!pushed };
+      });
+    });
+  }
 
   // 照片展示源：v1 照片仅存本机 IndexedDB（换设备不跟随存档；后续版本再做仓库同步）。
   // 因此这里只取本地；服务端照片通道已随纯静态化移除。

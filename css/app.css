@@ -1296,6 +1296,48 @@ body.in-parent {
   font-weight: 600;
 }
 
+/* 登录 / 注册同框页签：等宽两栏 + 下划线选中态（默认登录账号） */
+.auth-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--line-soft);
+  margin: 0 0 16px;
+}
+.auth-tab {
+  flex: 1 1 50%;
+  min-height: 46px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+}
+.auth-tab.is-on {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.auth-tab:active { opacity: .75; }
+
+/* GitHub 同步卡里的「存档保存规则」折叠说明 */
+.gh-rules {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.gh-rules summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.gh-rules ul { margin: 8px 0 0; padding-left: 18px; }
+.gh-rules li { margin: 3px 0; }
+
 .xp__day-sum.is-minus {
   color: var(--danger);
 }

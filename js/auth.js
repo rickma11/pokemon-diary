@@ -2,6 +2,7 @@
 // 账号元数据存 GitHub：accounts/{accountId}.json（仅含随机文件名 + 两个角色密码包裹的存档主密钥，公开仓库不可读）
 // 存档存 GitHub：saves/{accountId}.json（AES-GCM 加密，密钥由登录密码派生）
 // 强制登录：无会话即要求登录 / 注册，不再有「本机模式」。
+// 登录名支持三种：完整账号码（马一一-wd52it）、昵称（马一一）、短码（wd52it）；靠列目录 + 密码消歧，存量账号无需迁移。
 window.APP = window.APP || {};
 
 (function (APP) {
@@ -56,7 +57,8 @@ window.APP = window.APP || {};
 
     function tryCreate(attempt) {
       if (attempt > 8) return Promise.resolve({ ok: false, error: '生成账号码失败，请重试' });
-      var id = slug + '-' + randomSuffix();
+      var short = randomSuffix();
+      var id = slug + '-' + short;
       return gh().getFile('accounts/' + id + '.json').then(function (existing) {
         if (existing) return tryCreate(attempt + 1); // 撞号，换一个
         return APP.cipher.newVaultKey().then(function (vaultKey) {
@@ -82,7 +84,8 @@ window.APP = window.APP || {};
                           var vaultKeyB64 = APP.cipher.b64FromBytes(new Uint8Array(vaultRaw));
                           store({ accountId: id, nickname: nickname, role: 'child', vaultKeyB64: vaultKeyB64 });
                           lsSet(K_ACCOUNT, id);
-                          return { ok: true, accountId: id };
+                          // 三种登录名都交给 UI 展示：昵称 / 短码 / 完整账号码
+                          return { ok: true, accountId: id, nickname: nickname, short: short };
                         });
                       });
                     });
@@ -97,7 +100,64 @@ window.APP = window.APP || {};
     return tryCreate(0);
   }
 
-  // 登录：读账号文件 → 用输入密码派生密钥尝试解开 parent / child 包裹，解开即角色 + 拿到存档主密钥
+  // —— 登录名解析：三种都能登 ——
+  //   ① 完整账号码（马一一-wd52it）：直接读 accounts/{name}.json，最快
+  //   ② 昵称（马一一）：匹配 id 去掉 6 位随机后缀后的 slug 前缀
+  //   ③ 短码（wd52it）：匹配 id 的 6 位后缀
+  // 用「列 accounts/ 目录 + 逐个验密码」实现，不写别名索引文件：
+  // 旧版注册的存量账号（如已存在的 马一一-wd52it）同样能命中，零数据迁移。
+  function normName(s) { return String(s || '').trim().toLowerCase(); }
+  function slugOf(s) {
+    return normName(s).replace(/[^a-z0-9\u4e00-\u9fa5]/g, '').slice(0, 8);
+  }
+  function matchId(id, name) {
+    var n = normName(name);
+    if (!n) return false;
+    if (id === n) return true;                                // 完整账号码
+    if (id.slice(-(n.length + 1)) === '-' + n) return true;   // 短码
+    var prefix = id.replace(/-[a-z0-9]{6}$/, '');             // 昵称 slug 前缀
+    var ns = slugOf(n);
+    return !!ns && prefix === ns;
+  }
+  function resolveCandidates(name) {
+    return gh().getFile('accounts/' + name + '.json').then(function (direct) {
+      if (direct) return [name]; // 完整账号码直接命中，不必列目录
+      return gh().listAccounts().then(function (ids) {
+        var out = [];
+        for (var i = 0; i < ids.length; i++) {
+          if (matchId(ids[i], name)) out.push(ids[i]);
+        }
+        return out;
+      });
+    });
+  }
+
+  // 读一个账号文件并用输入密码试着解开 parent / child 包裹；解开即返回角色 + 存档主密钥
+  function tryOpen(id, pwd) {
+    return gh().getFile('accounts/' + id + '.json').then(function (rec) {
+      if (!rec) return { ok: false };
+      var data;
+      try { data = JSON.parse(gh().decode(rec.content)); } catch (e) { return { ok: false }; }
+      if (!data || !data.wrap || !data.wrap.parent || !data.wrap.child) return { ok: false };
+      function tryRole(role) {
+        var w = data.wrap[role];
+        return APP.cipher.deriveKey(pwd, APP.cipher.bytesFromB64(w.salt)).then(function (k) {
+          return APP.cipher.openBytes(w, k);
+        }).then(function (vaultRaw) {
+          return APP.cipher.importRaw(vaultRaw).then(function () {
+            return { role: role, vaultRaw: vaultRaw };
+          });
+        });
+      }
+      function ok(r) { return { ok: true, role: r.role, vaultRaw: r.vaultRaw, data: data }; }
+      // 用 then 第二参数只捕获「解包失败」，finish（写会话）出错不会被误报成密码错误
+      return tryRole('parent').then(ok, function () {
+        return tryRole('child').then(ok, function () { return { ok: false }; });
+      });
+    });
+  }
+
+  // 登录：账号码 / 昵称 / 短码 → 候选账号 → 逐个验密码（同名账号靠密码消歧）
   function login(accountId, pwd) {
     if (!needCfg()) {
       return Promise.resolve({ ok: false, error: '请先在页面上方的「GitHub 同步」里填写仓库与访问令牌' });
@@ -105,33 +165,24 @@ window.APP = window.APP || {};
     if (!APP.cipher || !APP.cipher.available()) {
       return Promise.resolve({ ok: false, error: '当前环境不支持加密（请用 https 或 localhost 打开）' });
     }
-    accountId = String(accountId || '').trim();
-    if (!accountId) return Promise.resolve({ ok: false, error: '请输入账号码' });
-    return gh().getFile('accounts/' + accountId + '.json').then(function (rec) {
-      if (!rec) return { ok: false, error: '账号不存在，请检查账号码' };
-      var data;
-      try { data = JSON.parse(gh().decode(rec.content)); } catch (e) { return { ok: false, error: '账号文件损坏' }; }
-      if (!data || !data.wrap || !data.wrap.parent || !data.wrap.child) return { ok: false, error: '账号文件损坏' };
-      function tryRole(role) {
-        var w = data.wrap[role];
-        return APP.cipher.deriveKey(pwd, APP.cipher.bytesFromB64(w.salt)).then(function (k) {
-          return APP.cipher.openBytes(w, k);
-        }).then(function (vaultRaw) {
-          return APP.cipher.importRaw(vaultRaw).then(function (vaultKey) {
-            return { role: role, vaultRaw: vaultRaw };
-          });
+    var name = String(accountId || '').trim();
+    if (!name) return Promise.resolve({ ok: false, error: '请输入账号码、昵称或短码' });
+    if (/[\/\\\r\n]/.test(name)) return Promise.resolve({ ok: false, error: '账号名不能包含斜杠或换行' });
+    return resolveCandidates(name).then(function (ids) {
+      if (!ids.length) return { ok: false, error: '账号不存在，请检查账号码 / 昵称 / 短码' };
+      function attempt(i) {
+        if (i >= ids.length) return { ok: false, error: '密码错误' };
+        return tryOpen(ids[i], pwd).then(function (r) {
+          if (r.ok) {
+            var vaultKeyB64 = APP.cipher.b64FromBytes(new Uint8Array(r.vaultRaw));
+            store({ accountId: ids[i], nickname: r.data.nickname, role: r.role, vaultKeyB64: vaultKeyB64 });
+            lsSet(K_ACCOUNT, ids[i]);
+            return { ok: true, role: r.role, accountId: ids[i] };
+          }
+          return attempt(i + 1);
         });
       }
-      function finish(r) {
-        var vaultKeyB64 = APP.cipher.b64FromBytes(new Uint8Array(r.vaultRaw));
-        store({ accountId: data.accountId, nickname: data.nickname, role: r.role, vaultKeyB64: vaultKeyB64 });
-        lsSet(K_ACCOUNT, data.accountId);
-        return { ok: true, role: r.role };
-      }
-      // 用 then 的第二参数只捕获「解包失败」：finish（写会话）出错不会被误报成密码错误
-      return tryRole('parent').then(finish, function () {
-        return tryRole('child').then(finish, function () { return { ok: false, error: '密码错误' }; });
-      });
+      return attempt(0);
     });
   }
 

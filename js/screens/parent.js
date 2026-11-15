@@ -61,7 +61,7 @@ window.APP = window.APP || {};
         '<li><span class="k">账号码</span><span class="v">' + esc(s.accountId) + '</span></li>' +
         '<li><span class="k">当前身份</span><span class="v">大人（可进后台与审核）</span></li>' +
       '</ul>' +
-      '<p class="field__hint">换设备时用账号码 + 对应密码登录，就能看到同一份数据。</p>' +
+      '<p class="field__hint">换设备时用 <b>昵称 / 短码 / 完整账号码</b> 任一种 + 对应密码登录，就能看到同一份数据。</p>' +
       '<p class="field__hint">数据在 GitHub 仓库里是加密保存的（仓库公开也读不到内容）。' +
         '<b>请抄下账号码并牢记家长密码</b>：两者都丢失时无法恢复记录；小孩密码可随时在下方重置。</p>' +
     '</section>';
@@ -677,8 +677,17 @@ window.APP = window.APP || {};
 
     // 自定义题库已搬到首页「玩法与题库」页，避免两处重复
 
-    // 纯静态版：原「服务器」设置替换为 GitHub 同步设置（家长在此填写仓库与 PAT，每台设备一次）
-    html += (APP.ghui && APP.ghui.cardHtml) ? APP.ghui.cardHtml() : '';
+    // 纯静态版：原「服务器」设置替换为 GitHub 同步完整设置卡（只有家长密码能进这里改 PAT）
+    html += (APP.ghui && APP.ghui.fullCardHtml) ? APP.ghui.fullCardHtml() : '';
+
+    // 本机旧记录的单向导入：登录默认直接用账号云端那份，不再弹「用哪份记录继续」二选一；
+    // 仅在家长后台保留一次导入机会（云端为空才可用、导入前自动备份），小孩端看不到。
+    html += '<section class="card"><h2>本机旧记录</h2>' +
+      '<p>旧版本留在这台设备上的打卡记录，需要时可以一次性导入当前账号。' +
+      '为避免覆盖已有数据，只有当前账号还是全新（没有打卡记录）时才能导入；导入前会自动留一份备份。</p>' +
+      '<div class="row"><button type="button" class="btn" data-act="import-local">导入本机旧记录</button></div>' +
+      '<p class="field__hint">数据存档默认直接用账号云端的那一份，不会再弹「用哪份记录继续」的选择框。</p>' +
+      '</section>';
 
     container.innerHTML = html;
 
@@ -740,7 +749,24 @@ window.APP = window.APP || {};
     var taskId = btn.getAttribute('data-task');
     var date = btn.getAttribute('data-date');
 
-    // GitHub 同步设置卡（我的数据页 / 后台设置页共用）：gh-save / gh-test / gh-sync
+    // 家长后台专有：把本机旧记录单向导入当前账号（含护栏，见 sync.js）
+    if (act === 'import-local') {
+      if (!APP.sync || !APP.sync.importLocalToAccount) return;
+      APP.sync.importLocalToAccount().then(function (r) {
+        if (r && r.ok) {
+          APP.ui.noticeCard({ title: '已导入', msg: '本机旧记录已导入当前账号，正在上传。', ok: '知道了' });
+        } else {
+          APP.ui.noticeCard({
+            title: '无法导入',
+            msg: (r && r.error) || '没有可导入的本机旧记录。',
+            ok: '知道了'
+          });
+        }
+      });
+      return;
+    }
+
+    // GitHub 同步设置卡（后台设置页用完整版；我的数据页用精简版）：gh-save / gh-test / gh-sync
     if (APP.ghui && APP.ghui.handle(act)) return;
 
     if (act === 'login') {

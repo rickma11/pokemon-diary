@@ -1,7 +1,7 @@
-// 登录页（T3）：账号 + 单密码框分流登录；支持创建新账号
+// 登录页：登录 / 注册同框分页签（默认登录，参考国内站做法）；强制登录 + 首次 GitHub 连接配置。
 // 交互原则：孩子端只有一个密码框，输小孩密码进前端、输大人密码进后台，不给「选角色」这一步。
-// 纯静态版强制登录（无账号即注册 / 登录），不再有「本机模式」。
-// 首次顺序：① 本页填 GitHub 连接 → ② 注册 / 登录账号 → ③ 才进入新手引导（门禁在 onboarding.js）。
+// 首次顺序：① 本页填 GitHub 连接（保存即验证）→ ② 注册 / 登录账号（注册成功直接进应用）
+//           → ③ 云端首次拉取完成后才进入新手引导（门禁在 onboarding.js）。
 window.APP = window.APP || {};
 
 (function (APP) {
@@ -12,12 +12,13 @@ window.APP = window.APP || {};
   var busy = false;
   var bound = false;
   var lastEl = null;
-  var showSetup = false;   // 已配置时是否展开 GitHub 设置卡（默认折叠，缩短首屏）
-  var wasConfigured = null;// 上一帧的配置状态：用于「刚保存好连接」时滚到第二步
+  var showSetup = false;   // 已配置时是否展开完整设置卡（默认折叠，缩短首屏）
+  var wasConfigured = null;// 上一帧配置状态：用于「刚保存好连接」时滚到第二步
   var vals = { account: '', pwd: '', nickname: '', childPwd: '', parentPwd: '' };
 
   function esc(t) {
-    return String(t === undefined || t === null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return String(t === undefined || t === null ? '' : t)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function field(label, id, type, value, placeholder, extra) {
@@ -32,69 +33,69 @@ window.APP = window.APP || {};
     return '<p class="hint"' + (msg.ok ? '' : ' style="color:#c0392b"') + '>' + esc(msg.text) + '</p>';
   }
 
-  function loginHtml() {
-    return '<section class="card">' +
-      '<h2><b>登录账号</b></h2>' +
-      '<p>家长和小孩共用账号，使用家长密码进入管理后台，使用小孩密码进入日程打卡。</p>' +
-      '<p>忘记小孩密码：家长进管理后台重置即可。<b>家长密码请务必记牢</b>——记录是加密保存的，家长密码也丢失时无法找回数据。</p>' +'<h2></h2>' +
-      field('账号', 'lg_account', 'text', vals.account, '') +'<h2></h2>' +
+  // 登录 / 注册同框：一张卡 + 两个下划线页签，默认高亮「登录账号」
+  function tabsHtml() {
+    return '<div class="auth-tabs">' +
+      '<button type="button" class="auth-tab' + (view === 'login' ? ' is-on' : '') +
+        '" data-act="tab-login">登录账号</button>' +
+      '<button type="button" class="auth-tab' + (view === 'register' ? ' is-on' : '') +
+        '" data-act="tab-register">账号注册</button>' +
+      '</div>';
+  }
+
+  function loginFormHtml() {
+    return '<p>家长和小孩共用账号：用<b>家长密码</b>进入管理后台，用<b>小孩密码</b>进入日程打卡，不用选角色。</p>' +
+      '<p class="field__hint">账号可填 <b>昵称</b>（如 马一一）、<b>短码</b>（如 wd52it）或 <b>完整账号码</b>（马一一-wd52it），三种都能登录。</p>' +
+      field('账号', 'lg_account', 'text', vals.account, '昵称 / 短码 / 完整账号码') +
       field('密码', 'lg_pwd', 'password', vals.pwd, '', 'inputmode="numeric"') +
       '<div class="row"><button type="button" class="btn btn--primary btn--block" data-act="login"' +
         (busy ? ' disabled' : '') + '>' + (busy ? '正在进入…' : '进入') + '</button></div>' +
       msgHtml() +
-      '</section>' +
-      '<section class="card">' +
-      '<h2><b>第一次使用？</b></h2>' +
-      '<p>一个家一个账号，记录存在账号里，共有两个密码，<b>孩子一个</b>用来看日程、打卡、照顾宝可梦；<b>家长一个</b>用来审核作业、设置任务。</p>' +
-      '<div class="row" style="flex-wrap:wrap">' +
-        '<button type="button" class="btn btn--sm" data-act="to-register">创建家庭账号</button>' +
-      '</div>' +'<h2></h2>' +
-      '<p>记录存在账号里，任何设备登录都能看到同一份数据；家长也能在自己手机上审核作业。</p>' +
-      '</section>';
+      '<p class="field__hint">忘记小孩密码：家长进管理后台重置即可。<b>家长密码请务必记牢</b>——记录是加密保存的，家长密码也丢失时无法找回数据。</p>';
   }
 
-  function registerHtml() {
-    return '<section class="card">' +
-      '<h2>创建家庭账号</h2>' +
-      '<p>一个家一个账号，记录存在账号里，共有两个密码，<b>孩子一个</b>用来看日程、打卡、照顾宝可梦；<b>家长一个</b>用来审核作业、设置任务。</p>' +'<h2></h2>' +
-      '<p class="field__hint">记录会以加密形式存进 GitHub 仓库（公开仓库也读不到内容）。<b>请牢记家长密码并记下账号码</b>：两样都丢了就无法恢复数据。</p>' +'<h2></h2>' +
-      field('孩子昵称', 'rg_nickname', 'text', vals.nickname, '如：小明的日程') +'<h2></h2>' +
-      field('小孩密码（4–16 位，建议纯数字）', 'rg_child', 'text', vals.childPwd, '如：2468', 'inputmode="numeric"') +'<h2></h2>' +
+  function registerFormHtml() {
+    return '<p>一个家一个账号：<b>孩子密码</b>用来看日程、打卡、照顾宝可梦；<b>家长密码</b>用来审核作业、设置任务。</p>' +
+      '<p class="field__hint">记录以加密形式存进 GitHub 仓库（公开仓库也读不到内容）。<b>注册成功后直接进入应用</b>，请先抄下弹窗里的账号码。</p>' +
+      field('孩子昵称（也能直接当账号登录）', 'rg_nickname', 'text', vals.nickname, '如：马一一') +
+      field('小孩密码（4–16 位，建议纯数字）', 'rg_child', 'text', vals.childPwd, '如：2468', 'inputmode="numeric"') +
       field('家长密码（8–64 位）', 'rg_parent', 'password', vals.parentPwd, '数字+英文组合') +
       '<div class="row"><button type="button" class="btn btn--primary btn--block" data-act="register"' +
         (busy ? ' disabled' : '') + '>' + (busy ? '正在创建…' : '创建账号') + '</button></div>' +
-      msgHtml() +
-      '</section>' +
-      '<section class="card"><div class="row">' +
-      '<button type="button" class="btn btn--sm" data-act="to-login">返回登录页面</button>' +
-      '</div></section>';
+      msgHtml();
+  }
+
+  function authCardHtml() {
+    return '<section class="card" id="authCard">' +
+      tabsHtml() +
+      (view === 'register' ? registerFormHtml() : loginFormHtml()) +
+      '</section>';
   }
 
   function html() {
-    // 强制登录页是首次使用的唯一入口：GitHub 连接信息必须能在这里填，
-    // 否则「进我的数据页配置」在未登录状态下不可达，注册 / 登录会死锁。
-    var setup = (APP.ghui && APP.ghui.cardHtml) ? APP.ghui.cardHtml() : '';
+    // 强制登录页是首次使用的唯一入口：未登录时进不去「我的数据」页，连接信息必须能在这里填。
     var configured = !!(APP.gh && APP.gh.hasConfig && APP.gh.hasConfig());
+    var full = (APP.ghui && APP.ghui.fullCardHtml) ? APP.ghui.fullCardHtml() : '';
+    var compact = (APP.ghui && APP.ghui.compactCardHtml)
+      ? APP.ghui.compactCardHtml({ expandButton: true }) : '';
     if (!configured) {
-      // 未配置：置顶 + 明确引导，避免用户先点注册再撞「请先配置」的提示
-      var lead = '<section class="card"><h2>第一步：连接你的 GitHub 仓库</h2>' +
-        '<p>记录会加密存放在你自己的 GitHub 仓库里。第一次使用请先完成下面 4 项，' +
-        '保存成功后再创建账号或登录。</p>' +
-        '<p class="field__hint">还没有仓库和令牌？按仓库里的 README「复制这个仓库，自己部署一份」做一遍即可。</p>' +
+      var lead = '<section class="card"><h2>第一步：连接已建好的数据仓库</h2>' +
+        '<p>记录会加密存放在<b>部署者已创建好的</b> GitHub 仓库里。这里只是填地址，<b>不需要新建仓库</b>；' +
+        '填完 4 项点「保存设置」会自动验证连接。</p>' +
+        '<p class="field__hint">还没有仓库和令牌？按仓库里 README 的「复制这个仓库，自己部署一份」做一遍即可。</p>' +
         '</section>';
-      return lead + setup + (view === 'register' ? registerHtml() : loginHtml());
+      return lead + full + authCardHtml();
     }
-    // 已配置：账号表单置顶（第二步），设置卡默认折叠收在底部，缩短首屏。
-    var step2 = '<section class="card" id="step2"><h2>第二步：创建 / 登录家庭账号</h2>' +
-      '<p>仓库已连接。首次使用在注册成功后会进入新手引导，选择你的第一只宝可梦；已有账号登录后直接进入。</p>' +
-      '</section>';
-    var folded = showSetup
-      ? setup
-      : '<section class="card"><div class="row" style="flex-wrap:wrap;align-items:center">' +
-        '<span>GitHub 同步：已配置</span>' +
-        '<button type="button" class="btn btn--sm" data-act="gh-expand">修改连接设置</button>' +
-        '</div></section>';
-    return step2 + (view === 'register' ? registerHtml() : loginHtml()) + folded;
+    // 已配置：账号卡置顶（第二步），连接设置收在底部（折叠态仍可一键同步）
+    var step2 = '<section class="card" id="step2"><h2>第二步：登录或创建家庭账号</h2>' +
+      '<p>仓库已连接。已有账号直接登录；第一次使用点右上角「账号注册」。注册成功后会直接进入应用，' +
+      '云端数据拉取完成后再进入新手引导。</p></section>';
+    var setup = showSetup
+      ? full + '<section class="card"><div class="row">' +
+          '<button type="button" class="btn btn--sm" data-act="gh-collapse">收起连接设置</button>' +
+        '</div></section>'
+      : compact;
+    return step2 + authCardHtml() + setup;
   }
 
   function repaint() {
@@ -140,15 +141,16 @@ window.APP = window.APP || {};
     var act = btn.getAttribute('data-act');
 
     if (act === 'gh-expand') { showSetup = true; return repaint(); }
+    if (act === 'gh-collapse') { showSetup = false; return repaint(); }
 
     // 首次使用的 GitHub 连接设置卡（gh-save / gh-test / gh-sync）与登录页共用事件委托。
-    // 刷新由 ghui 内部按需触发：gh-test/gh-sync 不刷新，避免冲掉用户尚未保存的输入。
+    // 刷新由 ghui 内部按需触发：保存成功才刷新，失败保持展开让用户就地修改。
     if (APP.ghui && APP.ghui.handle && APP.ghui.handle(act)) return;
 
-    if (act === 'to-register') { view = 'register'; msg = null; return repaint(); }
-    if (act === 'to-login') { view = 'login'; msg = null; return repaint(); }
+    if (act === 'tab-login' || act === 'to-login') { view = 'login'; msg = null; return repaint(); }
+    if (act === 'tab-register' || act === 'to-register') { view = 'register'; msg = null; return repaint(); }
     if (act === 'login') {
-      if (!vals.account || !vals.pwd) { msg = { ok: false, text: '请输入账号码和密码' }; return repaint(); }
+      if (!vals.account || !vals.pwd) { msg = { ok: false, text: '请输入账号和密码' }; return repaint(); }
       busy = true;
       msg = null;
       repaint();
@@ -156,10 +158,7 @@ window.APP = window.APP || {};
         busy = false;
         if (res.ok) {
           vals.pwd = '';
-          if (APP.auth.role() === 'parent') {
-            // 家长密码登录 → 直接进入家长后台（路由由 #/parent 驱动，隐藏子功能 tab）
-            window.location.hash = '#/parent';
-          }
+          if (APP.auth.role() === 'parent') window.location.hash = '#/parent';
           APP.refresh();
           return;
         }
@@ -176,17 +175,26 @@ window.APP = window.APP || {};
       repaint();
       return APP.auth.register(vals.nickname, vals.childPwd, vals.parentPwd).then(function (res) {
         busy = false;
-        if (res.ok) {
-          vals.account = res.accountId;
-          vals.pwd = '';
-          vals.childPwd = '';
-          vals.parentPwd = '';
+        if (!res.ok) { msg = { ok: false, text: res.error || '注册失败' }; return repaint(); }
+        vals.account = res.accountId;
+        vals.pwd = '';
+        vals.childPwd = '';
+        vals.parentPwd = '';
+        var names = '<div style="text-align:left;line-height:1.9">' +
+          '账号创建成功！下面三种都能登录，<b>请抄下来</b>：<br>' +
+          '· 昵称：<b>' + esc(res.nickname || '') + '</b><br>' +
+          '· 短码：<b>' + esc(res.short || '') + '</b><br>' +
+          '· 完整账号码：<b>' + esc(res.accountId) + '</b><br>' +
+          '<span style="font-size:12px;color:#666d80">登录时输对应的小孩 / 家长密码。家长密码和账号码都丢失时无法恢复数据。</span></div>';
+        function enterApp() {
           view = 'login';
-          msg = { ok: true, text: '账号已创建，账号码：' + res.accountId + '（请记下来）' };
-          return repaint();
+          // 注册已写入会话：直接进应用，不再要求二次登录（新手引导由云端拉取门禁决定）
+          if (APP.refresh) APP.refresh();
         }
-        msg = { ok: false, text: res.error || '注册失败' };
-        repaint();
+        if (APP.ui && APP.ui.noticeCard) {
+          return APP.ui.noticeCard({ title: '账号已创建', msg: names, ok: '记下了，开始使用' }).then(enterApp);
+        }
+        return enterApp();
       });
     }
   }

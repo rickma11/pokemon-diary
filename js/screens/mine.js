@@ -264,8 +264,9 @@ window.APP = window.APP || {};
         '<button type="button" class="btn" data-act="import">导入恢复</button>' +
       '</div></section>';
 
-    // 账号卡放在最上方：已登录显示用户名 + 退出；其下是 GitHub 同步设置；再下是数据存档与统计
-    container.innerHTML = accountCardHtml() + ghCardHtml() + slotCardHtml() + html;
+    // 账号卡 → 精简同步卡 → 统计与备份。
+    // 「数据存档」槽位卡已移除：本机旧记录不再作为可选数据源暴露，导入入口只在家长后台（家长密码可见）。
+    container.innerHTML = accountCardHtml() + ghCardHtml() + html;
 
     if (!bound) {
       container.addEventListener('click', onClick);
@@ -298,40 +299,10 @@ window.APP = window.APP || {};
       '</section>';
   }
 
-  // 数据存档卡：账号隔离后的槽位状态 + 切回本机旧记录 / 回到账号 / 导入旧记录
-  function slotCardHtml() {
-    if (!APP.sync || !APP.sync.ensureSlot) return '';
-    var owner = APP.sync.slotOwner();
-    var others = APP.sync.slotIds().filter(function (id) { return id !== owner; });
-    var label = APP.sync.slotLabel(owner);
-    var h = '<section class="card"><h2>数据存档<span class="card__side">' + esc(label) + '</span></h2>' +
-      '<ul class="list">' +
-        '<li><span class="k">当前使用</span><span class="v">' + esc(label) + '</span></li>' +
-        '<li><span class="k">已保留槽位</span><span class="v">' +
-          (others.length ? esc(others.map(APP.sync.slotLabel).join('、')) : '暂无') + '</span></li>' +
-      '</ul>' +
-      '<p class="field__hint">每个账号各用一份数据。切换账号时旧记录不会被删除，会完整收进独立槽位，随时可以切回。</p>' +
-      '<div class="row" style="flex-wrap:wrap">';
-    if (owner !== 'local' && others.length) {
-      h += '<button type="button" class="btn btn--sm" data-act="slot-refork" data-slot="' +
-        esc(others.indexOf('local') >= 0 ? 'local' : others[0]) + '">重新选择用哪份记录</button>';
-    }
-    h += '</div>';
-    // 每份保留的槽都能直接导回来（含二选一覆盖前自动备份的账号原记录）
-    if (others.length && owner !== 'local') {
-      h += '<div class="row" style="flex-wrap:wrap;margin-top:8px">';
-      for (var i = 0; i < others.length; i++) {
-        h += '<button type="button" class="btn btn--sm" data-act="slot-import" data-slot="' +
-          esc(others[i]) + '">用「' + esc(APP.sync.slotLabel(others[i])) + '」替换当前</button>';
-      }
-      h += '</div><p class="field__hint" style="margin-top:6px">导入会覆盖当前账号的数据，这份存档本身不会被删除。</p>';
-    }
-    return h + '</section>';
-  }
-
-  // GitHub 同步设置卡：复用共享 UI（APP.ghui），避免与后台设置页重复实现
+  // 「我的数据」页对所有人（含小孩）只显示精简同步卡：存档同步按钮 + 状态 + 规则，
+  // 不出现 owner / repo / branch / PAT —— 连接设置只允许在家长后台改。
   function ghCardHtml() {
-    return (APP.ghui && APP.ghui.cardHtml) ? APP.ghui.cardHtml() : '';
+    return (APP.ghui && APP.ghui.compactCardHtml) ? APP.ghui.compactCardHtml() : '';
   }
 
   // 账号卡：已登录 → 用户名 + 退出登录（纯静态强制登录，无本机模式）
@@ -358,21 +329,6 @@ window.APP = window.APP || {};
     var act = btn.getAttribute('data-act');
     if (act === 'reselect-char') { if (APP.onboarding && APP.onboarding.reselect) APP.onboarding.reselect(); return; }
     if (APP.ghui && APP.ghui.handle(act)) return;
-    if (act === 'slot-import') {
-      if (!APP.sync || !APP.sync.importSlot) return;
-      APP.sync.importSlot(btn.getAttribute('data-slot') || 'local').then(function (r) {
-        if (r && !r.ok && r.error) {
-          APP.ui.noticeCard({ title: '无法导入', msg: r.error, ok: '知道了' });
-        }
-      });
-      return;
-    }
-    if (act === 'slot-refork') {
-      if (APP.sync && APP.sync.reopenFork && !APP.sync.reopenFork(btn.getAttribute('data-slot') || 'local')) {
-        APP.ui.noticeCard({ title: '无法重新选择', msg: '没有找到另一份记录。', ok: '知道了' });
-      }
-      return;
-    }
     if (act === 'export') {
       var text = APP.store.exportData();
       APP.store.download('pokedex-backup-' + APP.todayStr() + '.json', text);
