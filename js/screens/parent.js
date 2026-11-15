@@ -31,11 +31,11 @@ window.APP = window.APP || {};
 
   function templateDefaults(type) {
     var map = {
-      '作业': { title: '作业', type: '作业', shards: 1, mode: 'photo', deadline: '21:00', slot: 'evening' },
+      '作业': { title: '作业', type: '作业', shards: 1, mode: 'check', deadline: '21:00', slot: 'evening' },
       '阅读': { title: '阅读', type: '阅读', shards: 1, mode: 'check', deadline: '20:30', slot: 'evening' },
-      '运动': { title: '运动', type: '运动', shards: 1, mode: 'check', deadline: '18:00', slot: 'afternoon' },
+      '运动': { title: '运动', type: '运动', shards: 1, mode: 'check', deadline: '21:00', slot: 'evening' },
       '家务': { title: '家务', type: '家务', shards: 1, mode: 'check', deadline: '07:40', slot: 'morning' },
-      '睡眠': { title: '睡眠', type: '睡眠', shards: 1, mode: 'check', deadline: '21:30', slot: 'evening' },
+      '睡眠': { title: '睡眠', type: '睡眠', shards: 1, mode: 'check', deadline: '22:00', slot: 'evening' },
       '吃饭': { title: '吃饭', type: '吃饭', shards: 1, mode: 'check', deadline: '12:00', slot: 'anytime' },
       '上学': { title: '上学', type: '上学', shards: 1, mode: 'check', deadline: '07:50', slot: 'morning' },
       '其他': { title: '', type: '其他', shards: 1, mode: 'check', deadline: '', slot: 'anytime' }
@@ -201,6 +201,7 @@ window.APP = window.APP || {};
       html += '<button type="button" class="pnav__btn pnav__btn--sm" data-tpl="' + APP.TYPES[t] + '">+ ' + APP.TYPES[t] + '</button>';
     }
     html += '</div>';
+    html += '<div class="row" style="margin:10px 0 2px"><button type="button" class="btn btn--sm" data-act="task-rules">规则说明：怎么添加任务 / 打钩与拍照的区别</button></div>';
 
     html += '<section class="card"><h2>当前任务（' + s.tasks.length + '）</h2><div class="tasks">';
     for (var i = 0; i < s.tasks.length; i++) {
@@ -428,6 +429,22 @@ window.APP = window.APP || {};
         '<b>冷却</b>不是倒计时消失的东西：它记的是「上次玩的日期」，到日子自动解除。<br><br>' +
         '<b>训练（外出）次数</b>：战斗 / 训练共用，每周自动累积，上限 10。<br><br>' +
         '<b>家长调试：</b>调试卡设置的「剩余次数」<b>不受上述上限约束</b>、可任意加，<b>次日自动刷新</b>回上面的正常规则；保存会同时清除冷却。'
+    });
+  }
+
+  function showTaskRulesModal() {
+    APP.ui.noticeCard({
+      title: '任务规则说明',
+      msg:
+        '<b>一、怎么添加任务</b><br>' +
+        '① 在「任务管理」顶部点「+ 类型」按钮，可快速套用该类型的预设模板（名称已填好，改改即可）；<br>' +
+        '② 在打开的「新增任务」表单里填写：<b>任务名称</b>、<b>类型</b>、<b>奖励碎片数</b>、<b>时段分组</b>、<b>完成方式</b>（打钩 / 拍照）、<b>截止时间</b>（可选）、<b>排程</b>（勾选每周几执行，默认每天）；<br>' +
+        '③ 点「保存」，任务会按排程在「日程」页自动出现；随时可「编辑 / 删除」；<br>' +
+        '④ 「恢复默认任务」可一键还原内置模板（会覆盖当前所有任务，含自定义）。<br><br>' +
+        '<b>二、打钩 与 拍照 的区别</b><br>' +
+        '· <b>直接打钩</b>：孩子自己点一下就完成。碎片是否立即到账，由「设置 → 打钩立即发碎片」开关决定（打开 = 立即得；关闭 = 需家长在「审核队列」确认）。<br>' +
+        '· <b>拍照提交</b>：孩子上传一张照片（如作业、练字），提交后进入「审核队列」，家长看到照片后点「通过」才发碎片；也可「驳回」让孩子重做。<br>' +
+        '· 适合需要家长见证的任务（作业、练琴等）建议用「拍照提交」；纯自觉类（阅读、运动、睡觉、吃饭）用「打钩」更顺手。'
     });
   }
 
@@ -799,6 +816,7 @@ window.APP = window.APP || {};
     if (act === 'go-playtools') { view = 'playtools'; APP.refresh(); return; }
     if (act === 'go-debug') { view = 'debug'; debugMsg = null; APP.refresh(); return; }
     if (act === 'go-settings') { view = 'settings'; APP.refresh(); return; }
+    if (act === 'task-rules') { showTaskRulesModal(); return; }
     if (act === 'play-reset-memory' || act === 'play-reset-training' || act === 'play-reset-all') {
       var pk = act === 'play-reset-memory' ? 'memory' : (act === 'play-reset-training' ? 'training' : 'all');
       var pn = resetPlayCounts(pk);

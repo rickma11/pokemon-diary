@@ -4104,6 +4104,22 @@ body {
   background: linear-gradient(#F5E7C4, #E8D3A6);
 }
 
+/* 屏幕内工具条：更换 / 设置 从屏幕顶角下移到底部对话框上方（data-act 不变）。
+   限定 .gba-screen__tools 作用域，不影响牧场页等其它 GBA 屏的按钮定位。 */
+.gba-screen__tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 2px 4px;
+}
+.gba-screen__tools .gba-swap-btn,
+.gba-screen__tools .gba-set-btn {
+  position: static;
+  top: auto; left: auto; right: auto;
+  z-index: auto;
+}
+
 /*  stage 不再是独立卡片，作为屏幕内容区：留足 padding，动画不再被屏幕边缘裁切。
     高度在原来基础上放大约 130%（宝可梦尺寸不变），让跳跃/下沉等动作始终留在框内 */
 .care-stage {
@@ -4296,11 +4312,14 @@ window.APP = window.APP || {};
   APP.SLOT_DEADLINE = { morning: '12:00', afternoon: '18:00', evening: '22:00' };
 
   APP.DEFAULT_TASKS = [
-    { id: 't_hw',    title: '完成今日作业',      type: '作业', shards: 1, mode: 'photo', deadline: '21:00', slot: 'evening', weekdays: ALL_WEEK },
-    { id: 't_read',  title: '课外阅读 20 分钟',  type: '阅读', shards: 1, mode: 'check', deadline: '20:30', slot: 'evening', weekdays: ALL_WEEK },
-    { id: 't_move',  title: '运动 30 分钟',      type: '运动', shards: 1, mode: 'check', deadline: '18:00', slot: 'afternoon', weekdays: ALL_WEEK },
-    { id: 't_chore', title: '整理书包 / 做家务', type: '家务', shards: 1, mode: 'check', deadline: '07:40', slot: 'morning', weekdays: ALL_WEEK },
-    { id: 't_sleep', title: '21:30 前上床',      type: '睡眠', shards: 1, mode: 'check', deadline: '21:30', slot: 'evening', weekdays: ALL_WEEK }
+    { id: 't_hw',        title: '完成今日作业', type: '作业', shards: 1, mode: 'check', deadline: '21:00', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_read',      title: '课外阅读 20 分钟', type: '阅读', shards: 1, mode: 'check', deadline: '20:30', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_move',      title: '运动 30 分钟', type: '运动', shards: 1, mode: 'check', deadline: '21:00', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_chore',     title: '整理书包',    type: '家务', shards: 1, mode: 'check', deadline: '07:40', slot: 'morning', weekdays: ALL_WEEK },
+    { id: 't_sleep',     title: '上床睡觉',    type: '睡眠', shards: 1, mode: 'check', deadline: '22:00', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_lunch',     title: '吃午饭',      type: '吃饭', shards: 1, mode: 'check', deadline: '12:00', slot: 'afternoon', weekdays: [6, 7] },
+    { id: 't_dinner',    title: '吃晚饭',      type: '吃饭', shards: 1, mode: 'check', deadline: '19:00', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_housework', title: '做家务',      type: '家务', shards: 1, mode: 'check', deadline: '', slot: 'anytime', weekdays: [6, 7] }
   ];
 
   function pad(n) {
@@ -10261,11 +10280,11 @@ window.APP = window.APP || {};
 
   function templateDefaults(type) {
     var map = {
-      '作业': { title: '作业', type: '作业', shards: 1, mode: 'photo', deadline: '21:00', slot: 'evening' },
+      '作业': { title: '作业', type: '作业', shards: 1, mode: 'check', deadline: '21:00', slot: 'evening' },
       '阅读': { title: '阅读', type: '阅读', shards: 1, mode: 'check', deadline: '20:30', slot: 'evening' },
-      '运动': { title: '运动', type: '运动', shards: 1, mode: 'check', deadline: '18:00', slot: 'afternoon' },
+      '运动': { title: '运动', type: '运动', shards: 1, mode: 'check', deadline: '21:00', slot: 'evening' },
       '家务': { title: '家务', type: '家务', shards: 1, mode: 'check', deadline: '07:40', slot: 'morning' },
-      '睡眠': { title: '睡眠', type: '睡眠', shards: 1, mode: 'check', deadline: '21:30', slot: 'evening' },
+      '睡眠': { title: '睡眠', type: '睡眠', shards: 1, mode: 'check', deadline: '22:00', slot: 'evening' },
       '吃饭': { title: '吃饭', type: '吃饭', shards: 1, mode: 'check', deadline: '12:00', slot: 'anytime' },
       '上学': { title: '上学', type: '上学', shards: 1, mode: 'check', deadline: '07:50', slot: 'morning' },
       '其他': { title: '', type: '其他', shards: 1, mode: 'check', deadline: '', slot: 'anytime' }
@@ -10431,6 +10450,7 @@ window.APP = window.APP || {};
       html += '<button type="button" class="pnav__btn pnav__btn--sm" data-tpl="' + APP.TYPES[t] + '">+ ' + APP.TYPES[t] + '</button>';
     }
     html += '</div>';
+    html += '<div class="row" style="margin:10px 0 2px"><button type="button" class="btn btn--sm" data-act="task-rules">规则说明：怎么添加任务 / 打钩与拍照的区别</button></div>';
 
     html += '<section class="card"><h2>当前任务（' + s.tasks.length + '）</h2><div class="tasks">';
     for (var i = 0; i < s.tasks.length; i++) {
@@ -10658,6 +10678,22 @@ window.APP = window.APP || {};
         '<b>冷却</b>不是倒计时消失的东西：它记的是「上次玩的日期」，到日子自动解除。<br><br>' +
         '<b>训练（外出）次数</b>：战斗 / 训练共用，每周自动累积，上限 10。<br><br>' +
         '<b>家长调试：</b>调试卡设置的「剩余次数」<b>不受上述上限约束</b>、可任意加，<b>次日自动刷新</b>回上面的正常规则；保存会同时清除冷却。'
+    });
+  }
+
+  function showTaskRulesModal() {
+    APP.ui.noticeCard({
+      title: '任务规则说明',
+      msg:
+        '<b>一、怎么添加任务</b><br>' +
+        '① 在「任务管理」顶部点「+ 类型」按钮，可快速套用该类型的预设模板（名称已填好，改改即可）；<br>' +
+        '② 在打开的「新增任务」表单里填写：<b>任务名称</b>、<b>类型</b>、<b>奖励碎片数</b>、<b>时段分组</b>、<b>完成方式</b>（打钩 / 拍照）、<b>截止时间</b>（可选）、<b>排程</b>（勾选每周几执行，默认每天）；<br>' +
+        '③ 点「保存」，任务会按排程在「日程」页自动出现；随时可「编辑 / 删除」；<br>' +
+        '④ 「恢复默认任务」可一键还原内置模板（会覆盖当前所有任务，含自定义）。<br><br>' +
+        '<b>二、打钩 与 拍照 的区别</b><br>' +
+        '· <b>直接打钩</b>：孩子自己点一下就完成。碎片是否立即到账，由「设置 → 打钩立即发碎片」开关决定（打开 = 立即得；关闭 = 需家长在「审核队列」确认）。<br>' +
+        '· <b>拍照提交</b>：孩子上传一张照片（如作业、练字），提交后进入「审核队列」，家长看到照片后点「通过」才发碎片；也可「驳回」让孩子重做。<br>' +
+        '· 适合需要家长见证的任务（作业、练琴等）建议用「拍照提交」；纯自觉类（阅读、运动、睡觉、吃饭）用「打钩」更顺手。'
     });
   }
 
@@ -11029,6 +11065,7 @@ window.APP = window.APP || {};
     if (act === 'go-playtools') { view = 'playtools'; APP.refresh(); return; }
     if (act === 'go-debug') { view = 'debug'; debugMsg = null; APP.refresh(); return; }
     if (act === 'go-settings') { view = 'settings'; APP.refresh(); return; }
+    if (act === 'task-rules') { showTaskRulesModal(); return; }
     if (act === 'play-reset-memory' || act === 'play-reset-training' || act === 'play-reset-all') {
       var pk = act === 'play-reset-memory' ? 'memory' : (act === 'play-reset-training' ? 'training' : 'all');
       var pn = resetPlayCounts(pk);
@@ -12049,48 +12086,50 @@ window.APP = window.APP || {};
     if (e.t === 'exp') return '获得经验 +' + e.exp;
     return e.txt || SYS_DEFAULT;
   }
+  // 短式成长文案（宝可梦口吻）：升级 / 进化 / 训练 / 玩耍成绩
+  function careTextShort(e) {
+    if (e.t === 'evo') return '进化成 ' + (e.name || '') + ' 啦，样子变了！';
+    if (e.t === 'level') return '升到 Lv.' + (e.level || '') + ' 啦，越来越厉害！';
+    if (e.t === 'train') return '刚完成 ' + (e.game || '') + '「' + (e.grade || '') + '」，好棒！';
+    if (e.t === 'play') return '刚玩完 ' + (e.title || '') + '，配对 ' + (e.done || 0) + '/' + (e.pairs || 0) + '！';
+    return '';
+  }
   function buildFeed(p) {
-    var s = APP.store.get(), t = APP.todayStr(), out = [], i;
-    var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
-    var n = 0, left = [];
-    for (i = 0; i < GAME_LABELS.length; i++) {
-      if (games[GAME_LABELS[i].k]) n++; else left.push(GAME_LABELS[i].n);
-    }
-    out.push(n === 0 ? '今日训练 0/4 · 四个玩法都可以玩' :
-      (n >= 4 ? '今日训练 4/4 · 全部完成' : '今日训练 ' + n + '/4 · 还剩' + left.join('、')));
+    var s = APP.store.get(), out = [], i;
+    var name = p ? nameOf(p) : '';
+    // 玩法是否解锁：未解锁（带锁）则不在提示里邀请该玩法
+    var trainOpen = featureOpen('train');
+    var playOpen = featureOpen('play');
 
-    var log = (s && s.careLog) || [], exp = 0, perfect = 0, shards = 0, trains = 0;
+    // 训练（仅解锁后展示）
+    if (trainOpen) {
+      var tr = dayEntry((s && s.trainingPlays) || []) || {}, games = tr.games || {};
+      var tn = 0; for (i = 0; i < GAME_LABELS.length; i++) if (games[GAME_LABELS[i].k]) tn++;
+      if (tn >= GAME_LABELS.length) out.push(name + ' 今天的训练都完成啦，明天再一起练吧！');
+      else out.push(name + ' 很想和你玩 训练 玩法，快来和它一起玩吧！');
+      if (p && p.stats && p.stats.food < 30) out.push(name + ' 有点饿了，先喂饱它才能一起训练哦～');
+      else if (p && p.perfectToday) out.push('元气满满生效中，今天训练经验 +10%！');
+    }
+
+    // 玩耍（仅解锁后展示）
+    if (playOpen) {
+      var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
+      var pd = 0; if (packs.pinyin) pd++; if (packs.english) pd++;
+      if (pd >= 2) out.push(name + ' 今天的玩耍都完成啦，玩得真开心！');
+      else out.push(name + ' 很想和你玩 玩耍 玩法，快来和它一起玩吧！');
+    }
+
+    // 成长事件（升级 / 进化 / 训练 / 玩耍成绩）：宝可梦口吻播报
+    var log = (s && s.careLog) || [];
     for (i = 0; i < log.length; i++) {
       var e = log[i];
-      if (e.d !== t) continue;
-      if (e.t === 'train') { trains++; exp += e.exp || 0; shards += e.shard || 0; if (e.grade === '完美') perfect++; }
-      else if (e.t === 'play' || e.t === 'exp') { exp += e.exp || 0; shards += e.shard || 0; }
-    }
-    out.push(trains || exp ?
-      '今日训练 ' + trains + ' 局 · 共 +' + exp + ' 经验' + (perfect ? ' · ' + perfect + ' 次完美' : '') +
-        (shards ? ' · +' + shards + ' 碎片' : '') :
-      '训练每局约 3 分钟 · 消耗体力 −10 / 饱腹 −10');
-
-    var food = p && p.stats ? p.stats.food : 0;
-    if (food < 30) out.push('饱腹 ' + food + ' 低于 30 · 先喂食才能训练');
-    else if (p && p.perfectToday) out.push('元气满满生效中 · 今日经验 +10%');
-    else {
-      var mem = dayEntry((s && s.memoryPlays) || []) || {}, packs = mem.packs || {};
-      var lv = (mem.levels && mem.levels.english) || '';
-      var lvName = lv === 'easy' ? '简单' : (lv === 'hard' ? '困难' : (lv === 'normal' ? '中等' : ''));
-      var done = [];
-      if (packs.pinyin) done.push('拼音已玩');
-      if (packs.english) done.push('英语已玩' + (lvName ? '（' + lvName + '）' : ''));
-      out.push(done.length ? '今日玩耍：' + done.join(' · ') : '今日玩耍 0/2 · 拼音、英语各 1 次');
-    }
-
-    var recent = null;
-    for (i = 0; i < log.length; i++) {
-      if (log[i].t === 'evo' || log[i].t === 'level' || log[i].t === 'train' || log[i].t === 'play') {
-        recent = log[i]; break;
+      if (e.t === 'evo' || e.t === 'level' || e.t === 'train' || e.t === 'play') {
+        out.push(name + ' ' + careTextShort(e));
+        break;
       }
     }
-    out.push(recent ? '最近：' + careText(recent) : SYS_DEFAULT);
+
+    if (!out.length) out.push(SYS_DEFAULT);
     return out;
   }
   function showFeed() {
@@ -12392,10 +12431,6 @@ window.APP = window.APP || {};
           '<span class="gba-shell__led"></span><span class="gba-shell__brand">POWER</span>' +
         '</div>' +
         '<div class="gba-screen">' +
-          // 屏幕左上角：掌机按键质感的「更换」按钮（精灵球图标 + 文字）→ 打开宝可梦中心
-          '<button type="button" class="gba-swap-btn" data-act="switch">' + ballSvg('gba-swap-btn__ball') + '<span>更换</span></button>' +
-          // 屏幕右上角：同款掌机按键质感的「设置」按钮（齿轮图标 + 文字）→ 打开声音/庆祝动画开关
-          '<button type="button" class="gba-set-btn" data-act="careset" aria-label="设置">' + gearSvg() + '<span>设置</span></button>' +
           '<div class="care-stage state-idle" id="careStage">' +
             '<div class="care-bubble" id="careBubble"></div>' +
             '<div class="care-creature-wrap" id="careCreature">' +
@@ -12408,6 +12443,11 @@ window.APP = window.APP || {};
             // 交换演出层（默认隐藏，playSwap 时按段切换 class）
             '<div class="care-swap-ball" id="careSwapBall">' + ballSvg('') + '</div>' +
             '<div class="care-swap-flash" id="careSwapFlash"></div>' +
+          '</div>' +
+          // 屏幕内工具条：更换 / 设置 移到对话框上方（data-act 不变，仍由 onButton 接管）
+          '<div class="gba-screen__tools">' +
+            '<button type="button" class="gba-swap-btn" data-act="switch">' + ballSvg('gba-swap-btn__ball') + '<span>更换</span></button>' +
+            '<button type="button" class="gba-set-btn" data-act="careset" aria-label="设置">' + gearSvg() + '<span>设置</span></button>' +
           '</div>' +
           // GBA 风对话框：系统提示走这里，宝可梦台词走头顶气泡
           '<div class="care-dlg" id="careDlg">' +

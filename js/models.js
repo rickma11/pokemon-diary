@@ -39,11 +39,14 @@ window.APP = window.APP || {};
   APP.SLOT_DEADLINE = { morning: '12:00', afternoon: '18:00', evening: '22:00' };
 
   APP.DEFAULT_TASKS = [
-    { id: 't_hw',    title: '完成今日作业',      type: '作业', shards: 1, mode: 'photo', deadline: '21:00', slot: 'evening', weekdays: ALL_WEEK },
-    { id: 't_read',  title: '课外阅读 20 分钟',  type: '阅读', shards: 1, mode: 'check', deadline: '20:30', slot: 'evening', weekdays: ALL_WEEK },
-    { id: 't_move',  title: '运动 30 分钟',      type: '运动', shards: 1, mode: 'check', deadline: '18:00', slot: 'afternoon', weekdays: ALL_WEEK },
-    { id: 't_chore', title: '整理书包 / 做家务', type: '家务', shards: 1, mode: 'check', deadline: '07:40', slot: 'morning', weekdays: ALL_WEEK },
-    { id: 't_sleep', title: '21:30 前上床',      type: '睡眠', shards: 1, mode: 'check', deadline: '21:30', slot: 'evening', weekdays: ALL_WEEK }
+    { id: 't_hw',        title: '完成今日作业', type: '作业', shards: 1, mode: 'check', deadline: '21:00', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_read',      title: '课外阅读 20 分钟', type: '阅读', shards: 1, mode: 'check', deadline: '20:30', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_move',      title: '运动 30 分钟', type: '运动', shards: 1, mode: 'check', deadline: '21:00', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_chore',     title: '整理书包',    type: '家务', shards: 1, mode: 'check', deadline: '07:40', slot: 'morning', weekdays: ALL_WEEK },
+    { id: 't_sleep',     title: '上床睡觉',    type: '睡眠', shards: 1, mode: 'check', deadline: '22:00', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_lunch',     title: '吃午饭',      type: '吃饭', shards: 1, mode: 'check', deadline: '12:00', slot: 'afternoon', weekdays: [6, 7] },
+    { id: 't_dinner',    title: '吃晚饭',      type: '吃饭', shards: 1, mode: 'check', deadline: '19:00', slot: 'evening', weekdays: ALL_WEEK },
+    { id: 't_housework', title: '做家务',      type: '家务', shards: 1, mode: 'check', deadline: '', slot: 'anytime', weekdays: [6, 7] }
   ];
 
   function pad(n) {
