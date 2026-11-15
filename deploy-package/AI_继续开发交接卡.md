@@ -2,7 +2,7 @@
 
 > **这份文件是给「另一个窗口的 AI 助手」直接读的**：自包含、不含任何令牌或凭据，读完即可开工，不需要用户再补充或修改内容。
 >
-> - 最近更新：2026-11-15 19:55（本轮 v82，详见第 12 节）
+> - 最近更新：2026-11-15 20:05（本轮 v83，详见第 13 节）
 > - 本地主交接文档：`F:/宝可梦日常打卡工具/docs/项目交接与继续指南.md`（含敏感配置，`docs/` 被 `.gitignore` 排除、**不进公开仓库**；其他窗口读它可能被安全策略拦下，所以请优先读本文件）
 > - 部署说明：`deploy-package/AI_DEPLOY_GUIDE.md`；完整使用/安全说明：`README.md`
 
@@ -19,9 +19,9 @@
 | 入口 | `index.html`（约 1.37 MB，**构建产物**，内联了全部 38 个 JS + 2 个 CSS） |
 | 源码 | `js/`、`css/`、`index.src.html`、`sw.js`、`manifest.json` |
 | 构建 | `node build.js`（`index.src.html` → `index.html`）；`更新推送.bat` 会自动调用 |
-| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v82'` |
+| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v83'` |
 | 账号/存档 | 客户端 AES-GCM 加密后写进仓库 `accounts/` 与 `saves/`；App 运行时会往 `main` 写 `sync: saves/...` commit |
-| 当前线上 | 本轮 v82；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
+| 当前线上 | 本轮 v83；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
 | 当前本地 | 与本轮线上一致；`accounts/` + `saves/` 共 4 个文件原样保留 |
 
 > **commit 号说明**：远端 `main` 会因 App 运行时写档（`sync: saves/...`）和**纯文档提交**不断前进。上表的 `d84ef845` 指的是**代码版本**；判断「页面是不是这一版」，看 `index.html` 的 sha 或 Pages 构建，不要只比对 `main` 的最新 commit。纯文档提交不会改 `index.html`，页面完全不受影响。
@@ -229,3 +229,17 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 - 后台里「退出登录」「重置小孩密码」等用账号体系的功能不受影响；models.js 的默认 `pin:'1234'` 仅为老存档字段兼容保留，无任何作用。
 
 **自检**：4 个改动 JS `node --check` 0 错；`index.html` 中 `renderLogin`/`setpin` 零残留（仅两行废弃注释）；SW 升 v82。备份 `backups/20261115-parentpwd-colorscheme/`（含 parent.js.pre、store.js.pre）。
+
+---
+
+## 13. 2026-11-15 宝可梦头顶气泡超框截断修复（v83）
+
+**用户报**：养成页头顶气泡（如「在吗在吗？陪我一会儿嘛~」）在部分手机上超出 GBA 屏右边被截断。
+**根因（两层）**：
+1. `@keyframes carePopfade` 的每个关键帧都写 `transform: translateY(...)`，**动画播放期间覆盖掉 `.care-bubble` 基础的 `transform: translateX(-50%)` 居中位移**——气泡从「left:50% 不回偏」的位置开始画，字一长就往右超框，被 `.care-stage` 的 `overflow:hidden` 剪掉。任何手机都存在，只是字够长/屏够窄才看得见。
+2. 气泡 `white-space: nowrap` 不折行，长台词必然超出发光屏宽度。
+
+**修复（`css/app.css`）**：carePopfade 每个关键帧自带 `translate(-50%, ...)`；气泡改 `white-space: normal` + `width: max-content` + `max-width: calc(100% - 24px)`（绝对定位百分比以舞台为基准）+ `text-align: center` + `line-height: 1.45`——任何字长都居中折行，不超框。
+**教训**：以后给 `.care-bubble`（或任何 `left:50% + translateX(-50%)` 居中元素）写动画，关键帧必须自带 `translate(-50%, ...)`，否则动画一播就丢居中。
+
+**自检**：`node build.js` 后 `index.html` 含新关键帧（`translate(-50%, 8px)` 等 3 处）；SW 升 v83。备份 `backups/20261115-parentpwd-colorscheme/app.css.bubble.pre`。
