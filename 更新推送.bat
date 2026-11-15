@@ -20,11 +20,17 @@ echo [1/3] Staging all changes...
 git add -A
 if errorlevel 1 goto :fail
 
-echo [2/3] Committing: %MSG%
-git commit -m "%MSG%"
+git diff --cached --quiet
+if errorlevel 1 (
+  echo [2/3] Committing: %MSG%
+  git commit -m "%MSG%"
+  if errorlevel 1 goto :fail
+) else (
+  echo [2/3] No changes to commit, skipping.
+)
 
 echo [3/3] Pushing to origin main ...
-git push origin main
+git -c credential.helper= push origin main
 if errorlevel 1 goto :fail
 
 echo.
