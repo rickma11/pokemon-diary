@@ -2,7 +2,7 @@
 
 > **这份文件是给「另一个窗口的 AI 助手」直接读的**：自包含、不含任何令牌或凭据，读完即可开工，不需要用户再补充或修改内容。
 >
-> - 最近更新：2026-11-15 20:05（本轮 v83，详见第 13 节）
+> - 最近更新：2026-11-15 20:25（演示账号轮，详见第 14 节；SW 仍为 v83）
 > - 本地主交接文档：`F:/宝可梦日常打卡工具/docs/项目交接与继续指南.md`（含敏感配置，`docs/` 被 `.gitignore` 排除、**不进公开仓库**；其他窗口读它可能被安全策略拦下，所以请优先读本文件）
 > - 部署说明：`deploy-package/AI_DEPLOY_GUIDE.md`；完整使用/安全说明：`README.md`
 
@@ -243,3 +243,17 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 **教训**：以后给 `.care-bubble`（或任何 `left:50% + translateX(-50%)` 居中元素）写动画，关键帧必须自带 `translate(-50%, ...)`，否则动画一播就丢居中。
 
 **自检**：`node build.js` 后 `index.html` 含新关键帧（`translate(-50%, 8px)` 等 3 处）；SW 升 v83。备份 `backups/20261115-parentpwd-colorscheme/app.css.bubble.pre`。
+
+---
+
+## 14. 2026-11-15 演示账号 OAOpkm（随仓库分发，SW 不变 v83）
+
+**用户需求**：造一个通用测试账号随仓库分发，任何人部署后即可登录体验全部功能。
+**账号**：`OAOpkm` / 小孩密码 `123456` / 家长密码 `pkm000000`。文件对已用 GitHub Contents API 直接写入仓库：`accounts/OAOpkm.json` + `saves/OAOpkm.json`。
+**生成方式**（脚本已删，要点留档）：VM 加载项目自己的 `js/github.js`（cipher）+ `js/models.js`（defaultState），随机 vaultKey → 双密码 PBKDF2 包裹 → 账号文件；存档 = defaultState + 改造（`meta.createdAt='2026-11-01'` 防新账号重判、`unlock.seen/claimed` 全 7 档置 1、主力 Lv.15、wallet 碎片 260/树果 99/球 30/券各 20、`seen` 26 只图鉴、近 7 天每天 4 条 `approved` 打卡、streak 6）→ `cipher.seal(state, vaultKey)` 加密上传。
+**验证**：脚本端到端读回仓库文件，parent/child 两个密码都能解开包裹并解密存档（shards=260、level=15、claimed 7 档）。
+**注意**：
+- 登录名 `OAOpkm` 命中 `resolveCandidates` 的「完整账号码直连」分支（`accounts/OAOpkm.json` 文件名即账号名）。
+- 这是**共享账号**：所有使用者写同一个 `saves/OAOpkm.json`，存档会被互相覆盖——README 已注明「仅用于体验」。想恢复演示数据，重新生成覆盖 `saves/OAOpkm.json` 即可（密码在 wrap 里不变）。
+- README 已加「### 演示账号（免注册，直接体验）」小节（第 5 步之后）+ 第四节文件清单补两行。
+- 本轮只动 `README.md` 与账号数据文件，**页面代码无改动，SW 仍是 v83，无需重新构建**。
