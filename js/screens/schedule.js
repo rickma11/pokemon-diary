@@ -348,9 +348,11 @@ window.APP = window.APP || {};
     }
     if (act === 'check') {
       APP.store.checkIn(taskId);
+      if (APP.sync && APP.sync.criticalPush) APP.sync.criticalPush();
       APP.refresh();
     } else if (act === 'undo') {
       APP.store.undo(taskId);
+      if (APP.sync && APP.sync.criticalPush) APP.sync.criticalPush();
       APP.refresh();
     } else if (act === 'photo') {
       pendingTaskId = taskId;

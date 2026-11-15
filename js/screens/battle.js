@@ -867,6 +867,8 @@
     menuHtml([{ info: '第 ' + B.round + ' 回合<br>本场结束' }], 'is-single');
     // 「收工」和「再战一次」都是回 P0 场景，合并为一个按钮
     center(title, desc, [{ text: btnText, yes: true, act: 'end-exit' }]);
+    // 战斗记录 / 经验 / 碎片 / 道馆徽章刚落地：立刻上云，不等 20 秒静默窗口
+    if (APP.sync && APP.sync.criticalPush) APP.sync.criticalPush();
   }
 
   function doExit() {
@@ -1019,6 +1021,12 @@
   function npcFull(i) { return 'assets/npc-v6/npc-' + pad2(i + 1) + '-full.png'; }
   function npcBust(i) { return 'assets/npc-v6/npc-' + pad2(i + 1) + '-bust.png'; }
   function heroFull(i) { return 'assets/npc-v6/' + MY_CHARS[i].base + '-full.png'; }
+  // 选角格只有 64px：用内联 160px 小图，避免一次拉 4 张 1MB 级别的原图
+  function heroBust(i) {
+    var base = MY_CHARS[i].base;
+    return (APP.HERO_BUST_ART && APP.HERO_BUST_ART[base])
+      ? APP.HERO_BUST_ART[base] : 'assets/npc-v6/' + base + '-bust.png';
+  }
   function bgFor(i) { return 'assets/pic/' + ((((i % BG_COUNT) + BG_COUNT) % BG_COUNT) + 1) + '.png'; }
   function timeSlot() {
     var d = new Date();
@@ -1208,7 +1216,7 @@
       '<div class="b4-intro__pickpanel"><h4><span>选择主角形象（4 位）</span><button type="button" data-bt="intro-pick-done">完成</button></h4><div class="b4-intro__grid">';
     for (var i = 0; i < MY_CHARS.length; i++) {
       h += '<button type="button" class="b4-intro__it' + (i === intro.my ? ' is-on' : '') + '" data-bt="intro-choose-' + i + '">' +
-        '<img src="assets/npc-v6/' + MY_CHARS[i].base + '-bust.png" alt=""><small>' + esc(MY_CHARS[i].name) + '</small></button>';
+        '<img src="' + heroBust(i) + '" alt=""><small>' + esc(MY_CHARS[i].name) + '</small></button>';
     }
     h += '</div></div>';
     var p = document.getElementById('b4-introPicker');

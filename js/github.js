@@ -267,6 +267,7 @@ window.APP = window.APP || {};
       '<summary>存档保存规则：静默 20 秒上传 · 每 5 分钟拉取 · 断网自动补传（点开看全部）</summary>' +
       '<ul>' +
         '<li>改动后静默 <b>20 秒</b>才上传，连续操作合并成一次，最多等 <b>60 秒</b>；切到后台或关页面立即补传。打开页面自动拉取一次，之后每 <b>5 分钟</b>拉取一次。</li>' +
+        '<li><b>关键步骤立即上传</b>，不等 20 秒：选宝可梦 / 完成新手引导 / 捕捉 / 战斗结算 / 任务打卡 / 解锁新档位。换设备不会重来一遍。</li>' +
         '<li><b>内容没变化就不写仓库</b>，不产生多余的提交记录。</li>' +
         '<li>一个账号只有「账号信息 + 加密存档」两个文件，都是覆盖写，<b>不会越存越多</b>；每次真正上传留一条提交记录，历史版本可回溯。</li>' +
         '<li>断网也能照常打卡，联网后自动补传。</li>' +
@@ -338,13 +339,15 @@ window.APP = window.APP || {};
         var branch = String((document.getElementById('gh_branch') || {}).value || 'main').trim() || 'main';
         var token = String((document.getElementById('gh_token') || {}).value || '').trim();
         if (!owner || !repo || !token) { setGhMsg(false, 'owner、repo、token 都要填'); return true; }
-        if (!APP.gh.saveConfig({ owner: owner, repo: repo, branch: branch, token: token })) {
-          setGhMsg(false, '保存失败：浏览器不允许写入本地存储'); return true;
-        }
-        // 保存即验证：成功才刷新（进入第二步 / 折叠），失败保持展开让用户就地改。
-        setGhMsg(true, '设置已保存，正在验证连接…');
-        APP.gh.ping().then(function (r) {
+        // 先用输入框里的值验证，通过才写进本地存储。
+        // 旧版「先保存再验证」会在验证失败时把配置留下，于是没连上仓库也会显示登录框。
+        var typed = { owner: owner, repo: repo, branch: branch, token: token };
+        setGhMsg(true, '正在验证连接…');
+        APP.gh.ping(typed).then(function (r) {
           if (r.ok) {
+            if (!APP.gh.saveConfig(typed)) {
+              setGhMsg(false, '保存失败：浏览器不允许写入本地存储'); return;
+            }
             setGhMsg(true, '连接成功，可以创建 / 登录账号了');
             if (APP.refresh) APP.refresh();
             if (APP.sync && APP.sync.start) APP.sync.start();
@@ -352,11 +355,11 @@ window.APP = window.APP || {};
             var why = r.status === 401 ? '令牌无效或已过期（401）'
               : r.status === 404 ? '仓库不存在，或令牌没有该仓库权限（404）'
               : (r.message || ('HTTP ' + r.status));
-            setGhMsg(false, '连接失败：' + why + '。设置已保存，请修改后重试');
+            setGhMsg(false, '连接失败：' + why + '。设置未保存，请修改后重试');
             updateStateText();
           }
         })['catch'](function (e) {
-          setGhMsg(false, '连接失败：' + ((e && e.message) || '网络错误') + '。设置已保存，可稍后重试');
+          setGhMsg(false, '连接失败：' + ((e && e.message) || '网络错误') + '。设置未保存，请稍后重试');
           updateStateText();
         });
         return true;

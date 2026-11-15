@@ -318,8 +318,10 @@ window.APP = window.APP || {};
           (acc.role === 'parent' ? '大人（可进后台）' : '小朋友') + '</span></li>' +
       '</ul>' +
       charBlockHtml() +
-      '<div class="row"><button type="button" class="btn" data-act="logout">退出登录</button></div>' +
-      '<p class="field__hint">换设备用同一账号码登录即可看到同一份数据；退出后需要用密码重新登录。</p>' +
+      '<div class="row"><button type="button" class="btn" data-act="logout">退出登录</button>' +
+        '<button type="button" class="btn" data-act="add-to-home">放到手机桌面</button></div>' +
+      '<p class="field__hint">换设备用同一账号码登录即可看到同一份数据；退出后需要用密码重新登录。' +
+        '点「放到手机桌面」可随时重新查看添加步骤。</p>' +
       '</section>';
   }
 
@@ -328,6 +330,7 @@ window.APP = window.APP || {};
     if (!btn) return;
     var act = btn.getAttribute('data-act');
     if (act === 'reselect-char') { if (APP.onboarding && APP.onboarding.reselect) APP.onboarding.reselect(); return; }
+    if (act === 'add-to-home') { if (APP.pwaInstall && APP.pwaInstall.open) APP.pwaInstall.open(); return; }
     if (APP.ghui && APP.ghui.handle(act)) return;
     if (act === 'export') {
       var text = APP.store.exportData();

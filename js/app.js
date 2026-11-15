@@ -308,6 +308,11 @@
     var docPlaying = !!(unlockRes && unlockRes.played);
     if (!fork && !skipAsk && !docPlaying) maybeAskRegister();
     else if (skipAsk) { try { window.localStorage.setItem(ASK_KEY, APP.todayStr()); } catch (e) {} } // 当天不再打扰
+    // 手机首次打开日程页问一次要不要放到桌面：首登刚结束这一拍优先，
+    // 已完成首登的老用户升级后第一次打开也会问；pwaInstall 内部保证只问一次。
+    if (tab === 'schedule' && APP.pwaInstall && APP.pwaInstall.maybePrompt) {
+      APP.pwaInstall.maybePrompt();
+    }
     // 保证跨天看守在跑（内部防重）
     startDateGuard();
   }

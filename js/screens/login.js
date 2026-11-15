@@ -113,12 +113,14 @@ window.APP = window.APP || {};
     if (!configured) {
       var lead = '<section class="card"><h2>第一步：连接已建好的数据仓库</h2>' +
         '<p>记录会加密存放在<b>部署者已创建好的</b> GitHub 仓库里。这里只是填地址，<b>不需要新建仓库</b>；' +
-        '填完 4 项点「保存设置」会自动验证连接。</p>' +
+        '填完 4 项点「保存设置」，验证成功后下面才会出现「登录 / 注册」。</p>' +
         '<p class="field__hint">还没有仓库和令牌？' +
         '<button type="button" data-act="deploy-guide" style="border:0;background:none;padding:0;color:#c0492b;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer">点这里看 5 步部署说明</button>' +
         '，或 <a href="' + esc(repoReadmeUrl()) + '" target="_blank" rel="noopener noreferrer" style="color:#c0492b;font-weight:700">直接打开 README →</a></p>' +
         '</section>';
-      return lead + full + authCardHtml();
+      // 未连上仓库时不给登录 / 注册入口：没有账号文件可读，填了也只会报错。
+      // gh-save 验证成功后 ghui 内部会 refresh，页面自动切到「第二步 + 账号卡」。
+      return lead + full;
     }
     // 已配置：账号卡置顶（第二步），连接设置收在底部（折叠态仍可一键同步）
     var step2 = '<section class="card" id="step2"><h2>第二步：登录或创建家庭账号</h2>' +

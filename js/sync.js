@@ -5,6 +5,8 @@
 //     需要时由家长后台「导入本机旧记录」单向导入（云端为空才可用、导入前备份）。
 // v3：每次 PUT 都是一个 git commit，2 秒防抖会让 commit 历史暴涨，也容易撞 GitHub 写限流 / 多端 sha 冲突。
 //     改为「静默窗口 + 最长兜底 + 最小间隔 + 内容去重」：数据没变不写仓库，连续操作合并成一次上传。
+// v4：关键步骤（选宠 / 完成首登 / 捕捉 / 战斗结算 / 打卡 / 解锁）走 criticalPush 立即上传，
+//     上传串行化避免并发 PUT 撞 sha；新设备本地是空档时无条件采纳云端，不再因 savedAt 被挡回。
 window.APP = window.APP || {};
 
 (function (APP) {
@@ -410,9 +412,15 @@ window.APP = window.APP || {};
             showFork();
             return true;
           }
+          // 新设备的默认空档在 migrate 里会把 savedAt 抬成「此刻」，比云端那份还新；
+          // 只按 LWW 比较会直接丢掉云端数据，症状就是换设备后重新走一遍首登选宠。
+          // 本机没有任何真实进度 / 没完成首登、而云端有 → 无条件采纳云端。
+          var local = APP.store.get();
+          var localHas = stateRealData(local) || !!(local.onboarding && local.onboarding.onboarded);
+          var cloudHas = stateRealData(data) || !!(data.onboarding && data.onboarding.onboarded);
           adopting = true;
           var changed = false;
-          try { changed = APP.store.adoptExternal(data); } catch (e) { changed = false; }
+          try { changed = APP.store.adoptExternal(data, !localHas && cloudHas); } catch (e) { changed = false; }
           adopting = false;
           // 云端数据刚落地，记下它的指纹，别在下一次 onLocalSave 里又原样推回去
           lastFingerprint = fingerprint(APP.store.get());
@@ -428,18 +436,31 @@ window.APP = window.APP || {};
     });
   }
 
+  // 串行上传：两个 PUT 同时发出会读到同一个 sha，后一个必然 409 失败。
+  // 关键步骤会连续触发多次上传，必须排队。
+  var pushChain = Promise.resolve();
+
   function push() {
     if (!canSync() || fork) return Promise.resolve(false);
-    var id = slotOwner();
-    if (id === 'local') return Promise.resolve(false);
+    if (slotOwner() === 'local') return Promise.resolve(false);
     var s = APP.auth.session();
     if (!s || !s.vaultKeyB64) return Promise.resolve(false);
+    pushChain = pushChain['then'](doPush, doPush);
+    return pushChain;
+  }
+
+  function doPush() {
+    if (!canSync() || fork) return false;
+    var id = slotOwner();
+    if (id === 'local') return false;
+    var s = APP.auth.session();
+    if (!s || !s.vaultKeyB64) return false;
     var sData = APP.store.get();
     var fp = fingerprint(sData);
     // 内容没变就不 PUT：省掉一个 commit，也避免无谓地 bump 仓库历史
     if (fp === lastFingerprint) {
       set({ syncing: false, offline: false, pending: 0, lastSyncAt: Date.now() });
-      return Promise.resolve(true);
+      return true;
     }
     set({ syncing: true });
     return APP.cipher.importRaw(APP.cipher.bytesFromB64(s.vaultKeyB64)).then(function (vaultKey) {
@@ -510,7 +531,9 @@ window.APP = window.APP || {};
     }
     if (typeof window !== 'undefined' && window.addEventListener) {
       window.addEventListener('online', function () {
-        pull()['then'](function () { push(); });
+        // 先补传本机没上传的改动，成功后再拉取；否则 pull 可能用云端旧档盖掉本机新进度。
+        // push() 失败（仍是离线）时不 pull，改动留在本机等下次联网。
+        push()['then'](function (ok) { if (ok) return pull(); });
       });
       // 关页面时不等静默窗口，尽力把最后一次改动补传上去
       window.addEventListener('pagehide', function () { flushPush(); });
@@ -529,6 +552,7 @@ window.APP = window.APP || {};
     firstPullDone = false; // 换账号 / 重新登录后，等新账号自己的首次拉取完成再放行引导
     if (pullTimer) { clearInterval(pullTimer); pullTimer = null; }
     if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+    if (criticalTimer) { clearTimeout(criticalTimer); criticalTimer = null; }
     firstDirtyAt = 0;
     lastPushAt = 0;
     lastFingerprint = ''; // 换账号必须清空，否则新账号的数据会被误判成「没变」
@@ -542,6 +566,20 @@ window.APP = window.APP || {};
     return push();
   }
 
+  // 关键步骤固定上传：选宝可梦 / 完成首登 / 捕捉 / 战斗结算 / 任务打卡 / 解锁新档位。
+  // 不走 20 秒静默窗口，也不受 30 秒最小间隔限制；仍保留内容去重（数据没变不写 commit）。
+  // 400ms 合并：一次交互里常常连着写好几次（打卡 → 发奖 → 解锁），只发一次 PUT。
+  var CRITICAL_COALESCE = 400;
+  var criticalTimer = null;
+  function criticalPush() {
+    if (!canSync()) return;
+    if (criticalTimer) clearTimeout(criticalTimer);
+    criticalTimer = setTimeout(function () {
+      criticalTimer = null;
+      flushPush();
+    }, CRITICAL_COALESCE);
+  }
+
   APP.sync = {
     start: start,
     stop: stop,
@@ -549,6 +587,7 @@ window.APP = window.APP || {};
     pull: pull,
     push: push,
     flushPush: flushPush,
+    criticalPush: criticalPush,
     uploadPhotos: uploadPhotos,
     photoSrc: photoSrc,
     importLocalToAccount: importLocalToAccount,

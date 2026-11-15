@@ -374,13 +374,18 @@ window.APP = window.APP || {};
 
   // 采用外部存档（云端 / 其他页面）：与 beginWrite 同一合并内核，但直接给对象。
   // 只在外部版本更新时才替换；返回是否真的换了数据（调用方可据此决定是否刷新界面）。
-  function adoptExternal(ext) {
+  // force=true：本机是全新空档、云端有真实数据时无条件采纳（换设备场景）。
+  // 这里刻意不调用 save()：它会把 savedAt 抬成「此刻」，等于本机凭空比其它设备新，
+  // 下次同步就会把对方的真实改动挡回去。保留云端原时间戳后静默落盘即可。
+  function adoptExternal(ext, force) {
     if (!ext || typeof ext !== 'object' || !Array.isArray(ext.tasks)) return false;
     var mine = state && typeof state.savedAt === 'number' ? state.savedAt : 0;
-    if ((Number(ext.savedAt) || 0) <= mine) return false;
+    var theirs = Number(ext.savedAt) || 0;
+    if (!force && theirs <= mine) return false;
     state = ext;
-    migrate(state);
-    save();
+    migrate(state);       // 期间可能 save() 抬时间戳，下面强制还原
+    state.savedAt = theirs;
+    try { window.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
     return true;
   }
 

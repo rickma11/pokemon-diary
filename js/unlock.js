@@ -364,6 +364,8 @@ window.APP = window.APP || {};
     }
     if (claimedChanged) APP.store.setUnlock({ claimed: claimed });
     if (changed) APP.store.setUnlock({ seen: seen });
+    // 新档位解锁 / 奖励发放：立刻上云，换设备不会重播讲解或重复领奖
+    if ((changed || claimedChanged) && APP.sync && APP.sync.criticalPush) APP.sync.criticalPush();
     pumpDoc();
     // played 供 app.js 判断：本次有新解锁讲解时，「要不要注册账号」提醒让位，避免两层弹窗打架
     res.played = played;

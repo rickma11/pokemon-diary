@@ -547,6 +547,8 @@
         dialog('跑掉了…', esc(cur.name) + ' 钻回躲藏点里了。', btns);
       }
       sync();
+      // 捕捉结果 / 门票消耗 / 图鉴已遇到刚落地：立刻上云，关页面也不丢
+      if (APP.sync && APP.sync.criticalPush) APP.sync.criticalPush();
       seq.busy = false;
       rootEl.classList.remove('is-busy');
     }

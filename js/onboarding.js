@@ -74,6 +74,15 @@ window.APP = window.APP || {};
     if (APP.STARTER_ART && APP.STARTER_ART[d]) return APP.STARTER_ART[d];
     return 'assets/pokemon/' + pad(d) + '.png';
   }
+  // 主角形象：选择格只有 64px，用 160px 内联小图；常量表缺失时回退到原始立绘
+  function heroArt(base) {
+    if (APP.HERO_BUST_ART && APP.HERO_BUST_ART[base]) return APP.HERO_BUST_ART[base];
+    return 'assets/npc-v6/' + base + '-bust.png';
+  }
+  // 关键节点固定上传：跳过平时的 20 秒静默窗口，立刻把这一步写进仓库
+  function critical() {
+    if (APP.sync && APP.sync.criticalPush) APP.sync.criticalPush();
+  }
 
   // 三个世代各抽 1 只御三家保证多样性；第 4 只有 80% 概率是皮卡丘，
   // 剩下 20% 从其余御三里补 1 只。最后打乱位置，皮卡丘不再固定在第一格。
@@ -249,6 +258,7 @@ window.APP = window.APP || {};
           }
         }
         APP.store.setOnboarding({ firstPokemon: p.name, onboarded: false, character: null, welcomed: false });
+        critical();   // 选好的初始宝可梦立刻上云，换设备不用重选
         closeOb(); pickChar();
       }
     }
@@ -259,7 +269,7 @@ window.APP = window.APP || {};
   function pickChar() {
     var items = CHARS.map(function (c, i) {
       return '<button type="button" class="ob-char' + (i === 0 ? ' is-sel' : '') + '" data-ob-char="' + i + '">' +
-        '<img src="assets/npc-v6/' + c.base + '-bust.png" alt="">' +
+        '<img src="' + heroArt(c.base) + '" alt="">' +
         '<small>' + esc(c.name) + '</small></button>';
     }).join('');
     var el = overlayEl();
@@ -281,6 +291,7 @@ window.APP = window.APP || {};
       if (findAttr(e.target, 'data-ob-ok')) {
         APP.store.setSetting('myTrainer', sel);
         APP.store.setOnboarding({ character: CHARS[sel].name, onboarded: true, reselectTime: 0, welcomed: true });
+        critical();   // onboarded=true 必须马上落云，否则另一台设备会重跑整套首登
         closeOb();
         finale();   // 「完成」→ 欢迎结语 → 进入日程页；博士只在真正解锁时出现
       }
@@ -322,7 +333,7 @@ window.APP = window.APP || {};
     var cur = (APP.store.settings() && APP.store.settings().myTrainer) || 0;
     var items = CHARS.map(function (c, i) {
       return '<button type="button" class="ob-char' + (i === cur ? ' is-sel' : '') + '" data-ob-char="' + i + '">' +
-        '<img src="assets/npc-v6/' + c.base + '-bust.png" alt="">' +
+        '<img src="' + heroArt(c.base) + '" alt="">' +
         '<small>' + esc(c.name) + '</small></button>';
     }).join('');
     var el = overlayEl();
@@ -344,6 +355,7 @@ window.APP = window.APP || {};
       if (findAttr(e.target, 'data-ob-ok')) {
         APP.store.setSetting('myTrainer', sel);
         APP.store.setOnboarding({ character: CHARS[sel].name, reselectTime: Date.now() });
+        critical();
         closeOb();
         if (APP.unlock && APP.unlock.toast) APP.unlock.toast('✅ 已重选为 ' + CHARS[sel].name + '（30 天内不可再选）');
         if (APP.refresh) APP.refresh();
