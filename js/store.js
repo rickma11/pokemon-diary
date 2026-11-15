@@ -252,6 +252,29 @@ window.APP = window.APP || {};
     // 牧场（Task 8 / Phase 1）：随行队超编（队伍 >5）自动收敛进仓库
     if (normalizeParty(s)) changed = true;
 
+    // 默认任务模板升级（5 项 → 8 项）：
+    // 只有「当前任务与旧版内置模板逐条一致」才自动套用新版，绝不覆盖用户自定义任务。
+    // 打一次标记，之后永不重复迁移；打卡记录在 instances 里，替换 tasks 不会丢记录。
+    if (s.taskTemplateVersion !== 2) {
+      var OLD_DEFAULT = [
+        ['t_hw', '完成今日作业', 'photo', '21:00', 'evening'],
+        ['t_read', '课外阅读 20 分钟', 'check', '20:30', 'evening'],
+        ['t_move', '运动 30 分钟', 'check', '18:00', 'afternoon'],
+        ['t_chore', '整理书包 / 做家务', 'check', '07:40', 'morning'],
+        ['t_sleep', '21:30 前上床', 'check', '21:30', 'evening']
+      ];
+      var cur = s.tasks || [];
+      var stillOld = cur.length === OLD_DEFAULT.length;
+      for (var oi = 0; stillOld && oi < OLD_DEFAULT.length; oi++) {
+        var t0 = cur[oi], o = OLD_DEFAULT[oi];
+        stillOld = !!t0 && t0.id === o[0] && t0.title === o[1] &&
+          t0.mode === o[2] && t0.deadline === o[3] && t0.slot === o[4];
+      }
+      if (stillOld) s.tasks = JSON.parse(JSON.stringify(APP.DEFAULT_TASKS));
+      s.taskTemplateVersion = 2;
+      changed = true;
+    }
+
     // 版本升级：保留全部数据，只把 version 抬到当前值。
     // 数据兼容全部由上面的字段迁移负责，绝不因版本号变化丢弃用户数据。
     if (s.version !== APP.VERSION) {

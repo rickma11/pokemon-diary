@@ -446,6 +446,22 @@
 
   if ('serviceWorker' in navigator &&
       (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
+    // 发版后自动切到新版：SW 在后台发现首页 ETag 变了会通知这里，页面自动刷新一次。
+    // sessionStorage 按版本号记账，同一版本只刷一次，不会来回抖。
+    (function () {
+      var KEY = 'pokedex-shell-reload';
+      function reloadOnce(ver) {
+        var v = String(ver || 'new');
+        try {
+          if (window.sessionStorage.getItem(KEY) === v) return;
+          window.sessionStorage.setItem(KEY, v);
+        } catch (e) {}
+        window.location.reload();
+      }
+      navigator.serviceWorker.addEventListener('message', function (e) {
+        if (e.data && e.data.type === 'SHELL_UPDATED') reloadOnce(e.data.ver);
+      });
+    })();
     window.addEventListener('load', function () {
       var sw = navigator.serviceWorker;
       // 旧版 SW 注册在 js/ 子目录：作用域只覆盖 js/，既缓存不到首页，
@@ -458,7 +474,8 @@
         }
         return Promise.all(jobs);
       })['catch'](function () {}).then(function () {
-        return sw.register('sw.js', { scope: './' });
+        // updateViaCache: none —— 每次打开都检查 sw.js 是否更新，不被 HTTP 缓存挡住
+        return sw.register('sw.js', { scope: './', updateViaCache: 'none' });
       })['catch'](function () {});
     });
   }

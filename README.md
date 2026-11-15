@@ -171,12 +171,42 @@ deploy-package/AI_DEPLOY_GUIDE.md   给 AI 助手看的部署手册
 ### 方式 3：手动 git（懂命令行的话）
 
 ```bash
+node build.js              # 关键：改过 js/ 或 css/ 就必须重建 index.html
 git add -A
 git commit -m "fix: 说明改了什么"
+git pull --rebase origin main   # 关键：App 会在远端写 sync: 存档 commit，不同步会被拒
 git push origin main
 ```
 
+> **最容易踩的坑**：只改 `js/` / `css/` 然后直接 `git push`。线上加载的是**内联了全部代码的 `index.html`**，源码文件本身不会被页面读取，所以线上完全不会变。必须先 `node build.js`。
+
 > **认证**：本仓库首次部署时 `origin` 已带凭据；如果你是 Fork 后自己 `git clone` 的，第一次推送会要求登录 GitHub（浏览器授权即可），之后由系统凭据管理器记住。若报 403 / 认证失败，多为 PAT 过期或被撤销，重新生成一个 `repo` 权限的 PAT 更新到 `origin` 地址即可。脚本里的 `-c credential.helper=` 是为了绕开部分机器上损坏的凭据助手配置。
+
+### 推送成功，但页面还是旧的？
+
+「代码推没推上去」和「页面看不看得见」是两件事，按顺序自查：
+
+1. **远端到底有没有新代码**：打开 `https://github.com/<owner>/<repo>/commits/main` 确认最新 commit，再打开仓库里的 `index.html` 搜这次新加的函数名 / 文案。**所有 JS/CSS 都内联在 `index.html` 里**，改了 `js/xxx.js` 却没重新 `node build.js`，这里就搜不到，线上自然不会变。
+2. **Pages 有没有构建完**：`https://api.github.com/repos/<owner>/<repo>/pages/builds/latest` 看 `status=built` 且 commit 与上一步一致；推送后约 1 分钟完成。
+3. **浏览器缓存**：离线缓存对首页是「先用缓存秒开、后台拉新版」，GitHub Pages 又给 HTML 设了 `Cache-Control: max-age=600`。现在已做自动切换：
+   - 每次发版把根目录 `sw.js` 里的 `var CACHE = 'pokedex-checkin-vNN'` **+1**，新 SW 接管时会清掉旧缓存，并把已打开的页面强制导航到新版；
+   - 即使忘了改版本号，SW 也会用 `no-store` 绕过 10 分钟 HTTP 缓存去拿最新 HTML、比对 ETag，发现内容变了就通知页面自动刷新一次（同一版本只刷一次，不会来回抖）。
+   - 想立刻看：电脑 `Ctrl+Shift+R` 硬刷新；手机清一下站点数据再打开；从桌面图标进的先关掉再开一次。
+4. **已有账号的「默认任务」**：`APP.DEFAULT_TASKS` 只在新建存档 / 点「恢复默认任务」时写入，改代码不会直接改写已保存的任务。现在 `store.migrate()` 会做一次性升级：任务列表与旧版 5 项模板逐条一致时自动换成新版 8 项（打卡记录存在 `instances` 里，不会丢）；**用户自己增删改过任务则不覆盖**，需到 家长后台 → 任务管理 →「恢复默认任务」手动套用。
+
+### 给「另一个窗口 / AI 助手」的发布清单
+
+不管是谁改的代码，推送前逐条确认：
+
+- [ ] 改的是 `js/`、`css/`、`index.src.html`，**没有直接改 `index.html`**（它是构建产物，下次构建会被覆盖）
+- [ ] 跑过 `node build.js`，且 `git status` 里 `index.html` 确实有变化
+- [ ] `sw.js` 的 `CACHE` 版本号 +1（推荐；漏了也有 ETag 自动刷新兜底）
+- [ ] `git pull --rebase origin main` 同步过 App 运行时写的 `sync: saves/...` commit
+- [ ] `git push origin main` 成功，远端最新 commit 就是这次
+- [ ] Pages 状态 `built`，且线上 `index.html` 里能搜到这次的新代码
+- [ ] 手机 / 电脑打开一次站点，确认自动切到新版
+
+> 最省事的做法就是双击 `更新推送.bat`：它已经把「重建 → 提交 → 同步远端 → 推送」串好了。
 
 ### 改完记得自测
 

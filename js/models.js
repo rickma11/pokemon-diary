@@ -102,6 +102,7 @@ window.APP = window.APP || {};
     var starterId = 'p_' + Date.now();
     return {
       version: APP.VERSION,
+      taskTemplateVersion: 2, // 内置任务模板版本；旧档缺此字段时由 migrate 判断是否自动升级
       family: {
         pin: '1234',
         createdAt: APP.todayStr(),

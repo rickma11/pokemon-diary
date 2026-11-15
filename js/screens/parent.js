@@ -689,7 +689,7 @@ window.APP = window.APP || {};
         '<button type="button" class="btn" data-act="restore">恢复默认任务</button>' +
         '<button type="button" class="btn" data-act="reset">清空全部数据</button>' +
       '</div>' +
-      '<p class="hint">恢复默认任务：清空自定义任务、还原为内置 5 项；清空全部数据：重置整个应用（含打卡记录、宝可梦、照片），不可逆。</p>' +
+      '<p class="hint">恢复默认任务：清空自定义任务、还原为内置 8 项模板（吃饭 / 做家务只在周末出现）；清空全部数据：重置整个应用（含打卡记录、宝可梦、照片），不可逆。</p>' +
     '</section>';
 
     // 自定义题库已搬到首页「玩法与题库」页，避免两处重复
