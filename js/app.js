@@ -228,13 +228,18 @@
     try { return !!(APP.auth && APP.auth.needLogin && APP.auth.needLogin()); } catch (e) { return false; }
   }
 
-  // 能否进家长后台：大人身份可以；小孩身份一律不可以；未登录（无会话）不允许
-  function canParent() {
-    if (!APP.auth) return true;
-    var role = APP.auth.role();
-    if (role === 'parent') return true;
-    if (role === 'child') return false;
-    return false;
+  // 家长后台临时通行证：每次点「家长」都必须重新输家长密码，验证通过才置 true；离开后台立即作废。
+  // 不再按会话角色放行——否则孩子输对一次家长密码后（旧实现会把会话覆盖成 parent 角色），之后就免密直进了。
+  var parentUnlocked = false;
+
+  // 家长后台入口：顶部「家长」按钮（可见）/ 长按顶部图标 3 秒（隐蔽）
+  function goParent() {
+    window.location.hash = '#/parent';
+  }
+
+  // 顶部「家长」按钮被点击：无论当前是家长还是孩子身份，每次进入都要输家长密码
+  function onParentEntry() {
+    promptParentPassword();
   }
 
   function render() {
@@ -245,6 +250,7 @@
     // 数据来源分叉待用户二选一：冻结首登 / 注册提醒 / 解锁引导，避免两层浮层打架
     var fork = !!(APP.sync && APP.sync.forkPending && APP.sync.forkPending());
     if (needLogin()) {
+      parentUnlocked = false; // 退出登录后通行证立即作废
       document.body.classList.remove('in-parent');
       tabbarEl.style.display = 'none';
       if (APP.statusbar) APP.statusbar.render('none');
@@ -260,8 +266,9 @@
     // 首登引导：未引导过则弹出选择流程（内部防重）
     if (!fork && APP.onboarding && APP.onboarding.maybeRun) APP.onboarding.maybeRun();
     var tab = currentTab();
-    // 从后台切走（含浏览器返回键）时清登录态，下次进入必须重新输密码
+    // 从后台切走（含浏览器返回键）时清登录态与临时通行证，下次进入必须重新输密码
     if (lastTab === 'parent' && tab !== 'parent') {
+      parentUnlocked = false;
       if (APP.screens && APP.screens.parent && APP.screens.parent.reset) {
         APP.screens.parent.reset();
       }
@@ -272,8 +279,9 @@
       window.location.hash = '#/schedule';
       return;
     }
-    if (tab === 'parent' && !canParent()) {
-      // 小孩 token 直接访问后台 → 回日程页
+    // 没输过家长密码（或会话已失效）直接访问 #/parent → 回日程页
+    if (tab === 'parent' && !(parentUnlocked && APP.auth && APP.auth.session())) {
+      parentUnlocked = false;
       window.location.hash = '#/schedule';
       return;
     }
@@ -340,19 +348,9 @@
 
   window.addEventListener('hashchange', render);
 
-  // 家长后台入口：顶部「家长」按钮（可见）/ 长按顶部图标 3 秒（隐蔽）
-  function goParent() {
-    if (!canParent()) return;
-    if (currentTab() !== 'parent') window.location.hash = '#/parent';
-  }
-
-  // 顶部「家长」按钮被点击：家长身份直接进；小孩身份需再输一次家长密码（不让小孩绕过密码进后台）
-  function onParentEntry() {
-    if (canParent()) { goParent(); return; }
-    promptParentPassword();
-  }
-
-  // 小孩身份进入家长后台：弹窗输入家长密码，验证通过才切换为家长会话并跳转；连续输错会触发 30 秒锁定提示
+  // 进入家长后台：弹窗输入家长密码，每次进入都必须输入；验证通过只发「临时通行证」，
+  // 不改会话身份（不能用 login()，它会把会话覆盖成 parent 角色，导致下次免密直进）。
+  // 连续输错会触发 30 秒锁定提示。
   function promptParentPassword() {
     var s = APP.auth && APP.auth.session();
     if (!s) { window.location.hash = '#/login'; return; }
@@ -382,8 +380,14 @@
         var pwd = (document.getElementById('ppPwd') || {}).value || '';
         var er = document.getElementById('ppErr');
         if (!pwd) { if (er) { er.style.display = ''; er.textContent = '请输入家长密码'; } return; }
-        APP.auth.login(s.accountId, pwd).then(function (res) {
-          if (res && res.ok && res.role === 'parent') { closeM(); window.location.hash = '#/parent'; APP.refresh(); return; }
+        APP.auth.verifyParent(s.accountId, pwd).then(function (res) {
+          if (res && res.ok) {
+            parentUnlocked = true;
+            closeM();
+            goParent();
+            APP.refresh();
+            return;
+          }
           if (er) { er.style.display = ''; er.textContent = (res && res.error) || '密码不正确'; }
         });
         return;
@@ -396,7 +400,6 @@
   var pressTimer = null;
   var pressStartTime = 0;
   function startPress() {
-    if (!canParent()) return;
     if (pressTimer || currentTab() === 'parent') return;
     if (pressHintEl) { pressHintEl.classList.add('is-on'); }
     if (pressBarEl) {
@@ -411,7 +414,7 @@
     pressTimer = setTimeout(function () {
       pressTimer = null;
       stopPress();
-      window.location.hash = '#/parent';
+      promptParentPassword(); // 长按同样要输家长密码，不再免密直进
     }, 3000);
   }
   function stopPress() {

@@ -2,7 +2,7 @@
 
 > **这份文件是给「另一个窗口的 AI 助手」直接读的**：自包含、不含任何令牌或凭据，读完即可开工，不需要用户再补充或修改内容。
 >
-> - 最近更新：2026-11-15 19:20（本轮 v80，详见第 10 节）
+> - 最近更新：2026-11-15 19:45（本轮 v81，详见第 11 节）
 > - 本地主交接文档：`F:/宝可梦日常打卡工具/docs/项目交接与继续指南.md`（含敏感配置，`docs/` 被 `.gitignore` 排除、**不进公开仓库**；其他窗口读它可能被安全策略拦下，所以请优先读本文件）
 > - 部署说明：`deploy-package/AI_DEPLOY_GUIDE.md`；完整使用/安全说明：`README.md`
 
@@ -19,9 +19,9 @@
 | 入口 | `index.html`（约 1.37 MB，**构建产物**，内联了全部 38 个 JS + 2 个 CSS） |
 | 源码 | `js/`、`css/`、`index.src.html`、`sw.js`、`manifest.json` |
 | 构建 | `node build.js`（`index.src.html` → `index.html`）；`更新推送.bat` 会自动调用 |
-| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v80'` |
+| 离线缓存 | 根目录 `sw.js`，当前 `var CACHE = 'pokedex-checkin-v81'` |
 | 账号/存档 | 客户端 AES-GCM 加密后写进仓库 `accounts/` 与 `saves/`；App 运行时会往 `main` 写 `sync: saves/...` commit |
-| 当前线上 | 本轮 v80；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
+| 当前线上 | 本轮 v81；发布后以 `pages/builds/latest` 与线上 `index.html` 为准 |
 | 当前本地 | 与本轮线上一致；`accounts/` + `saves/` 共 4 个文件原样保留 |
 
 > **commit 号说明**：远端 `main` 会因 App 运行时写档（`sync: saves/...`）和**纯文档提交**不断前进。上表的 `d84ef845` 指的是**代码版本**；判断「页面是不是这一版」，看 `index.html` 的 sha 或 Pages 构建，不要只比对 `main` 的最新 commit。纯文档提交不会改 `index.html`，页面完全不受影响。
@@ -198,3 +198,20 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 **自检**：VM 验证脚本 15 项全过（新账号提前解锁被拦、老账号不回收、真达标正常解锁、孤儿标记被清理）。`node build.js` 后 `index.html` 含 `isFreshAccount`；SW 升 v80。备份 `backups/20261115-unlock-newaccount/`。
 
 **遗留**：若用户以后要求「打开 App 就算登录一天」（当前口径=有打卡记录的不同日期数），需新增独立登录日期记录，会同时影响 v78/v79 的「还差几天」。
+
+---
+
+## 11. 2026-11-15 家长后台密码门收紧 + 夜间模式时间选择器修复（v81）
+
+**问题 1（用户报）**：输对一次家长密码后，再点「家长」不再要密码，小孩能直接点进去。
+**根因**：`app.js` 的 `promptParentPassword()` 调的是 `auth.login()`，它验证成功后会把**会话角色覆盖成 parent**（`store({role:'parent'...})`）——一次验证=永久免密。另外家长身份登录的账号本来就免密直进。
+**修复（用户要求：每次进入都必须输密码）**：
+- `js/auth.js` 新增 `verifyParent(accountId, pwd)`：只解开 `accounts/{id}.json` 的 **parent 包裹**验证密码，**不写会话、不切角色、不落本地存储**；已导出到 `APP.auth`。
+- `js/app.js`：删除按角色放行的 `canParent()`；新增模块级 `parentUnlocked` 临时通行证——顶部「家长」按钮和长按图标 3 秒**两条入口都改为必弹密码框**；验证通过置 `parentUnlocked=true` 才放行 `#/parent`；离开后台（`lastTab` 切换）、退出登录、直接访问 `#/parent` 都立即作废。孩子密码解不开 parent 包裹，进不去。
+- **注意**：以后任何进后台的代码路径都必须走 `promptParentPassword()`，不要直接 `hash='#/parent'`，也不要再用 `auth.login()` 验密码（会改会话角色）。
+
+**问题 2（用户报）**：手机系统切「夜晚/深色模式」后，家长后台「截止时间」的原生时间选择器弹窗浅字浅底看不清，页面也被强制涂黑。
+**根因**：全站三套皮肤（彩色/GBA/墨水）都是浅底，但没声明 `color-scheme`，浏览器强制深色（force dark）乱反色。
+**修复**：`index.src.html` head 加 `<meta name="color-scheme" content="only light">`，`css/app.css` 末尾加 `:root { color-scheme: light; }`——浏览器不再强制反色，原生时间/日期选择器按浅色渲染，任何皮肤下清晰可读。**若未来真的要做深色皮肤，需同步把这两处改成 `light dark` 并配好深色变量。**
+
+**自检**：VM 验证 `verifyParent` 5 项全过（正确密码放行/错误拒绝/孩子密码拒绝/空账号拒绝/**会话零改动**）；`node build.js` 后 `index.html` 含 `only light`、`verifyParent`、`parentUnlocked`；SW 升 v81。备份 `backups/20261115-parentpwd-colorscheme/`。

@@ -3761,3 +3761,11 @@ body.ink .lock-tip { color: #7A6A55; }
 .schedule-progress.is-compact { padding-top: 9px; padding-bottom: 9px; }
 .schedule-progress.is-compact > :not(h2):not(.bar) { display: none !important; }
 .schedule-progress.is-compact h2 { margin-bottom: 7px; font-size: 15px; }
+
+/* ===== 原生控件配色声明 =====
+   本站三套皮肤（彩色 / GBA / 墨水）全部是浅底设计，这里显式声明 color-scheme: light：
+   ① 配合 <meta name="color-scheme" content="only light">，手机系统开「深色/夜间模式」时
+      浏览器不会再强制把页面反色涂黑（强制深色会破坏所有皮肤的配色）；
+   ② 原生时间/日期选择器弹窗（如家长后台的「截止时间」）按浅色渲染，深色数字浅色底，
+      任何皮肤下都清晰可读、可正常设置。 */
+:root { color-scheme: light; }

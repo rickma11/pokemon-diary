@@ -262,6 +262,36 @@ window.APP = window.APP || {};
 
   function role() { var s = session(); return s ? s.role : null; }
 
+  // 只校验家长密码是否正确：不写会话、不切换身份、不落本地存储。
+  // 家长后台入口每次都要重新输密码（不能登录一次就长期放行），用这个而不是 login()，
+  // 否则孩子输对一次家长密码后，login() 会把会话覆盖成 parent 角色，之后就免密直进了。
+  function verifyParent(accountId, pwd) {
+    if (!needCfg()) {
+      return Promise.resolve({ ok: false, error: '请先在页面上方的「GitHub 同步」里填写仓库与访问令牌' });
+    }
+    if (!APP.cipher || !APP.cipher.available()) {
+      return Promise.resolve({ ok: false, error: '当前环境不支持加密（请用 https 或 localhost 打开）' });
+    }
+    var id = String(accountId || '').trim();
+    if (!id) return Promise.resolve({ ok: false, error: '未登录' });
+    return gh().getFile('accounts/' + id + '.json').then(function (rec) {
+      if (!rec) return { ok: false, error: '账号不存在' };
+      var data;
+      try { data = JSON.parse(gh().decode(rec.content)); } catch (e) { return { ok: false, error: '账号文件损坏' }; }
+      var w = data && data.wrap && data.wrap.parent;
+      if (!w) return { ok: false, error: '该账号未设置家长密码' };
+      return APP.cipher.deriveKey(pwd, APP.cipher.bytesFromB64(w.salt)).then(function (k) {
+        return APP.cipher.openBytes(w, k);
+      }).then(function () {
+        return { ok: true };
+      }, function () {
+        return { ok: false, error: '密码不正确' };
+      });
+    }, function () {
+      return { ok: false, error: '网络异常，请重试' };
+    });
+  }
+
   // 强制登录：没有会话就必须登录 / 注册（不再有本机模式）
   function needLogin() { return !session(); }
 
@@ -274,6 +304,7 @@ window.APP = window.APP || {};
   APP.auth = {
     session: session,
     role: role,
+    verifyParent: verifyParent,
     needLogin: needLogin,
     lastAccount: lastAccount,
     register: register,
