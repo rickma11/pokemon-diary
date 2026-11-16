@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- 由 build.js 从 index.src.html 自动生成，请勿直接编辑；改源码后运行 node build.js -->
-<script>window.APP_BUILD_VERSION="v95";</script>
+<script>window.APP_BUILD_VERSION="v96";</script>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -2762,7 +2762,6 @@ body.ink .ex-card--capture .ex-card__badge { background: var(--surface); }
   border-radius: 999px; padding: 5px 10px; font-size: 11.5px; cursor: pointer; white-space: nowrap;
 }
 .dex-chip.is-on { background: var(--ink); border-color: var(--ink-strong); color: #fff; font-weight: 700; }
-.dex-filter__hint { font-size: 10.5px; color: var(--muted); margin: 9px 0 0; line-height: 1.45; }
 .dex-sel {
   margin-left: auto; min-width: 96px;
   border: 1px solid var(--line-strong); background: var(--card); color: var(--text);
@@ -2779,8 +2778,6 @@ body.ink .ex-card--capture .ex-card__badge { background: var(--surface); }
   width: 100%; border: 1px solid var(--line); border-radius: 9px;
   padding: 8px 10px; font-size: 12.5px; background: var(--card); color: var(--text);
 }
-.dex-sw { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); margin-top: 8px; cursor: pointer; }
-.dex-sw input { accent-color: var(--ink); }
 
 /* 3 列图鉴格 */
 .dex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -2805,7 +2802,6 @@ body.ink .ex-card--capture .ex-card__badge { background: var(--surface); }
 .dex-card__img { width: 80px; height: 80px; object-fit: contain; display: block; margin: 9px auto 2px; }
 .dex-card__img.is-sil { filter: grayscale(1) brightness(0); opacity: .24; }
 .dex-card__nm { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dex-card__nm.is-hide { color: var(--muted); letter-spacing: 1px; }
 .dex-tps { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin: 3px 0 2px; }
 .dex-tp { font-size: 9px; line-height: 1.5; color: #fff; border-radius: 4px; padding: 1px 5px; font-weight: 700; }
 .dex-tp--sm { font-size: 8px; padding: 0 4px; }
@@ -15647,7 +15643,6 @@ window.APP = window.APP || {};
     type: 'all',
     status: 'all',
     q: '',
-    showName: true,
     cur: null,
     fi: 0
   };
@@ -15817,9 +15812,6 @@ window.APP = window.APP || {};
         '<select class="dex-sel" id="dexType" aria-label="按属性筛选">' + opts + '</select>' +
       '</div>' +
       '<input class="dex-search" id="dexQ" type="search" placeholder="搜编号或名字，如 006 / 喷火龙" value="' + esc(S.q) + '">' +
-      '<label class="dex-sw"><input type="checkbox" id="dexName"' + (S.showName ? ' checked' : '') +
-        '> 未发现的宝可梦显示名称</label>' +
-      '<p class="dex-filter__hint">💡 上方标签可点：切换世代（关都 / 城都 / 丰缘）、筛选「已拥有 · 已遇到 · 未发现」，右侧下拉可按属性筛</p>' +
       '</section>';
   }
 
@@ -15834,7 +15826,7 @@ window.APP = window.APP || {};
       var g = got(e, own), sv = e.path.some(function (p) { return se[p.id]; });
       var lit2 = g || sv;
       var f = cardForm(e, own);
-      var nm = (lit2 || S.showName) ? f.zh : '？？？';
+      var nm = f.zh;
       var stTxt = g ? '已拥有' : sv ? '已发现' : '未获得';
       var stCls = g ? '' : sv ? ' is-seen' : ' is-no';
       var dots = '';
@@ -15845,7 +15837,7 @@ window.APP = window.APP || {};
         '<span class="dex-card__st' + stCls + '">' + stTxt + '</span>' +
         '<img class="dex-card__img' + (lit2 ? '' : ' is-sil') +
           '" src="' + APP.art.sm(f.id) + '" alt="" loading="lazy">' +
-        '<div class="dex-card__nm' + (lit2 || S.showName ? '' : ' is-hide') + '">' + esc(nm) + '</div>' +
+        '<div class="dex-card__nm">' + esc(nm) + '</div>' +
         '<div class="dex-tps">' + badges(f.types) + '</div>' +
         '<div class="dex-card__dots">' + dots + '</div></div>';
     }).join('');
@@ -15995,7 +15987,6 @@ window.APP = window.APP || {};
   function onChange(e) {
     var t = e.target, id = t && t.id;
     if (id === 'dexType') { S.type = t.value || 'all'; S.cur = null; draw(); }
-    else if (id === 'dexName') { S.showName = !!t.checked; drawGrid(); }
   }
 
   function onInput(e) {

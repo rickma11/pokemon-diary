@@ -17,7 +17,6 @@
     type: 'all',
     status: 'all',
     q: '',
-    showName: true,
     cur: null,
     fi: 0
   };
@@ -187,9 +186,6 @@
         '<select class="dex-sel" id="dexType" aria-label="按属性筛选">' + opts + '</select>' +
       '</div>' +
       '<input class="dex-search" id="dexQ" type="search" placeholder="搜编号或名字，如 006 / 喷火龙" value="' + esc(S.q) + '">' +
-      '<label class="dex-sw"><input type="checkbox" id="dexName"' + (S.showName ? ' checked' : '') +
-        '> 未发现的宝可梦显示名称</label>' +
-      '<p class="dex-filter__hint">💡 上方标签可点：切换世代（关都 / 城都 / 丰缘）、筛选「已拥有 · 已遇到 · 未发现」，右侧下拉可按属性筛</p>' +
       '</section>';
   }
 
@@ -204,7 +200,7 @@
       var g = got(e, own), sv = e.path.some(function (p) { return se[p.id]; });
       var lit2 = g || sv;
       var f = cardForm(e, own);
-      var nm = (lit2 || S.showName) ? f.zh : '？？？';
+      var nm = f.zh;
       var stTxt = g ? '已拥有' : sv ? '已发现' : '未获得';
       var stCls = g ? '' : sv ? ' is-seen' : ' is-no';
       var dots = '';
@@ -215,7 +211,7 @@
         '<span class="dex-card__st' + stCls + '">' + stTxt + '</span>' +
         '<img class="dex-card__img' + (lit2 ? '' : ' is-sil') +
           '" src="' + APP.art.sm(f.id) + '" alt="" loading="lazy">' +
-        '<div class="dex-card__nm' + (lit2 || S.showName ? '' : ' is-hide') + '">' + esc(nm) + '</div>' +
+        '<div class="dex-card__nm">' + esc(nm) + '</div>' +
         '<div class="dex-tps">' + badges(f.types) + '</div>' +
         '<div class="dex-card__dots">' + dots + '</div></div>';
     }).join('');
@@ -365,7 +361,6 @@
   function onChange(e) {
     var t = e.target, id = t && t.id;
     if (id === 'dexType') { S.type = t.value || 'all'; S.cur = null; draw(); }
-    else if (id === 'dexName') { S.showName = !!t.checked; drawGrid(); }
   }
 
   function onInput(e) {

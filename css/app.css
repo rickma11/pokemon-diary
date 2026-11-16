@@ -2738,7 +2738,6 @@ body.ink .ex-card--capture .ex-card__badge { background: var(--surface); }
   border-radius: 999px; padding: 5px 10px; font-size: 11.5px; cursor: pointer; white-space: nowrap;
 }
 .dex-chip.is-on { background: var(--ink); border-color: var(--ink-strong); color: #fff; font-weight: 700; }
-.dex-filter__hint { font-size: 10.5px; color: var(--muted); margin: 9px 0 0; line-height: 1.45; }
 .dex-sel {
   margin-left: auto; min-width: 96px;
   border: 1px solid var(--line-strong); background: var(--card); color: var(--text);
@@ -2755,8 +2754,6 @@ body.ink .ex-card--capture .ex-card__badge { background: var(--surface); }
   width: 100%; border: 1px solid var(--line); border-radius: 9px;
   padding: 8px 10px; font-size: 12.5px; background: var(--card); color: var(--text);
 }
-.dex-sw { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); margin-top: 8px; cursor: pointer; }
-.dex-sw input { accent-color: var(--ink); }
 
 /* 3 列图鉴格 */
 .dex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -2781,7 +2778,6 @@ body.ink .ex-card--capture .ex-card__badge { background: var(--surface); }
 .dex-card__img { width: 80px; height: 80px; object-fit: contain; display: block; margin: 9px auto 2px; }
 .dex-card__img.is-sil { filter: grayscale(1) brightness(0); opacity: .24; }
 .dex-card__nm { font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dex-card__nm.is-hide { color: var(--muted); letter-spacing: 1px; }
 .dex-tps { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; margin: 3px 0 2px; }
 .dex-tp { font-size: 9px; line-height: 1.5; color: #fff; border-radius: 4px; padding: 1px 5px; font-weight: 700; }
 .dex-tp--sm { font-size: 8px; padding: 0 4px; }
