@@ -121,6 +121,28 @@ window.APP = window.APP || {};
     idle(next);
   }
 
+  // 图鉴名单里的全部编号（含进化形态与对战专用）——「补图鉴小图」就按这个清单来。
+  // 只有名单内的编号才会出现在图鉴页，别按磁盘上的 001–386 全量下，白费流量。
+  function allValidIds() {
+    var out = [];
+    try {
+      var v = APP.dexData.validIds();
+      for (var k in v) if (Object.prototype.hasOwnProperty.call(v, k)) out.push(Number(k));
+      out.sort(function (a, b) { return a - b; });
+    } catch (e) {}
+    return out;
+  }
+  function smallAllList() {
+    var ids = allValidIds(), out = [];
+    for (var i = 0; i < ids.length; i++) out.push(APP.art.sm(ids[i]));
+    return out;
+  }
+  function largeAllList() {
+    var ids = allValidIds(), out = [];
+    for (var i = 0; i < ids.length; i++) out.push(APP.art.lg(ids[i]));
+    return out;
+  }
+
   function maybeStart() {
     if (started) return;
     if (APP.auth && APP.auth.needLogin && APP.auth.needLogin()) return;
@@ -135,5 +157,15 @@ window.APP = window.APP || {};
     }, 1500);
   }
 
-  APP.preload = { maybeStart: maybeStart };
+  APP.preload = {
+    maybeStart: maybeStart,
+    // 给「我的数据」页的素材统计/一键下载复用，保证两边清单口径完全一致
+    lists: {
+      smallAll: smallAllList,
+      largeAll: largeAllList,
+      scene: sceneList,
+      wildGif: wildGifList,
+      battle: battleList
+    }
+  };
 })(window.APP);

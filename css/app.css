@@ -3899,3 +3899,18 @@ body.ink .lock-tip { color: #7A6A55; }
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
 }
+
+/* 素材下载进度条（我的数据页 + 下载弹窗共用） */
+.asset-bar {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--surface, #eaeef8);
+  overflow: hidden;
+  margin: 10px 0;
+}
+.asset-bar__fill {
+  height: 100%;
+  background: var(--ok, #2e9e5b);
+  border-radius: 6px;
+  transition: width .25s ease;
+}

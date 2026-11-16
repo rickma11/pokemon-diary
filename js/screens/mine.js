@@ -256,13 +256,19 @@ window.APP = window.APP || {};
     // ④ 近期流水（经验 / 碎片 双标签，按日分组）
     html += xpCardHtml();
 
-    // ⑤ 数据备份（导出 / 导入）
+    // ⑤ 素材资源（缓存进度 + 一键补齐）
+    html += assetsCardHtml();
+
+    // ⑥ 数据备份（导出 / 导入）
     html += '<section class="card"><h2>数据备份</h2>' +
       '<p>导出为 JSON 文件保存；换设备时用「导入恢复」还原全部数据。</p>' +
       '<div class="row">' +
         '<button type="button" class="btn" data-act="export">导出备份</button>' +
         '<button type="button" class="btn" data-act="import">导入恢复</button>' +
       '</div></section>';
+
+    // ⑦ 版本信息（页面版本 + SW 更新检查）
+    html += versionCardHtml();
 
     // 账号卡 → 精简同步卡 → 统计与备份。
     // 「数据存档」槽位卡已移除：本机旧记录不再作为可选数据源暴露，导入入口只在家长后台（家长密码可见）。
@@ -272,6 +278,77 @@ window.APP = window.APP || {};
       container.addEventListener('click', onClick);
       bound = true;
     }
+
+    // 统计要读 Cache API，异步结果出来后再填进度条
+    refreshAssetsStat();
+  }
+
+  // ===== 素材资源卡 =====
+  function assetsCardHtml() {
+    var busy = (APP.assetsStatus && APP.assetsStatus.isDownloading && APP.assetsStatus.isDownloading());
+    return '<section class="card" id="assetsCard"><h2>素材资源' +
+      '<span class="card__side" id="assetsSide">' + (busy ? '下载中' : '读取中') + '</span></h2>' +
+      '<div class="asset-bar"><div class="asset-bar__fill" id="assetsBar" style="width:0%"></div></div>' +
+      '<ul class="list" id="assetsList"><li><span class="k">正在读取缓存进度…</span></li></ul>' +
+      '<div class="row">' +
+        '<button type="button" class="btn" data-act="dl-small">补图鉴小图</button>' +
+        '<button type="button" class="btn" data-act="dl-all">下载全部素材</button>' +
+      '</div>' +
+      '<div class="row"><button type="button" class="btn btn--sm" data-act="assets-refresh">刷新进度</button></div>' +
+      '<p class="field__hint">小图只有几 KB，缺的图扫码般补齐；「全部素材」含大图与动图，约几十 MB，可慢速后台下载。' +
+      '下载在后台进行，不用盯着这一页。</p>' +
+      '</section>';
+  }
+
+  // 异步统计后填充进度条与明细
+  function refreshAssetsStat() {
+    if (!APP.assetsStatus || !APP.assetsStatus.stat) return;
+    APP.assetsStatus.stat(function (r) {
+      var side = document.getElementById('assetsSide');
+      var bar = document.getElementById('assetsBar');
+      var list = document.getElementById('assetsList');
+      if (!side || !bar || !list) return; // 页面已切走
+      if (!r) {
+        side.textContent = '不可用';
+        list.innerHTML = '<li><span class="k">当前环境不支持读取缓存（请用在线地址打开）</span></li>';
+        return;
+      }
+      var pct = r.total ? Math.round(r.cached / r.total * 100) : 0;
+      side.textContent = '已缓存 ' + pct + '%';
+      bar.style.width = pct + '%';
+      var html = '';
+      for (var i = 0; i < r.groups.length; i++) {
+        var g = r.groups[i];
+        html += '<li><span class="k">' + esc(g.name) + '</span><span class="v">' +
+          g.cached + ' / ' + g.total + '</span></li>';
+      }
+      html += '<li><span class="k">还差</span><span class="v">' +
+        (r.total - r.cached) + ' 张</span></li>';
+      list.innerHTML = html;
+    });
+  }
+
+  function setAssetBusy(busy, done, total) {
+    var side = document.getElementById('assetsSide');
+    var bar = document.getElementById('assetsBar');
+    var list = document.getElementById('assetsList');
+    if (side) side.textContent = busy ? ('下载中 ' + done + '/' + total) : '已缓存';
+    if (bar && total) bar.style.width = Math.round(done / total * 100) + '%';
+    if (list && busy) list.innerHTML = '<li><span class="k">正在下载，请稍候…</span></li>';
+  }
+
+  // ===== 版本信息卡 =====
+  function versionCardHtml() {
+    var v = (APP.assetsStatus && APP.assetsStatus.version && APP.assetsStatus.version()) || '—';
+    return '<section class="card"><h2>版本信息</h2>' +
+      '<ul class="list">' +
+        '<li><span class="k">页面版本</span><span class="v">' + esc(v) + '</span></li>' +
+        '<li><span class="k">离线缓存</span><span class="v">' + (('caches' in window) ? '已启用' : '不支持') + '</span></li>' +
+      '</ul>' +
+      '<div class="row"><button type="button" class="btn btn--sm" data-act="check-update">检查更新</button>' +
+        '<span id="verState" style="align-self:center;color:#888;font-size:13px"></span></div>' +
+      '<p class="field__hint">看到新版本号，说明页面已刷新到最新版（更新一般会自动完成）。</p>' +
+      '</section>';
   }
 
   // 主角形象行：显示当前形象 + 每月重选入口（形象选择已迁到「我的数据-账号」）
@@ -331,6 +408,22 @@ window.APP = window.APP || {};
     var act = btn.getAttribute('data-act');
     if (act === 'reselect-char') { if (APP.onboarding && APP.onboarding.reselect) APP.onboarding.reselect(); return; }
     if (act === 'add-to-home') { if (APP.pwaInstall && APP.pwaInstall.open) APP.pwaInstall.open(); return; }
+    if (act === 'dl-small') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('small'); return; }
+    if (act === 'dl-all') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('all'); return; }
+    if (act === 'assets-refresh') { refreshAssetsStat(); return; }
+    if (act === 'check-update') {
+      var state = document.getElementById('verState');
+      if (state) state.textContent = '检查中…';
+      if (APP.assetsStatus && APP.assetsStatus.checkUpdate) {
+        APP.assetsStatus.checkUpdate(function (r) {
+          var s = document.getElementById('verState');
+          if (!s) return;
+          s.textContent = r === 'found' ? '发现新版本，即将刷新' :
+            r === 'latest' ? '已是最新' : r === 'unsupported' ? '当前浏览器不支持' : '暂时无法检查';
+        });
+      }
+      return;
+    }
     if (APP.ghui && APP.ghui.handle(act)) return;
     if (act === 'export') {
       var text = APP.store.exportData();

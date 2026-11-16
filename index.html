@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <!-- 由 build.js 从 index.src.html 自动生成，请勿直接编辑；改源码后运行 node build.js -->
+<script>window.APP_BUILD_VERSION="v95";</script>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -3921,6 +3922,21 @@ body.ink .lock-tip { color: #7A6A55; }
 .b3-scene img, .b4-scene img {
   -webkit-user-drag: none;
   -webkit-touch-callout: none;
+}
+
+/* 素材下载进度条（我的数据页 + 下载弹窗共用） */
+.asset-bar {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--surface, #eaeef8);
+  overflow: hidden;
+  margin: 10px 0;
+}
+.asset-bar__fill {
+  height: 100%;
+  background: var(--ok, #2e9e5b);
+  border-radius: 6px;
+  transition: width .25s ease;
 }
 
 
@@ -11939,13 +11955,19 @@ window.APP = window.APP || {};
     // ④ 近期流水（经验 / 碎片 双标签，按日分组）
     html += xpCardHtml();
 
-    // ⑤ 数据备份（导出 / 导入）
+    // ⑤ 素材资源（缓存进度 + 一键补齐）
+    html += assetsCardHtml();
+
+    // ⑥ 数据备份（导出 / 导入）
     html += '<section class="card"><h2>数据备份</h2>' +
       '<p>导出为 JSON 文件保存；换设备时用「导入恢复」还原全部数据。</p>' +
       '<div class="row">' +
         '<button type="button" class="btn" data-act="export">导出备份</button>' +
         '<button type="button" class="btn" data-act="import">导入恢复</button>' +
       '</div></section>';
+
+    // ⑦ 版本信息（页面版本 + SW 更新检查）
+    html += versionCardHtml();
 
     // 账号卡 → 精简同步卡 → 统计与备份。
     // 「数据存档」槽位卡已移除：本机旧记录不再作为可选数据源暴露，导入入口只在家长后台（家长密码可见）。
@@ -11955,6 +11977,77 @@ window.APP = window.APP || {};
       container.addEventListener('click', onClick);
       bound = true;
     }
+
+    // 统计要读 Cache API，异步结果出来后再填进度条
+    refreshAssetsStat();
+  }
+
+  // ===== 素材资源卡 =====
+  function assetsCardHtml() {
+    var busy = (APP.assetsStatus && APP.assetsStatus.isDownloading && APP.assetsStatus.isDownloading());
+    return '<section class="card" id="assetsCard"><h2>素材资源' +
+      '<span class="card__side" id="assetsSide">' + (busy ? '下载中' : '读取中') + '</span></h2>' +
+      '<div class="asset-bar"><div class="asset-bar__fill" id="assetsBar" style="width:0%"></div></div>' +
+      '<ul class="list" id="assetsList"><li><span class="k">正在读取缓存进度…</span></li></ul>' +
+      '<div class="row">' +
+        '<button type="button" class="btn" data-act="dl-small">补图鉴小图</button>' +
+        '<button type="button" class="btn" data-act="dl-all">下载全部素材</button>' +
+      '</div>' +
+      '<div class="row"><button type="button" class="btn btn--sm" data-act="assets-refresh">刷新进度</button></div>' +
+      '<p class="field__hint">小图只有几 KB，缺的图扫码般补齐；「全部素材」含大图与动图，约几十 MB，可慢速后台下载。' +
+      '下载在后台进行，不用盯着这一页。</p>' +
+      '</section>';
+  }
+
+  // 异步统计后填充进度条与明细
+  function refreshAssetsStat() {
+    if (!APP.assetsStatus || !APP.assetsStatus.stat) return;
+    APP.assetsStatus.stat(function (r) {
+      var side = document.getElementById('assetsSide');
+      var bar = document.getElementById('assetsBar');
+      var list = document.getElementById('assetsList');
+      if (!side || !bar || !list) return; // 页面已切走
+      if (!r) {
+        side.textContent = '不可用';
+        list.innerHTML = '<li><span class="k">当前环境不支持读取缓存（请用在线地址打开）</span></li>';
+        return;
+      }
+      var pct = r.total ? Math.round(r.cached / r.total * 100) : 0;
+      side.textContent = '已缓存 ' + pct + '%';
+      bar.style.width = pct + '%';
+      var html = '';
+      for (var i = 0; i < r.groups.length; i++) {
+        var g = r.groups[i];
+        html += '<li><span class="k">' + esc(g.name) + '</span><span class="v">' +
+          g.cached + ' / ' + g.total + '</span></li>';
+      }
+      html += '<li><span class="k">还差</span><span class="v">' +
+        (r.total - r.cached) + ' 张</span></li>';
+      list.innerHTML = html;
+    });
+  }
+
+  function setAssetBusy(busy, done, total) {
+    var side = document.getElementById('assetsSide');
+    var bar = document.getElementById('assetsBar');
+    var list = document.getElementById('assetsList');
+    if (side) side.textContent = busy ? ('下载中 ' + done + '/' + total) : '已缓存';
+    if (bar && total) bar.style.width = Math.round(done / total * 100) + '%';
+    if (list && busy) list.innerHTML = '<li><span class="k">正在下载，请稍候…</span></li>';
+  }
+
+  // ===== 版本信息卡 =====
+  function versionCardHtml() {
+    var v = (APP.assetsStatus && APP.assetsStatus.version && APP.assetsStatus.version()) || '—';
+    return '<section class="card"><h2>版本信息</h2>' +
+      '<ul class="list">' +
+        '<li><span class="k">页面版本</span><span class="v">' + esc(v) + '</span></li>' +
+        '<li><span class="k">离线缓存</span><span class="v">' + (('caches' in window) ? '已启用' : '不支持') + '</span></li>' +
+      '</ul>' +
+      '<div class="row"><button type="button" class="btn btn--sm" data-act="check-update">检查更新</button>' +
+        '<span id="verState" style="align-self:center;color:#888;font-size:13px"></span></div>' +
+      '<p class="field__hint">看到新版本号，说明页面已刷新到最新版（更新一般会自动完成）。</p>' +
+      '</section>';
   }
 
   // 主角形象行：显示当前形象 + 每月重选入口（形象选择已迁到「我的数据-账号」）
@@ -12014,6 +12107,22 @@ window.APP = window.APP || {};
     var act = btn.getAttribute('data-act');
     if (act === 'reselect-char') { if (APP.onboarding && APP.onboarding.reselect) APP.onboarding.reselect(); return; }
     if (act === 'add-to-home') { if (APP.pwaInstall && APP.pwaInstall.open) APP.pwaInstall.open(); return; }
+    if (act === 'dl-small') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('small'); return; }
+    if (act === 'dl-all') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('all'); return; }
+    if (act === 'assets-refresh') { refreshAssetsStat(); return; }
+    if (act === 'check-update') {
+      var state = document.getElementById('verState');
+      if (state) state.textContent = '检查中…';
+      if (APP.assetsStatus && APP.assetsStatus.checkUpdate) {
+        APP.assetsStatus.checkUpdate(function (r) {
+          var s = document.getElementById('verState');
+          if (!s) return;
+          s.textContent = r === 'found' ? '发现新版本，即将刷新' :
+            r === 'latest' ? '已是最新' : r === 'unsupported' ? '当前浏览器不支持' : '暂时无法检查';
+        });
+      }
+      return;
+    }
     if (APP.ghui && APP.ghui.handle(act)) return;
     if (act === 'export') {
       var text = APP.store.exportData();
@@ -20553,6 +20662,28 @@ window.APP = window.APP || {};
     idle(next);
   }
 
+  // 图鉴名单里的全部编号（含进化形态与对战专用）——「补图鉴小图」就按这个清单来。
+  // 只有名单内的编号才会出现在图鉴页，别按磁盘上的 001–386 全量下，白费流量。
+  function allValidIds() {
+    var out = [];
+    try {
+      var v = APP.dexData.validIds();
+      for (var k in v) if (Object.prototype.hasOwnProperty.call(v, k)) out.push(Number(k));
+      out.sort(function (a, b) { return a - b; });
+    } catch (e) {}
+    return out;
+  }
+  function smallAllList() {
+    var ids = allValidIds(), out = [];
+    for (var i = 0; i < ids.length; i++) out.push(APP.art.sm(ids[i]));
+    return out;
+  }
+  function largeAllList() {
+    var ids = allValidIds(), out = [];
+    for (var i = 0; i < ids.length; i++) out.push(APP.art.lg(ids[i]));
+    return out;
+  }
+
   function maybeStart() {
     if (started) return;
     if (APP.auth && APP.auth.needLogin && APP.auth.needLogin()) return;
@@ -20567,7 +20698,242 @@ window.APP = window.APP || {};
     }, 1500);
   }
 
-  APP.preload = { maybeStart: maybeStart };
+  APP.preload = {
+    maybeStart: maybeStart,
+    // 给「我的数据」页的素材统计/一键下载复用，保证两边清单口径完全一致
+    lists: {
+      smallAll: smallAllList,
+      largeAll: largeAllList,
+      scene: sceneList,
+      wildGif: wildGifList,
+      battle: battleList
+    }
+  };
+})(window.APP);
+
+;
+
+/* ===== js/assets-status.js ===== */
+window.APP = window.APP || {};
+
+(function (APP) {
+  'use strict';
+
+  // ===== 素材下载状态（我的数据页用）=====
+  // 背景：素材池 pokedex-assets-static 永不清空，只有真正请求过的图才会进缓存。
+  // 图鉴页是懒加载，没滚到的编号不会下载，于是出现「一半有一半没」。
+  // 本模块做两件事：① 数清楚池里到底有多少图；② 一键把缺的补齐。
+  // 清单口径全部复用 preload.js 的 lists，保证「统计 / 后台预热 / 一键下载」三处一致。
+
+  var ASSETS = 'pokedex-assets-static';
+  var downloading = false;
+
+  function norm(u) {
+    try { return new URL(u, location.href).href; } catch (e) { return u; }
+  }
+
+  // 统计用的三组（与原型图一致）。大图立绘并入「图鉴立绘」按需统计，
+  // 但「下载全部」会把大图也一起补上。
+  function groups() {
+    var L = (APP.preload && APP.preload.lists) || {};
+    var small = L.smallAll ? L.smallAll() : [];
+    var large = L.largeAll ? L.largeAll() : [];
+    var wild = L.wildGif ? L.wildGif() : [];
+    var scene = L.scene ? L.scene() : [];
+    var battle = L.battle ? L.battle() : [];
+    return {
+      small: { name: '图鉴立绘', urls: small },
+      wild: { name: '出场动图', urls: wild },
+      scene: { name: '场景与擂台', urls: scene.concat(battle) },
+      _all: { small: small, large: large, wild: wild, scene: scene, battle: battle }
+    };
+  }
+
+  function haveSet(reqs) {
+    var have = Object.create(null);
+    for (var i = 0; i < reqs.length; i++) have[reqs[i].url] = 1;
+    return have;
+  }
+
+  function openKeys() {
+    if (!('caches' in window)) return Promise.reject(new Error('no cache api'));
+    return caches.open(ASSETS).then(function (cache) { return cache.keys(); });
+  }
+
+  // 统计：异步，回调 { groups:[{key,name,cached,total}], cached, total }，失败回调 null
+  function stat(cb) {
+    var gs = groups();
+    openKeys().then(function (reqs) {
+      var have = haveSet(reqs);
+      var out = [], tc = 0, tt = 0;
+      ['small', 'wild', 'scene'].forEach(function (k) {
+        var g = gs[k], c = 0;
+        for (var j = 0; j < g.urls.length; j++) if (have[norm(g.urls[j])]) c++;
+        out.push({ key: k, name: g.name, cached: c, total: g.urls.length });
+        tc += c; tt += g.urls.length;
+      });
+      cb({ groups: out, cached: tc, total: tt });
+    })['catch'](function () { cb(null); });
+  }
+
+  // 下载清单：small=只补图鉴小图；all=小图+大图+动图+场景+擂台
+  function targetList(kind) {
+    var g = groups()._all;
+    var urls;
+    if (kind === 'small') {
+      urls = g.small.slice();
+    } else {
+      urls = g.small.concat(g.large, g.wild, g.scene, g.battle);
+    }
+    var seen = Object.create(null), out = [];
+    for (var i = 0; i < urls.length; i++) {
+      if (!seen[urls[i]]) { seen[urls[i]] = 1; out.push(urls[i]); }
+    }
+    return out;
+  }
+
+  function download(kind, onProgress, onDone) {
+    if (downloading) { if (onDone) onDone(false, 0, '正在下载中'); return; }
+    openKeys().then(function (reqs) {
+      var have = haveSet(reqs);
+      var all = targetList(kind);
+      // 只下缺的：已缓存的 fetch 也会命中缓存，但没必要再走一遍
+      var list = [], i;
+      for (i = 0; i < all.length; i++) if (!have[norm(all[i])]) list.push(all[i]);
+      if (!list.length) { if (onDone) onDone(true, 0); return; }
+      run(list, onProgress, onDone);
+    })['catch'](function () {
+      run(targetList(kind), onProgress, onDone);
+    });
+  }
+
+  // 并发 6 张，一张完成就补下一张；fetch 经 SW 自动写进素材池
+  function run(list, onProgress, onDone) {
+    downloading = true;
+    var idx = 0, done = 0, total = list.length, CONC = 6;
+    function one() {
+      if (idx >= total) return;
+      var u = list[idx++];
+      try {
+        fetch(u).then(tick, tick);
+      } catch (e) { tick(); }
+    }
+    function tick() {
+      done++;
+      if (onProgress) onProgress(done, total);
+      if (done >= total) {
+        downloading = false;
+        // SW 的 cache.put 是异步的，稍等再让页面重新统计
+        setTimeout(function () { if (onDone) onDone(true, total); }, 600);
+        return;
+      }
+      one();
+    }
+    for (var i = 0; i < CONC && i < total; i++) one();
+  }
+
+  function isDownloading() { return downloading; }
+
+  // 检查 SW 更新：有新版会由现有 SHELL_UPDATED 机制自动刷新页面
+  function checkUpdate(cb) {
+    if (!('serviceWorker' in navigator)) { cb('unsupported'); return; }
+    navigator.serviceWorker.getRegistration().then(function (reg) {
+      if (!reg) { cb('none'); return; }
+      var found = false;
+      reg.addEventListener && reg.addEventListener('updatefound', function () { found = true; });
+      reg.update().then(function () {
+        setTimeout(function () { cb(found ? 'found' : 'latest'); }, 800);
+      })['catch'](function () { cb('error'); });
+    })['catch'](function () { cb('error'); });
+  }
+
+  // ===== 下载进度弹窗 =====
+  // 用 APP.ui 的 uiOverlay + ui-modal 外壳，但内容要实时刷新，所以单独管理。
+  // 下载中：进度条 + 张数；完成：汇总 + 关闭按钮；可「后台下载」关掉继续用。
+  var modalOpen = false;
+
+  function overlayEl() {
+    var el = document.getElementById('uiOverlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'uiOverlay';
+      el.className = 'ui-overlay';
+      document.body.appendChild(el);
+    }
+    el.style.display = '';
+    return el;
+  }
+  function closeModal() {
+    modalOpen = false;
+    var el = document.getElementById('uiOverlay');
+    if (el) { el.innerHTML = ''; el.onclick = null; el.style.display = 'none'; }
+  }
+
+  function modalShell(inner) {
+    var el = overlayEl();
+    el.innerHTML =
+      '<div class="ui-overlay__bg"></div>' +
+      '<div class="ui-modal ui-modal--notice" role="dialog" aria-label="素材下载进度">' + inner + '</div>';
+    return el;
+  }
+
+  // 打开进度弹窗并发起下载。kind='small'|'all'
+  function downloadWithModal(kind) {
+    if (downloading) return;
+    var label = kind === 'small' ? '图鉴小图' : '全部素材';
+    modalOpen = true;
+    modalShell(
+      '<h3 class="ui-modal__title">正在下载' + label + '</h3>' +
+      '<p class="ui-modal__msg" id="dlPct" style="text-align:center;font-size:26px;font-weight:500;margin:6px 0 2px">0%</p>' +
+      '<p class="ui-modal__msg" id="dlCount" style="text-align:center;margin:0">准备中…</p>' +
+      '<div class="asset-bar" style="margin:14px 0"><div class="asset-bar__fill" id="dlBar" style="width:0%"></div></div>' +
+      '<div class="row" style="margin-top:6px">' +
+        '<button type="button" class="btn btn--primary" data-dl="bg">后台下载</button>' +
+        '<button type="button" class="btn" data-dl="cancel">关闭窗口</button>' +
+      '</div>' +
+      '<p class="field__hint" style="text-align:center">下载完会自动补齐，下次图鉴再翻到就是秒开。</p>'
+    );
+    var el = document.getElementById('uiOverlay');
+    var cancelled = false;
+    el.onclick = function (e) {
+      var a = e.target.getAttribute && e.target.getAttribute('data-dl');
+      if (a === 'bg') { modalOpen = false; closeModal(); }
+      else if (a === 'cancel') { cancelled = true; closeModal(); }
+    };
+
+    download(kind, function (done, total) {
+      if (!modalOpen) return; // 已点「后台下载」，只更新卡片不弹窗
+      var pct = total ? Math.round(done / total * 100) : 0;
+      var p = document.getElementById('dlPct');
+      var c = document.getElementById('dlCount');
+      var b = document.getElementById('dlBar');
+      if (p) p.textContent = pct + '%';
+      if (c) c.textContent = '已下载 ' + done + ' / ' + total + ' 张';
+      if (b) b.style.width = pct + '%';
+    }, function (ok, total) {
+      if (cancelled) return;
+      if (modalOpen) {
+        modalShell(
+          '<h3 class="ui-modal__title">' + (ok ? '下载完成' : '已取消') + '</h3>' +
+          '<p class="ui-modal__msg" style="text-align:center">' +
+            (ok ? '本次补齐 ' + total + ' 张素材。' : '下载已停止。') + '</p>' +
+          '<button type="button" class="btn btn--primary btn--block" id="dlDone">知道啦</button>'
+        );
+        var doneBtn = document.getElementById('dlDone');
+        if (doneBtn) doneBtn.onclick = closeModal;
+      }
+      if (APP.refresh) APP.refresh(); // 回到卡片，进度已更新
+    });
+  }
+
+  APP.assetsStatus = {
+    stat: stat,
+    download: download,
+    downloadWithModal: downloadWithModal,
+    isDownloading: isDownloading,
+    checkUpdate: checkUpdate,
+    version: function () { return window.APP_BUILD_VERSION || ''; }
+  };
 })(window.APP);
 
 ;
@@ -21061,6 +21427,7 @@ window.APP = window.APP || {};
 })();
 
 </script>
+
 
 
 
