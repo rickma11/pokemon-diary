@@ -84,6 +84,11 @@
         '<div class="b4-ib b4-ib--mine" id="b4-ibMine"></div>' +
         '<div class="b4-fx" id="b4-fx"></div>' +
         '<div class="b4-mini" id="b4-mini"></div>' +
+        // 第 13 轮：全屏操作层，与捕捉页一致——倒数期锁定、出招期整屏任意处按住/连点。
+        '<div class="b4-pad" id="b4-pad">' +
+          '<div class="b4-pad__hand">👈</div>' +
+          '<div class="b4-pad__go">按住屏幕任意位置！</div>' +
+        '</div>' +
         '<div class="b4-center" id="b4-center"></div>' +
         '<div class="b4-bottom">' +
           '<div class="b4-say" id="b4-say"></div>' +
@@ -186,8 +191,13 @@
   }
   function hideCenter() { var c = $('center'); if (c) { c.classList.remove('is-on'); c.innerHTML = ''; } }
   function hideMini() {
-    var m = $('mini');
-    if (m) { m.className = 'b4-mini'; m.innerHTML = ''; }
+    var m = $('mini'), pad = $('pad');
+    if (m) { m.className = 'b4-mini'; m.innerHTML = ''; m.onclick = null; m.onpointerdown = null; m.onpointerup = null; m.onpointerleave = null; m.onpointercancel = null; }
+    if (pad) { // 第 13 轮：全屏层的事件与两态一起清掉
+      pad.onpointerdown = null; pad.onpointerup = null; pad.onpointerleave = null; pad.onpointercancel = null;
+      pad.className = 'b4-pad';
+    }
+    if ($('scene')) $('scene').classList.remove('is-prep', 'is-live');
     if (seq.iv) { clearInterval(seq.iv); seq.iv = null; }
     if (seq.decay) { clearInterval(seq.decay); seq.decay = null; }
     seq.holding = false;
@@ -477,11 +487,16 @@
     var mode = isInk() ? 'off' : cfg().gameMode;
     if (mode === 'off' || !animated()) { finishMini('good', 0); return; } // 墨水屏/关动画：按「良好」自动出招
 
-    var m = $('mini');
+    var m = $('mini'), pad = $('pad');
     if (!m) { finishMini('none'); return; }
     m.className = 'b4-mini is-on b4-mini--' + mode;
-    var tip = mode === 'tap' ? '1.2 秒内连点这块面板！点得越多命中越高'
-      : '按住这块面板蓄力，松手停在绿区！命中更高';
+    // 第 13 轮：出招先「准备」锁定（冷灰 + 先别按），再转整屏可按住，和捕捉页两态一致。
+    var sc = $('scene');
+    if (sc) sc.classList.add('is-prep');
+    if (pad) pad.className = 'b4-pad is-prep';
+    var PREP = 700;   // 准备期毫秒数，之后开放操作
+    var tip = mode === 'tap' ? '先别按 · 倒数后连点屏幕'
+      : '先别按 · 倒数后按住屏幕';
     m.innerHTML = '<div class="b4-mini__tip" id="b4-miniTip">' + tip + '</div>' +
       '<div class="b4-mini__track" id="b4-miniTrack">' +
         '<i class="b4-mini__zone"></i><span class="b4-mini__fill" id="b4-miniFill"></span>' +
@@ -491,27 +506,50 @@
       '<div class="b4-mini__auto">不点也会自动出招 · 基础命中 ' + (move.acc || 80) + '%</div>';
     var widen = B.cheer ? 1.5 : 1;
 
-    // 第 12 轮：timing 与 hold 统一为「按住蓄力」（松手停在绿区）。
-    // 旧的 timing 是圆环 1.2s 收缩 + 点一下，缩放太快、又和面板两个圆圈分不清点哪个。
+    // 第 13 轮：准备期结束后才开放整屏操作；事件绑在全屏 pad 上，不再要求点中卡片。
+    var hit = pad || m;
+    function arm() {
+      if (sc) { sc.classList.remove('is-prep'); sc.classList.add('is-live'); }
+      if (pad) pad.className = 'b4-pad is-live';
+      var tp = document.getElementById('b4-miniTip');
+      if (tp) tp.textContent = mode === 'tap' ? '快速连点屏幕任意位置！'
+        : '按住屏幕任意位置！松手停在绿区！';
+    }
     if (mode === 'tap') {
       var need = Math.max(3, Math.round(5 / widen));
-      m.onclick = function () {
+      hit.onpointerdown = function (e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (seq.bonus || seq.grade) return;
         seq.taps++;
         var fill = document.getElementById('b4-miniFill');
         if (fill) fill.style.width = Math.min(100, seq.taps / need * 100) + '%';
         var tp = document.getElementById('b4-miniTip');
         if (tp) tp.textContent = '快速连点！ ' + seq.taps + ' / ' + need;
       };
-      later(1200, function () {
+      later(PREP, arm);
+      later(PREP + 1200, function () {
         var g = seq.taps >= need ? 'perfect' : (seq.taps >= Math.max(2, need - 2) ? 'good' : 'none');
         miniTip(g);
         finishMini(g);
       });
     } else {
-      m.onpointerdown = function (e) {
+      var up = function (e) {
         if (e && e.preventDefault) e.preventDefault();
-        if (seq.holding) return;
+        if (!seq.holding || seq.grade) return;
+        seq.holding = false;
+        if (pad) pad.classList.remove('is-pressing');
+        if (seq.iv) { clearInterval(seq.iv); seq.iv = null; }
+        var lo = 62 - (widen - 1) * 7, hi = 85 + (widen - 1) * 7;
+        var g = (seq.p >= lo && seq.p <= hi) ? 'perfect'
+          : (Math.min(Math.abs(seq.p - lo), Math.abs(seq.p - hi)) <= 12 * widen ? 'good' : 'none');
+        miniTip(g);
+        finishMini(g);
+      };
+      hit.onpointerdown = function (e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (seq.holding || seq.grade) return;
         seq.holding = true;
+        if (pad) pad.classList.add('is-pressing');
         seq.iv = setInterval(function () {
           seq.p += seq.dir * 3.2;
           if (seq.p >= 100) { seq.p = 100; seq.dir = -1; }
@@ -520,20 +558,10 @@
           if (k) k.style.left = clamp(seq.p, 0, 97) + '%';
         }, 30);
       };
-      var up = function (e) {
-        if (e && e.preventDefault) e.preventDefault();
-        if (!seq.holding || seq.grade) return;
-        seq.holding = false;
-        if (seq.iv) { clearInterval(seq.iv); seq.iv = null; }
-        var lo = 62 - (widen - 1) * 7, hi = 85 + (widen - 1) * 7;
-        var g = (seq.p >= lo && seq.p <= hi) ? 'perfect'
-          : (Math.min(Math.abs(seq.p - lo), Math.abs(seq.p - hi)) <= 12 * widen ? 'good' : 'none');
-        miniTip(g);
-        finishMini(g);
-      };
-      m.onpointerup = up; m.onpointerleave = up; m.onpointercancel = up;
-      later(1600, function () { if (!seq.holding && !seq.grade) { miniTip('none'); finishMini('none'); } });
-      later(3000, up);
+      hit.onpointerup = up; hit.onpointerleave = up; hit.onpointercancel = up;
+      later(PREP, arm);
+      later(PREP + 1600, function () { if (!seq.holding && !seq.grade) { miniTip('none'); finishMini('none'); } });
+      later(PREP + 3000, up);
     }
   }
   function miniTip(grade) {

@@ -3216,6 +3216,18 @@ body.ink .b3-sign__spr { filter: grayscale(1); }
 .b3-count.is-pop b { animation: b3CountPop .5s cubic-bezier(.2,1.4,.4,1); }
 @keyframes b3CountPop { 0% { transform: scale(1.8); opacity: 0; } 45% { transform: scale(1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 .b3-scene.is-stage .b3-count b { color: #242424; text-shadow: 0 3px 0 rgba(255,255,255,.9),0 0 18px rgba(255,190,60,.95); }
+/* 第 13 轮：全屏操作层。默认整层不接收事件；准备期铺冷灰蒙版，蓄力期透明并接管整屏按住/连点。 */
+.b3-pad { position: absolute; inset: 0; z-index: 16; pointer-events: none; display: none; touch-action: none; }
+.b3-pad.is-prep { display: block; background: rgba(46,58,74,.34); pointer-events: auto; }
+.b3-pad.is-live { display: block; pointer-events: auto; box-shadow: inset 0 0 0 3px #6ccf5a, inset 0 0 24px rgba(108,207,90,.55); animation: b3PadLive 1s ease-in-out infinite; }
+@keyframes b3PadLive { 0%,100% { background: rgba(108,207,90,0); } 50% { background: rgba(108,207,90,.10); } }
+.b3-pad__hand, .b3-pad__go { position: absolute; left: 50%; transform: translateX(-50%); opacity: 0; pointer-events: none; white-space: nowrap; }
+.b3-pad.is-live .b3-pad__hand { top: 30%; font-size: 40px; opacity: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); animation: b3HandTap 1s ease-in-out infinite; }
+.b3-pad.is-live .b3-pad__go { top: calc(30% + 50px); font-size: 15px; font-weight: 900; color: #174d10; background: rgba(255,255,255,.96); border: 2px solid #6ccf5a; border-radius: 999px; padding: 5px 14px; opacity: 1; box-shadow: 0 3px 0 rgba(20,80,15,.25); animation: b3GoPulse 1s ease-in-out infinite; }
+.b3-pad.is-pressing .b3-pad__hand { animation: none; transform: translateX(-50%) scale(.8); }
+.b3-pad.is-pressing .b3-pad__go { animation: none; background: #6ccf5a; color: #fff; }
+@keyframes b3HandTap { 0%,100% { transform: translateX(-50%) translateX(-8px) rotate(-12deg); } 50% { transform: translateX(-50%) translateX(8px) rotate(12deg) scale(1.12); } }
+@keyframes b3GoPulse { 0%,100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.06); } }
 .b3-ball.is-fly { animation: b3BallFly .62s cubic-bezier(.32,.62,.52,1) forwards; }
 @keyframes b3BallFly { 0% { transform: translate(-50%,200px) scale(.5) rotate(-170deg); opacity: 0; } 16% { opacity: 1; } 58% { transform: translate(-50%,-36px) scale(1.06) rotate(-12deg); } 100% { transform: translate(-50%,0) scale(1) rotate(0); opacity: 1; } }
 /* 第 12 轮：摆动窗口拉长到 5.4s（3-2-1 倒计时 2.28s + 小游戏 3s） */
@@ -3437,6 +3449,18 @@ body.ink .b4-mvp__hd { border-bottom-color: #bbb; }
 /* 自动出招提示：整块面板可点，不点也会自动出招 */
 .b4-mini { cursor: pointer; touch-action: none; }
 .b4-mini__auto { margin-top: 3px; font-size: 9px; font-weight: 700; opacity: .8; }
+/* 第 13 轮：战斗页全屏操作层，与捕捉页两态一致（冷灰锁定 → 绿色整屏可按住） */
+.b4-pad { position: absolute; inset: 0; z-index: 16; pointer-events: none; display: none; touch-action: none; }
+.b4-pad.is-prep { display: block; background: rgba(20,26,40,.40); pointer-events: auto; }
+.b4-pad.is-live { display: block; pointer-events: auto; box-shadow: inset 0 0 0 3px #6ccf5a, inset 0 0 24px rgba(108,207,90,.5); animation: b4PadLive 1s ease-in-out infinite; }
+@keyframes b4PadLive { 0%,100% { background: rgba(108,207,90,0); } 50% { background: rgba(108,207,90,.10); } }
+.b4-pad__hand, .b4-pad__go { position: absolute; left: 50%; transform: translateX(-50%); opacity: 0; pointer-events: none; white-space: nowrap; }
+.b4-pad.is-live .b4-pad__hand { top: 26%; font-size: 38px; opacity: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.4)); animation: b4HandTap 1s ease-in-out infinite; }
+.b4-pad.is-live .b4-pad__go { top: calc(26% + 48px); font-size: 14px; font-weight: 900; color: #174d10; background: rgba(255,255,255,.96); border: 2px solid #6ccf5a; border-radius: 999px; padding: 5px 14px; opacity: 1; animation: b4GoPulse 1s ease-in-out infinite; }
+.b4-pad.is-pressing .b4-pad__hand { animation: none; transform: translateX(-50%) scale(.8); }
+.b4-pad.is-pressing .b4-pad__go { animation: none; background: #6ccf5a; color: #fff; }
+@keyframes b4HandTap { 0%,100% { transform: translateX(-50%) translateX(-8px) rotate(-12deg); } 50% { transform: translateX(-50%) translateX(8px) rotate(12deg) scale(1.12); } }
+@keyframes b4GoPulse { 0%,100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.06); } }
 
 /* 中央开始 / 结算卡 */
 .b4-center { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%); z-index: 10;

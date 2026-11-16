@@ -199,6 +199,11 @@
               '<i class="b3-ball__spark b3-ball__spark--1"></i><i class="b3-ball__spark b3-ball__spark--2"></i>' +
               '<i class="b3-ball__spark b3-ball__spark--3"></i><i class="b3-ball__spark b3-ball__spark--4"></i>' +
             '</div>' +
+            // 第 13 轮：全屏操作层。准备期铺冷灰蒙版只显示「先别按」，蓄力期透明并接管整屏按住/连点。
+            '<div class="b3-pad" id="b3-pad">' +
+              '<div class="b3-pad__hand">👈</div>' +
+              '<div class="b3-pad__go">按住屏幕任意位置！</div>' +
+            '</div>' +
             '<div class="b3-game" id="b3-game"></div>' +
             '<div class="b3-dialog" id="b3-dialog"><h3 id="b3-dlgTitle"></h3><p id="b3-dlgBody"></p>' +
               '<div class="b3-dialog__row" id="b3-dlgRow"></div></div>' +
@@ -377,6 +382,8 @@
     $('game').className = 'b3-game';
     var c = $('count');
     if (c) { c.classList.remove('is-on', 'is-pop'); c.innerHTML = ''; }
+    if ($('scene')) $('scene').classList.remove('is-prep', 'is-live');
+    if ($('pad')) $('pad').className = 'b3-pad';
     exitStage();
   }
 
@@ -592,11 +599,12 @@
   // 无论选哪种捕捉方案，小游戏开始前都先数三下并给出玩法提示，
   // 让小朋友知道「马上要做什么、按哪里」，再开放操作。
   function gameTip(mode) {
-    return mode === 'tap' ? '等下快速连点精灵球！'
-      : (mode === 'hold' || mode === 'timing') ? '等下按住精灵球蓄力！' : '';
+    return mode === 'tap' ? '先别按 · 倒数后连点屏幕'
+      : (mode === 'hold' || mode === 'timing') ? '先别按 · 倒数后按住屏幕' : '';
   }
   function countdown(tip, done) {
-    var c = $('count');
+    var c = $('count'), sc = $('scene');
+    if (c) sc.classList.add('is-prep');   // 准备期：画面压冷灰，明确「还不能按」
     if (!c) { done(); return; }
     var steps = ['3', '2', '1', '开始！'], i = 0;
     c.classList.add('is-on');
@@ -604,6 +612,7 @@
       if (!alive()) return;
       if (i >= steps.length) {
         c.classList.remove('is-on'); c.innerHTML = '';
+        sc.classList.remove('is-prep');
         done();
         return;
       }
@@ -699,13 +708,19 @@
   function gmTip(txt) { $('game').innerHTML = '<div class="b3-game__tip">' + txt + '</div>'; }
   function endGame() {
     if (!alive()) return;
-    var b = $('ball');
+    var b = $('ball'), pad = $('pad');
     b.onclick = null;
     b.onpointerdown = null; b.onpointerup = null; b.onpointerleave = null; b.onpointercancel = null;
+    if (pad) { // 第 13 轮：全屏层的事件也要一起解绑，避免结算后误触
+      pad.onclick = null;
+      pad.onpointerdown = null; pad.onpointerup = null; pad.onpointerleave = null; pad.onpointercancel = null;
+    }
     b.classList.remove('is-ring');
     b.classList.remove('is-charge');
     b.classList.remove('is-holding');
     b.style.setProperty('--cp', '0');
+    if ($('scene')) $('scene').classList.remove('is-live');
+    if (pad) pad.className = 'b3-pad';
     $('game').className = 'b3-game';
     if (seq.decay) { clearInterval(seq.decay); seq.decay = null; }
     if (seq.iv) { clearInterval(seq.iv); seq.iv = null; }
@@ -715,13 +730,16 @@
   function startGame(b) {
     var mode = isInk() ? 'off' : cfg().gameMode;
     if (mode === 'off') return;
-    var gm = $('game');
+    var gm = $('game'), pad = $('pad');
     gm.className = 'b3-game is-on';
+    // 第 13 轮：倒数结束 → 进入「可按住」态。整屏透明层接管操作，画面转绿呼吸 + 👈引导。
+    if ($('scene')) { $('scene').classList.remove('is-prep'); $('scene').classList.add('is-live'); }
+    if (pad) pad.className = 'b3-pad is-live';
+    var hit = pad || b;   // 全屏层接管；万一缺失退回球本身
     if (mode === 'timing') {
-      // ① 球上蓄力：按住精灵球，球上的进度环涨到绿区（62%~85%）松手。
-      // 第 12 轮改掉旧的「圆环 1.2s 收缩 + 点一下」：缩放太快，而且圆环和球两个圆圈
-      // 并排，小朋友根本不知道该点哪个。现在点击点只有精灵球一个，进度直接画在球上。
-      gmTip('按住精灵球！光环保满停在绿区，松手！');
+      // ① 球上蓄力：按住屏幕任意位置，球上的进度环涨到绿区（62%~85%）松手。
+      // 第 13 轮：不再要求点中精灵球，整屏任意处按住即可；准备/蓄力两态用颜色和 👈 明确区分。
+      gmTip('按住屏幕任意位置！光环到绿区松手！');
       b.classList.add('is-charge');
       var cp = 0, cdir = 1;
       function drawCharge() { b.style.setProperty('--cp', cp.toFixed(1)); }
@@ -730,6 +748,7 @@
         if (!seq.holding) return;
         seq.holding = false;
         b.classList.remove('is-holding');
+        if (pad) pad.classList.remove('is-pressing');
         if (seq.iv) { clearInterval(seq.iv); seq.iv = null; }
         if (cp >= 62 && cp <= 85) seq.bonus = .20;
         else if (Math.min(Math.abs(cp - 62), Math.abs(cp - 85)) <= 12) seq.bonus = .10;
@@ -738,11 +757,12 @@
         gmTip(seq.bonus === .20 ? '正中绿区！成功率 +20%'
           : seq.bonus === .10 ? '差一点，成功率 +10%' : '没停稳，按原概率');
       }
-      b.onpointerdown = function (e) {
+      hit.onpointerdown = function (e) {
         if (e && e.preventDefault) e.preventDefault();
         if (seq.holding || seq.clicked) return;
         seq.holding = true;
         b.classList.add('is-holding');
+        if (pad) pad.classList.add('is-pressing');
         seq.iv = setInterval(function () {
           cp += cdir * 4.5;
           if (cp >= 100) { cp = 100; cdir = -1; }
@@ -750,21 +770,22 @@
           drawCharge();
         }, 30);
       };
-      b.onpointerup = chargeUp; b.onpointerleave = chargeUp; b.onpointercancel = chargeUp;
+      hit.onpointerup = chargeUp; hit.onpointerleave = chargeUp; hit.onpointercancel = chargeUp;
       later(GAME_WINDOW, function () { if (!seq.clicked) { seq.clicked = true; chargeUp(); } });
     } else if (mode === 'tap') {
       // ② 连点挣脱：收服条每 120ms 回落，3 秒内压满即加成
       var need = cur.tier === 'common' ? 5 : cur.tier === 'uncommon' ? 7 : 10, val = 0;
-      gm.innerHTML = '<div class="b3-game__tip" id="b3-gmTip">快速连点精灵球，压住它！ 0 / ' + need + '</div>' +
+      gm.innerHTML = '<div class="b3-game__tip" id="b3-gmTip">快速连点屏幕任意位置！ 0 / ' + need + '</div>' +
         '<div class="b3-game__track"><div class="b3-game__fill" id="b3-gmFill"></div></div>';
       function draw() {
         var f = $('gmFill'), t = $('gmTip');
         if (!f || !t) return;
         f.style.width = Math.min(100, val / need * 100) + '%';
-        t.textContent = '快速连点精灵球，压住它！ ' + Math.floor(val) + ' / ' + need;
+        t.textContent = '快速连点屏幕任意位置！ ' + Math.floor(val) + ' / ' + need;
       }
       seq.decay = setInterval(function () { val = Math.max(0, val - .45); draw(); }, 120);
-      b.onclick = function () {
+      hit.onpointerdown = function (e) {
+        if (e && e.preventDefault) e.preventDefault();
         if (seq.bonus) return;
         val += 1; draw();
         if (val >= need) {
@@ -778,9 +799,9 @@
         if (!seq.bonus) gmTip('没压住，按原概率');
       });
     } else if (mode === 'hold') {
-      // ③ 滑条蓄力：卡片上的光标来回扫，按住精灵球蓄力，松手停在 62–85 绿区
+      // ③ 滑条蓄力：光标来回扫，按住屏幕任意位置蓄力，松手停在 62–85 绿区
       var p = 0, dir = 1;
-      gm.innerHTML = '<div class="b3-game__tip" id="b3-gmTip">按住精灵球蓄力，松手停在绿区！</div>' +
+      gm.innerHTML = '<div class="b3-game__tip" id="b3-gmTip">按住屏幕任意位置！松手停在绿区！</div>' +
         '<div class="b3-game__zone"><i></i><span class="b3-game__knob" id="b3-gmKnob"></span></div>';
       function draw() {
         var k = $('gmKnob');
@@ -790,16 +811,18 @@
         if (e && e.preventDefault) e.preventDefault();
         if (!seq.holding) return;
         seq.holding = false; seq.bonus = 0;
+        if (pad) pad.classList.remove('is-pressing');
         if (seq.iv) { clearInterval(seq.iv); seq.iv = null; }
         if (p >= 62 && p <= 85) seq.bonus = .20;
         else if (Math.min(Math.abs(p - 62), Math.abs(p - 85)) <= 12) seq.bonus = .10;
         gmTip(seq.bonus === .20 ? '正中绿区！成功率 +20%'
           : seq.bonus === .10 ? '差一点，成功率 +10%' : '没停稳，按原概率');
       }
-      b.onpointerdown = function (e) {
+      hit.onpointerdown = function (e) {
         if (e && e.preventDefault) e.preventDefault();
         if (seq.holding) return;
         seq.holding = true;
+        if (pad) pad.classList.add('is-pressing');
         seq.iv = setInterval(function () {
           p += dir * 3.2;
           if (p >= 100) { p = 100; dir = -1; }
@@ -807,7 +830,7 @@
           draw();
         }, 30);
       };
-      b.onpointerup = up; b.onpointerleave = up; b.onpointercancel = up;
+      hit.onpointerup = up; hit.onpointerleave = up; hit.onpointercancel = up;
       later(3000, up);
     }
   }
