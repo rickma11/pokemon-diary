@@ -301,6 +301,8 @@ window.APP = window.APP || {};
   // 异步统计后填充进度条与明细
   function refreshAssetsStat() {
     if (!APP.assetsStatus || !APP.assetsStatus.stat) return;
+    var side = document.getElementById('assetsSide');
+    if (side) side.textContent = '读取中';
     APP.assetsStatus.stat(function (r) {
       var side = document.getElementById('assetsSide');
       var bar = document.getElementById('assetsBar');
@@ -326,14 +328,24 @@ window.APP = window.APP || {};
     });
   }
 
-  function setAssetBusy(busy, done, total) {
+  // 下载进度实时回填卡片（关掉弹窗也看得到后台在跑多少）
+  APP.assetsCardProgress = function (j) {
     var side = document.getElementById('assetsSide');
     var bar = document.getElementById('assetsBar');
     var list = document.getElementById('assetsList');
-    if (side) side.textContent = busy ? ('下载中 ' + done + '/' + total) : '已缓存';
-    if (bar && total) bar.style.width = Math.round(done / total * 100) + '%';
-    if (list && busy) list.innerHTML = '<li><span class="k">正在下载，请稍候…</span></li>';
-  }
+    if (!side || !bar || !list) return; // 页面已切走
+    if (!j) { // 下载结束 → 重新统计真实缓存数
+      refreshAssetsStat();
+      return;
+    }
+    var pct = j.total ? Math.round((j.done + j.failed) / j.total * 100) : 0;
+    side.textContent = '下载中 ' + pct + '%';
+    bar.style.width = pct + '%';
+    var t = '已下载 ' + j.done + ' / ' + j.total + ' 张';
+    if (j.failed) t += '，失败 ' + j.failed + ' 张';
+    list.innerHTML = '<li><span class="k">' + esc(t) + '</span></li>' +
+      '<li><span class="k">完成后会自动刷新缓存统计</span></li>';
+  };
 
   // ===== 版本信息卡 =====
   function versionCardHtml() {
@@ -406,7 +418,13 @@ window.APP = window.APP || {};
     if (act === 'add-to-home') { if (APP.pwaInstall && APP.pwaInstall.open) APP.pwaInstall.open(); return; }
     if (act === 'dl-small') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('small'); return; }
     if (act === 'dl-all') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('all'); return; }
-    if (act === 'assets-refresh') { refreshAssetsStat(); return; }
+    if (act === 'assets-refresh') {
+      // 给个可见反馈：点了要能看出在读，读完再显示最终数字
+      var side = document.getElementById('assetsSide');
+      if (side) side.textContent = '读取中…';
+      refreshAssetsStat();
+      return;
+    }
     if (act === 'check-update') {
       var state = document.getElementById('verState');
       if (state) state.textContent = '检查中…';

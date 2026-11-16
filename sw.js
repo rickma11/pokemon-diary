@@ -2,7 +2,7 @@
 // 必须放在站点根目录、注册时 scope 为 './'，才能缓存 index.html 等全站资源。
 // 旧版放在 js/ 子目录，作用域只覆盖 js/，既缓存不到首页，又会把没缓存的 JS
 // 换成 index.html 壳（浏览器当 JS 解析失败 → 名字表缺失、选宠只显示 #编号）。
-var CACHE = 'pokedex-checkin-v97';
+var CACHE = 'pokedex-checkin-v98';
 // 素材缓存故意不带版本号——图片/GIF/音效体积大、下载慢，绝不能因为发版就清空。
 // 以前图片和代码共用一个带版本号的 cache，结果每次发版（v87→v92 连升 5 次）
 // 都把图片一起删光，玩家每次打开都要重下 80MB 素材，慢得打不开。
@@ -133,7 +133,10 @@ self.addEventListener('fetch', function (event) {
       fetch(request).then(function (r) {
         if (r && r.ok) {
           var copy = r.clone();
-          caches.open(CACHE).then(function (cache) { cache.put(request, copy); });
+          // 同上：写入必须挂 waitUntil，否则 SW 被回收时代码没落盘，离线打开会白屏。
+          event.waitUntil(
+            caches.open(CACHE).then(function (cache) { return cache.put(request, copy); })['catch'](function () {})
+          );
         }
         return r;
       })['catch'](function () {
@@ -155,7 +158,9 @@ self.addEventListener('fetch', function (event) {
         return fetch(request).then(function (response) {
           if (response && response.ok) {
             var copy = response.clone();
-            cache.put(request, copy);
+            // 必须挂 waitUntil：不挂的话 SW 可能在 cache.put 落盘前就被回收，
+            // 表现就是「图看着下完了，缓存池里却一张没有」。
+            event.waitUntil(cache.put(request, copy)['catch'](function () {}));
           }
           return response;
         });
