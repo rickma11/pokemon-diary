@@ -30,7 +30,7 @@ window.APP = window.APP || {};
     { key:'bamboo', name:'竹林', scene:'assets/catch/scenes/bamboo.webp', hides:['assets/catch/hides/bamboo-1.webp','assets/catch/hides/bamboo-2.webp','assets/catch/hides/bamboo-3.webp'] },
     { key:'desert', name:'沙漠', scene:'assets/catch/scenes/desert.webp', hides:['assets/catch/hides/desert-1.webp','assets/catch/hides/desert-2.webp','assets/catch/hides/desert-3.webp'] },
     { key:'beach',  name:'海滩', scene:'assets/catch/scenes/beach.webp',  hides:['assets/catch/hides/beach-1.webp','assets/catch/hides/beach-2.webp','assets/catch/hides/beach-3.webp'] },
-    { key:'cave',   name:'洞窟', scene:'assets/catch/scenes/cave.webp',   hides:['assets/catch/hides/cave-1.webp','assets/catch/hides/cave-2.webp','assets/catch/hides/cave-3.webp'] },
+    { key:'cave',   name:'洞窟', scene:'assets/catch/scenes/cave.webp',   hides:['assets/catch/hides/cave-1.webp','assets/catch/hides/cave-2-ore.webp','assets/catch/hides/cave-3.webp'] },
     { key:'snow',   name:'雪山', scene:'assets/catch/scenes/snow.webp',   hides:['assets/catch/hides/snow-1.webp','assets/catch/hides/snow-2.webp','assets/catch/hides/snow-3.webp'] }
   ];
 

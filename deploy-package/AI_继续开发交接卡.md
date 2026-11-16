@@ -390,3 +390,17 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 - Playwright 跑 6 次完整捕捉：形象全部显示、无报错；
 - 缓存分区实测：代码池 1 项、素材池 107 项，互不干扰；
 - 以后发版只清代码池，素材池不动 → 打开速度稳定。
+
+## 19. 2026-11-16 洞窟躲藏点 cave-2 换成矿石堆（v94）
+- 用户提供的矿石堆图是 JPG 白底（1658x1115）。用 flood-fill 只把「与四边连通」的白像素抠透明
+  （抠掉 42.7%），矿石内部白色高光保留，存成 `assets/catch/hides/cave-2-ore.webp`（158KB）+ 同名 PNG 兜底。
+- **换新文件名而不是覆盖旧 cave-2.webp**：第 18 节起素材池 `pokedex-assets-static` 永不清空，
+  覆盖同名文件的话老用户缓存里还是旧洞口图；换 URL 才能让他们拿到新图。
+  **以后凡是替换已有图片，一律换新文件名（或 URL 加查询串），不要直接覆盖。**
+- 改动点：
+  - `js/data/catch-pools.js` cave 主题 hides 第 2 项 → `cave-2-ore.webp`；
+  - `css/app.css` 的矩形柔化遮罩选择器从 `[src*="cave-2"]` 收窄为 `[src*="cave-2.webp"]`，
+    新矿石图已抠透明，不再套遮罩（套了反而削掉矿石边缘）；
+  - SW v93 → v94（代码变了要刷新，但素材池不动）。
+- Playwright 验证：洞窟场景 3 个躲藏点正确出现矿石堆，`mask: none`，无报错，视觉正常。
+- 抠图脚本本轮用完已删（`tools/_ore_cut.js`）。

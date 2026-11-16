@@ -3089,7 +3089,8 @@ body.ink .shard { filter: grayscale(1); }
    侵蚀发虚，看着像被掏空（用户反馈「中间镂空，原图是正常的」）。现在默认原样渲染，
    只给唯一需要柔化四边的 cave-2 单独加遮罩。 */
 .b3-hide__img { display: block; width: 72px; height: auto; max-height: 78px; object-fit: contain; filter: drop-shadow(0 3px 2px rgba(0,0,0,.3)); image-rendering: pixelated; pointer-events: none; }
-.b3-hide__img[src*="cave-2"] { -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 52%, #000 58%, rgba(0,0,0,0) 100%); mask-image: radial-gradient(ellipse 74% 78% at 50% 52%, #000 58%, rgba(0,0,0,0) 100%); }
+/* 只给旧的整块矩形 cave-2 加柔化遮罩；新的 cave-2-ore 已抠成透明，原样渲染即可 */
+.b3-hide__img[src*="cave-2.webp"] { -webkit-mask-image: radial-gradient(ellipse 74% 78% at 50% 52%, #000 58%, rgba(0,0,0,0) 100%); mask-image: radial-gradient(ellipse 74% 78% at 50% 52%, #000 58%, rgba(0,0,0,0) 100%); }
 /* 第 7 轮：编号框从「压在躲藏点图片上」下移到图片下方，不再遮挡展示 */
 /* 第 8 轮：去掉数字外面的胶囊框，只保留圆圈+数字本体；label 退化为纯定位容器 */
 .b3-hide__label { position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%); display: inline-flex; align-items: center; justify-content: center; line-height: 1; white-space: nowrap; }
