@@ -480,8 +480,8 @@
     var m = $('mini');
     if (!m) { finishMini('none'); return; }
     m.className = 'b4-mini is-on b4-mini--' + mode;
-    var tip = mode === 'timing' ? '圆环缩到中心时点这块面板！命中更高'
-      : mode === 'tap' ? '1.2 秒内连点这块面板！点得越多命中越高' : '按住面板，松手停在绿区！命中更高';
+    var tip = mode === 'tap' ? '1.2 秒内连点这块面板！点得越多命中越高'
+      : '按住这块面板蓄力，松手停在绿区！命中更高';
     m.innerHTML = '<div class="b4-mini__tip" id="b4-miniTip">' + tip + '</div>' +
       '<div class="b4-mini__track" id="b4-miniTrack">' +
         '<i class="b4-mini__zone"></i><span class="b4-mini__fill" id="b4-miniFill"></span>' +
@@ -491,18 +491,9 @@
       '<div class="b4-mini__auto">不点也会自动出招 · 基础命中 ' + (move.acc || 80) + '%</div>';
     var widen = B.cheer ? 1.5 : 1;
 
-    if (mode === 'timing') {
-      seq.tTarget = performance.now() + 800;
-      m.onclick = function () {
-        if (seq.clicked) return;
-        seq.clicked = true;
-        var d = Math.abs(performance.now() - seq.tTarget);
-        var g = d < 150 * widen ? 'perfect' : (d < 480 * widen ? 'good' : 'none');
-        miniTip(g);
-        finishMini(g);
-      };
-      later(1200, function () { if (!seq.clicked) { miniTip('none'); finishMini('none'); } });
-    } else if (mode === 'tap') {
+    // 第 12 轮：timing 与 hold 统一为「按住蓄力」（松手停在绿区）。
+    // 旧的 timing 是圆环 1.2s 收缩 + 点一下，缩放太快、又和面板两个圆圈分不清点哪个。
+    if (mode === 'tap') {
       var need = Math.max(3, Math.round(5 / widen));
       m.onclick = function () {
         seq.taps++;

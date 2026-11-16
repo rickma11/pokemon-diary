@@ -10,10 +10,12 @@
   var D = APP.catchData;
   var GAME_NAMES = {
     off: '不做小游戏',
-    timing: '① 时机点击',
+    timing: '① 球上蓄力',
     tap: '② 连点挣脱',
-    hold: '③ 长按蓄力'
+    hold: '③ 滑条蓄力'
   };
+  // 第 12 轮：小游戏开始前的 3-2-1 倒计时（每步毫秒 / 「开始！」停留）
+  var COUNT_STEP = 600, COUNT_GO = 480, GAME_WINDOW = 3000;
 
   var rootEl = null;
   var cur = null;
@@ -186,12 +188,14 @@
             '</button>' +
             '<div class="b3-wild" id="b3-wild"><div class="b3-wild__pop"><div class="b3-wild__frame"><img alt=""></div><div class="b3-wild__tag"></div></div></div>' +
             '<div class="b3-stage__veil" id="b3-stageVeil"></div>' +
+            '<div class="b3-count" id="b3-count"></div>' +
             '<div class="b3-ball" id="b3-ball">' +
               '<div class="b3-ball__glow"></div><div class="b3-ball__beam"></div><div class="b3-ball__ding"></div>' +
               '<div class="b3-ball__fx"><i class="b3-ball__fx--a"></i><i class="b3-ball__fx--b"></i><i class="b3-ball__fx--c"></i></div>' +
               '<div class="b3-ball__shadow"></div><div class="b3-ball__shine"></div>' +
               '<div class="b3-ball__top"></div><div class="b3-ball__bot"></div>' +
               '<div class="b3-ball__btn"></div><div class="b3-ball__ring"></div>' +
+              '<div class="b3-ball__charge"></div><div class="b3-ball__zone"></div>' +
               '<i class="b3-ball__spark b3-ball__spark--1"></i><i class="b3-ball__spark b3-ball__spark--2"></i>' +
               '<i class="b3-ball__spark b3-ball__spark--3"></i><i class="b3-ball__spark b3-ball__spark--4"></i>' +
             '</div>' +
@@ -371,6 +375,8 @@
     $('wild').className = 'b3-wild';
     $('ball').className = 'b3-ball';
     $('game').className = 'b3-game';
+    var c = $('count');
+    if (c) { c.classList.remove('is-on', 'is-pop'); c.innerHTML = ''; }
     exitStage();
   }
 
@@ -486,12 +492,19 @@
     // 宝可梦（球会跟随 w.style.left）正对选中的躲藏点；宽名字条单独夹到安全区，避免被场景裁掉
     var safe = Math.max(half + 4, Math.min(sc.clientWidth - half - 4, cx));
     w.style.left = cx + 'px';
-    var fit = D.PM_FIT[cur.no] || [40, 40, 0, 0, 40, 40], k = Math.min(120 / fit[4], 82 / fit[5]);
+    // 第 12 轮：统一显示大小 + 不再被裁。
+    // 旧算法按整幅画布缩放到 120x82 框内：留白多的宝可梦显小、内容大的显大（实测差 2 倍以上），
+    // 而且用的是静态图 bbox（PM_FIT），比动画单帧小 4~7px，动画播到边缘就被裁掉。
+    // 新算法：k 由「单帧可见内容的最长边」决定（PM_FRAME，离线逐帧实测），
+    // 所有宝可梦单帧显示大小一致；整幅画布按 k 缩放后完整落在 120x92 框内 → 任何一帧都不裁。
+    var fit = D.PM_FIT[cur.no] || [40, 40, 0, 0, 40, 40];
+    var fr = D.PM_FRAME[cur.no] || Math.max(fit[4], fit[5]);
+    var k = Math.min(54 / fr, (120 - 6) / fit[0], (92 - 6) / fit[1]);
     var im = w.querySelector('img');
     im.style.width = (fit[0] * k) + 'px';
     im.style.height = (fit[1] * k) + 'px';
-    im.style.left = ((120 - fit[4] * k) / 2 - fit[2] * k) + 'px';
-    im.style.top = ((82 - fit[5] * k) / 2 - fit[3] * k) + 'px';
+    im.style.left = ((120 - fit[0] * k) / 2) + 'px';
+    im.style.top = ((92 - fit[1] * k) / 2) + 'px';
     im.src = D.GIF_BASE + cur.no + '.gif';
     var tag = w.querySelector('.b3-wild__tag');
     tag.innerHTML = 'No.' + cur.no + ' ' + esc(cur.name) + ' ' + badges(cur.types);
@@ -575,6 +588,36 @@
     sc.removeAttribute('data-fx');
   }
 
+  // ===== 第 12 轮：3-2-1 倒计时 =====
+  // 无论选哪种捕捉方案，小游戏开始前都先数三下并给出玩法提示，
+  // 让小朋友知道「马上要做什么、按哪里」，再开放操作。
+  function gameTip(mode) {
+    return mode === 'tap' ? '等下快速连点精灵球！'
+      : (mode === 'hold' || mode === 'timing') ? '等下按住精灵球蓄力！' : '';
+  }
+  function countdown(tip, done) {
+    var c = $('count');
+    if (!c) { done(); return; }
+    var steps = ['3', '2', '1', '开始！'], i = 0;
+    c.classList.add('is-on');
+    function step() {
+      if (!alive()) return;
+      if (i >= steps.length) {
+        c.classList.remove('is-on'); c.innerHTML = '';
+        done();
+        return;
+      }
+      var isGo = i === steps.length - 1;
+      c.innerHTML = '<b>' + steps[i] + '</b>' + (tip ? '<span>' + tip + '</span>' : '');
+      c.classList.remove('is-pop');
+      void c.offsetWidth;           // 重新触发 pop 动画
+      c.classList.add('is-pop');
+      i++;
+      later(isGo ? COUNT_GO : COUNT_STEP, step);
+    }
+    step();
+  }
+
   // ===== V5 完整捕捉动画：8 阶段时序（摆动固定 3 秒，小游戏在摆动窗口内） =====
   function throwBall(no, g, w) {
     var base = D.CATCH_RATE[cur.tier];
@@ -596,10 +639,15 @@
       b.classList.remove('is-open'); b.classList.add('is-flash'); APP.audio.sfxBall('close');
       enterStage(b);                                                                                                   // 聚光舞台：浅灰底 + 中间大球 + 缩放光环
     });
-    later(1860, function () {                                                                                          // P6 摆动 3 秒
-      b.classList.remove('is-flash'); b.classList.add('is-wobble'); startGame(b);
+    later(1860, function () {                                                                                          // P6 摆动
+      b.classList.remove('is-flash'); b.classList.add('is-wobble');
     });
-    later(4860, function () {                                                                                          // P7 成败
+    var gameMode = isInk() ? 'off' : cfg().gameMode;                                                                   // 第 12 轮：小游戏前先 3-2-1
+    var hasGame = gameMode !== 'off';
+    if (hasGame) {
+      later(1860, function () { countdown(gameTip(gameMode), function () { startGame(b); }); });
+    }
+    later(1860 + (hasGame ? COUNT_STEP * 3 + COUNT_GO + GAME_WINDOW : GAME_WINDOW), function () {                        // P7 成败
       b.classList.remove('is-wobble');
       endGame();
       var win = decide(base, seq.bonus);
@@ -655,6 +703,9 @@
     b.onclick = null;
     b.onpointerdown = null; b.onpointerup = null; b.onpointerleave = null; b.onpointercancel = null;
     b.classList.remove('is-ring');
+    b.classList.remove('is-charge');
+    b.classList.remove('is-holding');
+    b.style.setProperty('--cp', '0');
     $('game').className = 'b3-game';
     if (seq.decay) { clearInterval(seq.decay); seq.decay = null; }
     if (seq.iv) { clearInterval(seq.iv); seq.iv = null; }
@@ -667,22 +718,40 @@
     var gm = $('game');
     gm.className = 'b3-game is-on';
     if (mode === 'timing') {
-      // ① 时机点击：圆环 1.2s 收缩到球大小，绿窗内点一下球
-      gmTip('圆环缩到球上时，点一下精灵球！');
-      b.classList.add('is-ring');
-      seq.tTarget = performance.now() + 880;
-      b.onclick = function () {
-        if (seq.clicked) return;
-        seq.clicked = true;
-        var d = Math.abs(performance.now() - seq.tTarget);
-        seq.bonus = d < 170 ? .20 : (d < 420 ? .10 : 0);
-        gmTip(seq.bonus === .20 ? '完美！成功率 +20%'
-          : seq.bonus === .10 ? '不错！成功率 +10%' : '慢了一点，按原概率');
-        b.classList.remove('is-ring');
+      // ① 球上蓄力：按住精灵球，球上的进度环涨到绿区（62%~85%）松手。
+      // 第 12 轮改掉旧的「圆环 1.2s 收缩 + 点一下」：缩放太快，而且圆环和球两个圆圈
+      // 并排，小朋友根本不知道该点哪个。现在点击点只有精灵球一个，进度直接画在球上。
+      gmTip('按住精灵球！光环保满停在绿区，松手！');
+      b.classList.add('is-charge');
+      var cp = 0, cdir = 1;
+      function drawCharge() { b.style.setProperty('--cp', cp.toFixed(1)); }
+      function chargeUp(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (!seq.holding) return;
+        seq.holding = false;
+        b.classList.remove('is-holding');
+        if (seq.iv) { clearInterval(seq.iv); seq.iv = null; }
+        if (cp >= 62 && cp <= 85) seq.bonus = .20;
+        else if (Math.min(Math.abs(cp - 62), Math.abs(cp - 85)) <= 12) seq.bonus = .10;
+        drawCharge();
+        b.classList.remove('is-charge');
+        gmTip(seq.bonus === .20 ? '正中绿区！成功率 +20%'
+          : seq.bonus === .10 ? '差一点，成功率 +10%' : '没停稳，按原概率');
+      }
+      b.onpointerdown = function (e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (seq.holding || seq.clicked) return;
+        seq.holding = true;
+        b.classList.add('is-holding');
+        seq.iv = setInterval(function () {
+          cp += cdir * 4.5;
+          if (cp >= 100) { cp = 100; cdir = -1; }
+          if (cp <= 0) { cp = 0; cdir = 1; }
+          drawCharge();
+        }, 30);
       };
-      later(1400, function () {
-        if (!seq.clicked) { seq.clicked = true; b.classList.remove('is-ring'); gmTip('没点到，按原概率'); }
-      });
+      b.onpointerup = chargeUp; b.onpointerleave = chargeUp; b.onpointercancel = chargeUp;
+      later(GAME_WINDOW, function () { if (!seq.clicked) { seq.clicked = true; chargeUp(); } });
     } else if (mode === 'tap') {
       // ② 连点挣脱：收服条每 120ms 回落，3 秒内压满即加成
       var need = cur.tier === 'common' ? 5 : cur.tier === 'uncommon' ? 7 : 10, val = 0;
@@ -709,7 +778,7 @@
         if (!seq.bonus) gmTip('没压住，按原概率');
       });
     } else if (mode === 'hold') {
-      // ③ 长按蓄力：光标来回扫，松手停在 62–85 绿区
+      // ③ 滑条蓄力：卡片上的光标来回扫，按住精灵球蓄力，松手停在 62–85 绿区
       var p = 0, dir = 1;
       gm.innerHTML = '<div class="b3-game__tip" id="b3-gmTip">按住精灵球蓄力，松手停在绿区！</div>' +
         '<div class="b3-game__zone"><i></i><span class="b3-game__knob" id="b3-gmKnob"></span></div>';
@@ -767,6 +836,7 @@
       '<button type="button" data-b3="list">名单</button>' +
       '<button type="button" data-b3="rule">规则</button></div>' +
       '<div class="b3-setdlg__hint">三种玩法都保留，随时换；<b>捕捉和战斗出招共用这一套</b>。' +
+      '每次小游戏开始前都有 <b>3-2-1 倒计时</b>和玩法提示，' +
       '捕捉时只给成功率加成（+10% / +20%，上限 95%），战斗时决定「完美 / 良好 / 打空」；' +
       '点不中也不扣分。关掉动画或墨水屏时自动跳过。59 只名单与捕捉规则也收在这里。</div>' +
       '<button type="button" class="b3-setdlg__done" data-b3="set-close">完成</button>';
@@ -812,7 +882,7 @@
       '· <b>已拥有也会从躲藏点出现</b>：不能重复捕捉，会发起<b>对战</b>；打赢得经验 +30 与 <b><i class="shard shard--sm"></i>2 碎片</b>，战败有 <b><i class="shard shard--sm"></i>1 碎片</b>安慰，不再另发 3 碎片补偿；「逃跑」直接结束探索、不进战斗<br>' +
       '· 队伍满 5 只自动进仓库；投球失败不退精灵球与次数<br>' +
       '· <b>完整捕捉动画</b>：抛球 → 砸中 → 开盖 → 缩小吸入 → 闭合 → 摆动 3 秒 → 成功「叮」/ 失败开盖逃跑。右上角设置按钮可关掉（关闭后直接出结果）<br>' +
-      '· <b>捕捉 / 出招小游戏</b>：设置里可选「① 时机点击 / ② 连点挣脱 / ③ 长按蓄力 / 不做」，捕捉时只给 +10% / +20% 成功率加成（上限 95%），战斗出招时决定完成度，点不中不扣分也不扣体力<br>' +
+      '· <b>捕捉 / 出招小游戏</b>：设置里可选「① 球上蓄力 / ② 连点挣脱 / ③ 滑条蓄力 / 不做」，捕捉时只给 +10% / +20% 成功率加成（上限 95%），战斗出招时决定完成度，点不中不扣分也不扣体力<br>' +
       '· <b>外出战斗</b>：消耗 1 张战斗券 + 1 次入场（与捕捉独立计次）；双方 HP 100 / 体力 100，每回合回 25 体力；4 个纯攻击招耗体力 15/30/45/70，单击最多扣 45 点，通常 4 回合分胜负<br>' +
       '· 墨水屏下不撒彩带、不播叫声、跳过动画与小游戏</div>';
     $('drawer').classList.add('is-on');

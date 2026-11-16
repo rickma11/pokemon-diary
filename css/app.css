@@ -3125,7 +3125,7 @@ body.ink .b3-sign__spr { filter: grayscale(1); }
 .b3-wild.is-on { display: block; }
 .b3-wild__pop { animation: b3WildPop .5s cubic-bezier(.2,1.5,.5,1); }
 @keyframes b3WildPop { 0% { transform: translateY(30px) scale(.4); opacity: 0; } 70% { transform: translateY(-8px) scale(1.08); } 100% { transform: translateY(0) scale(1); opacity: 1; } }
-.b3-wild__frame { position: relative; width: 120px; height: 82px; margin: 0 auto; overflow: hidden; }
+.b3-wild__frame { position: relative; width: 120px; height: 92px; margin: 0 auto; overflow: hidden; }
 .b3-wild__frame img { position: absolute; display: block; image-rendering: pixelated; filter: drop-shadow(0 4px 3px rgba(0,0,0,.3)); margin: 0; }
 .b3-wild__tag { display: inline-block; margin-top: 3px; font-size: 10.5px; font-weight: 800; color: #fff; background: rgba(38,54,30,.88); border: 1.5px solid rgba(255,255,255,.7); border-radius: 999px; padding: 3px 8px; line-height: 1.5; }
 .b3-tp { display: inline-block; font-size: 9px; font-weight: 800; color: #fff; border-radius: 999px; padding: 1px 6px; margin-left: 3px; vertical-align: 1px; }
@@ -3193,9 +3193,33 @@ body.ink .b3-sign__spr { filter: grayscale(1); }
 .b3-ball.is-flash .b3-ball__btn { background: #fff6a8; box-shadow: 0 0 0 .16em rgba(255,240,150,.9),0 0 .36em #ffe07a; }
 .b3-ball.is-win .b3-ball__glow { opacity: 1; }
 .b3-ball.is-win { filter: drop-shadow(0 0 .23em #ffd94a); }
+
+/* ===== 第 12 轮：球上蓄力环（方案①）+ 3-2-1 倒计时 =====
+   ① 球上蓄力：按住精灵球 → 球外圈金色进度环涨到绿区（62%~85%）松手。
+   点击点只有「精灵球」一个，进度画在球上，不再出现第二个会缩放的圆环。 */
+.b3-ball__charge { position: absolute; left: 50%; top: 50%; width: 2.05em; height: 2.05em; transform: translate(-50%,-50%); border-radius: 50%; opacity: 0; pointer-events: none; z-index: 5;
+  background: conic-gradient(from -90deg, #ffd54a 0 calc(var(--cp, 0) * 1%), rgba(255,255,255,.20) 0 100%);
+  -webkit-mask: radial-gradient(circle, transparent 0 63%, #000 64% 100%);
+  mask: radial-gradient(circle, transparent 0 63%, #000 64% 100%); }
+.b3-ball.is-charge .b3-ball__charge { opacity: 1; }
+.b3-ball__zone { position: absolute; left: 50%; top: 50%; width: 2.26em; height: 2.26em; transform: translate(-50%,-50%); border-radius: 50%; opacity: 0; pointer-events: none; z-index: 4;
+  background: conic-gradient(from -90deg, transparent 0 62%, rgba(124,224,106,.55) 62% 85%, transparent 85%);
+  -webkit-mask: radial-gradient(circle, transparent 0 72%, #000 73% 100%);
+  mask: radial-gradient(circle, transparent 0 72%, #000 73% 100%); }
+.b3-ball.is-charge .b3-ball__zone { opacity: 1; }
+.b3-ball.is-holding { filter: brightness(1.12); }
+/* 3-2-1 倒计时：压在小游戏开始之前，配合玩法提示 */
+.b3-count { position: absolute; left: 50%; top: 20%; transform: translate(-50%,-50%); z-index: 22; display: none; text-align: center; pointer-events: none; }
+.b3-count.is-on { display: block; }
+.b3-count b { display: block; font-size: 56px; font-weight: 900; line-height: 1.05; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.3),0 0 20px rgba(255,214,60,.95); }
+.b3-count span { display: inline-block; margin-top: 7px; font-size: 12.5px; font-weight: 800; color: #2b2b2b; background: rgba(255,255,255,.95); border: 1.5px solid rgba(36,36,36,.45); border-radius: 999px; padding: 4px 12px; }
+.b3-count.is-pop b { animation: b3CountPop .5s cubic-bezier(.2,1.4,.4,1); }
+@keyframes b3CountPop { 0% { transform: scale(1.8); opacity: 0; } 45% { transform: scale(1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.b3-scene.is-stage .b3-count b { color: #242424; text-shadow: 0 3px 0 rgba(255,255,255,.9),0 0 18px rgba(255,190,60,.95); }
 .b3-ball.is-fly { animation: b3BallFly .62s cubic-bezier(.32,.62,.52,1) forwards; }
 @keyframes b3BallFly { 0% { transform: translate(-50%,200px) scale(.5) rotate(-170deg); opacity: 0; } 16% { opacity: 1; } 58% { transform: translate(-50%,-36px) scale(1.06) rotate(-12deg); } 100% { transform: translate(-50%,0) scale(1) rotate(0); opacity: 1; } }
-.b3-ball.is-wobble { animation: b3BallWobble 3s ease-in-out forwards; }
+/* 第 12 轮：摆动窗口拉长到 5.4s（3-2-1 倒计时 2.28s + 小游戏 3s） */
+.b3-ball.is-wobble { animation: b3BallWobble 5.4s ease-in-out forwards; }
 @keyframes b3BallWobble { 0%,100% { transform: translate(-50%,0) rotate(0); } 8% { transform: translate(-50%,0) rotate(-20deg); } 17% { transform: translate(-50%,0) rotate(20deg); } 26% { transform: translate(-50%,0) rotate(0); } 40% { transform: translate(-50%,0) rotate(-14deg); } 52% { transform: translate(-50%,0) rotate(14deg); } 64% { transform: translate(-50%,0) rotate(0); } 78% { transform: translate(-50%,0) rotate(-8deg); } 88% { transform: translate(-50%,0) rotate(8deg); } }
 .b3-wild.is-hit .b3-wild__pop { animation: b3HitSquash .30s ease-out; }
 @keyframes b3HitSquash { 0% { transform: scale(1); } 42% { transform: scale(1.24,.70) translateY(7px); } 100% { transform: scale(1); } }
@@ -3406,11 +3430,10 @@ body.ink .b4-mvp__hd { border-bottom-color: #bbb; }
   background: #fff; border-radius: 2px; box-shadow: 0 0 6px #fff; }
 .b4-mini__ring { display: none; position: absolute; left: 50%; top: 50%; width: 20px; height: 20px;
   margin: -10px 0 0 -10px; border: 3px solid #fff; border-radius: 50%; }
-.b4-mini--hold .b4-mini__zone, .b4-mini--hold .b4-mini__knob { display: block; }
+/* 第 12 轮：timing 与 hold 都是「按住蓄力」，两者的滑条与绿区都要显示 */
+.b4-mini--hold .b4-mini__zone, .b4-mini--hold .b4-mini__knob,
+.b4-mini--timing .b4-mini__zone, .b4-mini--timing .b4-mini__knob { display: block; }
 .b4-mini--tap .b4-mini__fill { display: block; }
-.b4-mini--timing .b4-mini__track { height: 24px; overflow: visible; background: rgba(255,255,255,.12); }
-.b4-mini--timing .b4-mini__ring { display: block; animation: b4Ring 1.2s linear forwards; }
-@keyframes b4Ring { 0% { transform: scale(2.2); border-color: #fff; } 70% { transform: scale(1); border-color: #ffe26a; } 100% { transform: scale(.7); border-color: #8ce06a; } }
 /* 自动出招提示：整块面板可点，不点也会自动出招 */
 .b4-mini { cursor: pointer; touch-action: none; }
 .b4-mini__auto { margin-top: 3px; font-size: 9px; font-weight: 700; opacity: .8; }
