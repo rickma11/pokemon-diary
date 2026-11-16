@@ -3126,7 +3126,7 @@ body.ink .b3-sign__spr { filter: grayscale(1); }
 .b3-wild__pop { animation: b3WildPop .5s cubic-bezier(.2,1.5,.5,1); }
 @keyframes b3WildPop { 0% { transform: translateY(30px) scale(.4); opacity: 0; } 70% { transform: translateY(-8px) scale(1.08); } 100% { transform: translateY(0) scale(1); opacity: 1; } }
 .b3-wild__frame { position: relative; width: 120px; height: 92px; margin: 0 auto; overflow: hidden; }
-.b3-wild__frame img { position: absolute; display: block; image-rendering: pixelated; filter: drop-shadow(0 4px 3px rgba(0,0,0,.3)); margin: 0; }
+.b3-wild__frame img { position: absolute; display: block; image-rendering: pixelated; filter: drop-shadow(0 4px 3px rgba(0,0,0,.3)); margin: 0; transition: opacity .18s ease; }
 .b3-wild__tag { display: inline-block; margin-top: 3px; font-size: 10.5px; font-weight: 800; color: #fff; background: rgba(38,54,30,.88); border: 1.5px solid rgba(255,255,255,.7); border-radius: 999px; padding: 3px 8px; line-height: 1.5; }
 .b3-tp { display: inline-block; font-size: 9px; font-weight: 800; color: #fff; border-radius: 999px; padding: 1px 6px; margin-left: 3px; vertical-align: 1px; }
 

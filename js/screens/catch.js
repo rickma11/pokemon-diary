@@ -512,6 +512,15 @@
     im.style.height = (fit[1] * k) + 'px';
     im.style.left = ((120 - fit[0] * k) / 2) + 'px';
     im.style.top = ((92 - fit[1] * k) / 2) + 'px';
+    // 图没下载好之前先藏着，只显示名字条；避免用户看到「有名字没形象」的半截演出。
+    // 缓存命中时 load 会在本轮同步代码之后触发，不会永久隐藏。
+    im.style.opacity = '0';
+    im.onload = function () { im.style.opacity = '1'; };
+    im.onerror = function () {
+      // GIF 解不出（个别 WebView / 缓存坏档）→ 退到静态 PNG，尺寸换算完全一致
+      if (im.getAttribute('src') !== D.GIF_BASE + cur.no + '.gif') return;
+      im.src = APP.art.lgPng(cur.no);
+    };
     im.src = D.GIF_BASE + cur.no + '.gif';
     var tag = w.querySelector('.b3-wild__tag');
     tag.innerHTML = 'No.' + cur.no + ' ' + esc(cur.name) + ' ' + badges(cur.types);

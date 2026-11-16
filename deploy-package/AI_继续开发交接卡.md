@@ -353,3 +353,40 @@ git pull --rebase origin main；不得覆盖 accounts/ 与 saves/；不得输出
 - SW `v86 → v87`；
 - `node build.js` 重建（`index.html` 是产物，勿手改）；
 - 生成小图：`node tools/make_sm_art.js`（幂等，可重复跑）。
+
+## 18. 2026-11-16 图片独立持久缓存 + 捕捉形象加载兜底（v93）
+
+### 18.1 「昨天加载过今天又重下」的根因
+- SW 旧逻辑：代码和图片共用**一个带版本号**的 cache（`pokedex-checkin-vNN`），
+  `activate` 里把除当前版本外的所有 cache 全删。
+- 结果：2026-11-16 一天内连发 v87→v92 共 5 版，每发一版就把图片缓存删光，
+  玩家每次打开都要重下 ~80MB 素材 → 「今天素材加载特别慢」。
+- 定案：**代码与素材分池**。
+  | 池 | 名称 | 内容 | 升级时 |
+  |---|---|---|---|
+  | 代码池 | `pokedex-checkin-v93`（带版本号） | HTML / JS / CSS / JSON | 换号清空 |
+  | 素材池 | `pokedex-assets-static`（**不带版本号**） | 图片 / GIF / 音效 | **永久保留** |
+
+- `activate` 里只删 `pokedex-checkin-` 开头且非当前的缓存，`pokedex-assets-static` 跳过。
+- 顺带加了 `migrateAssets()`：删旧代码缓存前，把里面的图片/GIF/音效**搬进素材池**
+  （纯缓存 API 内部复制，不走网络），让本次从 v92 升 v93 的玩家不用重下。
+- **以后改素材要它失效，靠改文件名或 URL 加查询串，不要靠升 SW 版本号清缓存。**
+
+### 18.2 「外出捕捉不出现宝可梦形象」
+- 排查：本机 Chrome 跑真实点击流程，6 次捕捉的形象 img 全部正常显示
+  （`<img src=assets/pokemon/animated/NNN.gif>`，natural 尺寸有效，opacity=1）。
+  GIF 文件本身没问题。
+- 用户在手机上看到「有 No.185 标签但没形象」= **图还在下载时标签先显示了**，
+  加上素材缓存被反复清空 → 每次都要重下 → 大部分时间看到空舞台。
+- 修复（`js/screens/catch.js` 的 `showWild()`）：
+  - 设 `im.style.opacity='0'`，`onload` 才淡入（CSS 加了 `transition: opacity .18s`）；
+    缓存命中时 load 在同步代码之后触发，不会永久隐藏；
+  - `onerror` 自动退到静态 PNG（`APP.art.lgPng(no)`），尺寸换算完全一致，
+    专治个别 WebView 解不出 GIF / 缓存坏档。
+- `js/preload.js` 新增 `wildGifList()`：捕捉池 59 只出场 GIF（共约 1.4MB）
+  纳入后台预加载，队列顺序=主力→自己的立绘→场景→**野外GIF**→战斗背景。
+
+### 18.3 验证
+- Playwright 跑 6 次完整捕捉：形象全部显示、无报错；
+- 缓存分区实测：代码池 1 项、素材池 107 项，互不干扰；
+- 以后发版只清代码池，素材池不动 → 打开速度稳定。

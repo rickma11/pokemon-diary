@@ -57,6 +57,27 @@ window.APP = window.APP || {};
     return out;
   }
 
+  // 捕捉池 59 只的出场 GIF（野外遇到谁是从这个池按稀有度抽的）。
+  // 不提前下好，投石问路后就会出现「有名字没形象」的空舞台——用户反馈的正是这个。
+  // 59 只合计约 1.4MB，空闲时分批下载，不抢首屏。
+  function wildGifList() {
+    var out = [];
+    try {
+      var pools = (APP.catchData && APP.catchData.POOLS) || {};
+      var ids = Object.create(null), k, i;
+      for (k in pools) {
+        if (!Object.prototype.hasOwnProperty.call(pools, k)) continue;
+        var arr = pools[k] || [];
+        for (i = 0; i < arr.length; i++) ids[arr[i].id] = 1;
+      }
+      var keys = Object.keys(ids).map(Number).sort(function (a, b) { return a - b; });
+      for (i = 0; i < keys.length; i++) {
+        out.push('assets/pokemon/animated/' + APP.pad3(keys[i]) + '.gif');
+      }
+    } catch (e) {}
+    return out;
+  }
+
   // 图鉴 / 状态栏：已拥有的宝可梦立绘（小图优先，编号小的先下）
   // 小图 128px 只有 5KB，先把它们铺满，状态栏和图鉴立刻能出图；
   // 大图 475px 23KB 稍后再补。
@@ -109,8 +130,8 @@ window.APP = window.APP || {};
     if (!p) return; // 还没选宝可梦：新手流程没走完，先不预热
     started = true;
     setTimeout(function () {
-      // 主力宝可梦 → 自己的立绘 → 捕捉场景 → 战斗背景
-      drain(mainList().concat(ownedList(), sceneList(), battleList()));
+      // 主力宝可梦 → 自己的立绘 → 捕捉场景 → 野外 GIF → 战斗背景
+      drain(mainList().concat(ownedList(), sceneList(), wildGifList(), battleList()));
     }, 1500);
   }
 
