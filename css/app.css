@@ -3882,3 +3882,19 @@ body.ink .lock-tip { color: #7A6A55; }
    ② 原生时间/日期选择器弹窗（如家长后台的「截止时间」）按浅色渲染，深色数字浅色底，
       任何皮肤下都清晰可读、可正常设置。 */
 :root { color-scheme: light; }
+
+/* ===== 第 14 轮：长按/连点小游戏禁止文本选择与系统长按菜单 =====
+   全屏 pad 的提示文字（「按住屏幕任意位置！」）会被长按选中，触发浏览器 AI 划词条 /
+   系统「复制·分享·全选」菜单。pointer-events:none 只挡点击、挡不住文本选择，
+   必须靠 user-select + -webkit-touch-callout 才能根治。 */
+.b3-scene, .b4-scene,
+.b3-scene *, .b4-scene * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.b3-scene img, .b4-scene img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}

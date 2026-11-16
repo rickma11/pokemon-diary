@@ -3906,6 +3906,22 @@ body.ink .lock-tip { color: #7A6A55; }
       任何皮肤下都清晰可读、可正常设置。 */
 :root { color-scheme: light; }
 
+/* ===== 第 14 轮：长按/连点小游戏禁止文本选择与系统长按菜单 =====
+   全屏 pad 的提示文字（「按住屏幕任意位置！」）会被长按选中，触发浏览器 AI 划词条 /
+   系统「复制·分享·全选」菜单。pointer-events:none 只挡点击、挡不住文本选择，
+   必须靠 user-select + -webkit-touch-callout 才能根治。 */
+.b3-scene, .b4-scene,
+.b3-scene *, .b4-scene * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.b3-scene img, .b4-scene img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
 
 /* ===== css/gba.css ===== */
 /* ==========================================================================
@@ -17475,6 +17491,10 @@ window.APP = window.APP || {};
     teardownIntro();                          // 清掉旧开场（含气泡轮播定时器）
     host = el;
     host.innerHTML = shellHtml();
+    // 第 14 轮：兜底拦截长按选中 / 系统菜单（CSS user-select 为主，这里再挡一层）
+    host.onselectstart = function () { return false; };
+    host.oncontextmenu = function (e) { e.preventDefault(); };
+    host.ondragstart = function () { return false; };
     host.onclick = onClick;
     showIdle();          // 先铺战场骨架（兜底 / 信息框）
     introBegin();        // V6：切到外出战斗第一眼 = P0 野外对战区
@@ -19056,6 +19076,10 @@ window.APP = window.APP || {};
     if (subTabLocked(activeTab)) activeTab = 'catch'; // 等级回退 / 存档异常时回到捕捉页签
     rootEl = container;
     container.innerHTML = pageHtml();
+    // 第 14 轮：兜底拦截长按选中 / 系统菜单（CSS user-select 为主，这里再挡一层）
+    container.onselectstart = function () { return false; };
+    container.oncontextmenu = function (e) { e.preventDefault(); };
+    container.ondragstart = function () { return false; };
     container.addEventListener('click', onClick);
     syncStickyTop();
     applyScene();

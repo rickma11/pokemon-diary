@@ -974,6 +974,10 @@
     if (subTabLocked(activeTab)) activeTab = 'catch'; // 等级回退 / 存档异常时回到捕捉页签
     rootEl = container;
     container.innerHTML = pageHtml();
+    // 第 14 轮：兜底拦截长按选中 / 系统菜单（CSS user-select 为主，这里再挡一层）
+    container.onselectstart = function () { return false; };
+    container.oncontextmenu = function (e) { e.preventDefault(); };
+    container.ondragstart = function () { return false; };
     container.addEventListener('click', onClick);
     syncStickyTop();
     applyScene();

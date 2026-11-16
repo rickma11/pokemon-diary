@@ -1011,6 +1011,10 @@
     teardownIntro();                          // 清掉旧开场（含气泡轮播定时器）
     host = el;
     host.innerHTML = shellHtml();
+    // 第 14 轮：兜底拦截长按选中 / 系统菜单（CSS user-select 为主，这里再挡一层）
+    host.onselectstart = function () { return false; };
+    host.oncontextmenu = function (e) { e.preventDefault(); };
+    host.ondragstart = function () { return false; };
     host.onclick = onClick;
     showIdle();          // 先铺战场骨架（兜底 / 信息框）
     introBegin();        // V6：切到外出战斗第一眼 = P0 野外对战区
