@@ -60,14 +60,15 @@ window.APP = window.APP || {};
     })['catch'](function () { cb(null); });
   }
 
-  // 下载清单：small=只补图鉴小图；all=小图+大图+动图+场景+擂台
+  // 下载清单：small=只补图鉴小图（下载图鉴素材）；other=大图+动图+场景+擂台（下载其他素材），
+  // 刻意排除图鉴小图 —— 两个按钮分工不重叠：一个管图鉴网格，一个管其余素材。
   function targetList(kind) {
     var g = groups()._all;
     var urls;
     if (kind === 'small') {
       urls = g.small.slice();
     } else {
-      urls = g.small.concat(g.large, g.wild, g.scene, g.battle);
+      urls = g.large.concat(g.wild, g.scene, g.battle);
     }
     var seen = Object.create(null), out = [];
     for (var i = 0; i < urls.length; i++) {
@@ -164,7 +165,7 @@ window.APP = window.APP || {};
   // 打开进度弹窗并发起下载。kind='small'|'all'
   function downloadWithModal(kind) {
     if (downloading) return;
-    var label = kind === 'small' ? '图鉴小图' : '全部素材';
+    var label = kind === 'small' ? '图鉴素材' : '其他素材';
     modalOpen = true;
     modalShell(
       '<h3 class="ui-modal__title">正在下载' + label + '</h3>' +
@@ -175,7 +176,7 @@ window.APP = window.APP || {};
         '<button type="button" class="btn btn--primary" data-dl="bg">后台下载</button>' +
         '<button type="button" class="btn" data-dl="cancel">关闭窗口</button>' +
       '</div>' +
-      '<p class="field__hint" style="text-align:center">下载完会自动补齐，下次图鉴再翻到就是秒开。</p>'
+      '<p class="field__hint" style="text-align:center">下载在后台进行，完成后这些图就是秒开。</p>'
     );
     var el = document.getElementById('uiOverlay');
     var cancelled = false;

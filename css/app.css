@@ -3910,3 +3910,28 @@ body.ink .lock-tip { color: #7A6A55; }
   border-radius: 6px;
   transition: width .25s ease;
 }
+/* 素材卡按钮行：两个下载按钮靠左，「刷新」推到最右，同一水平线 */
+.asset-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.asset-actions [data-act="assets-refresh"] {
+  margin-left: auto;
+}
+/* 数据备份 + 版本信息：同一行左右等宽等高；窄屏自动堆叠 */
+.card-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+.card-duo > .card {
+  margin: 0;
+  height: 100%;
+}
+@media (max-width: 560px) {
+  .card-duo { grid-template-columns: 1fr; }
+}

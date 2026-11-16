@@ -259,16 +259,16 @@ window.APP = window.APP || {};
     // ⑤ 素材资源（缓存进度 + 一键补齐）
     html += assetsCardHtml();
 
-    // ⑥ 数据备份（导出 / 导入）
-    html += '<section class="card"><h2>数据备份</h2>' +
-      '<p>导出为 JSON 文件保存；换设备时用「导入恢复」还原全部数据。</p>' +
-      '<div class="row">' +
-        '<button type="button" class="btn" data-act="export">导出备份</button>' +
-        '<button type="button" class="btn" data-act="import">导入恢复</button>' +
-      '</div></section>';
-
-    // ⑦ 版本信息（页面版本 + SW 更新检查）
-    html += versionCardHtml();
+    // ⑥⑦ 数据备份 + 版本信息：同一行左右等宽等高（窄屏自动堆叠）
+    html += '<div class="card-duo">' +
+      '<section class="card"><h2>数据备份</h2>' +
+        '<p>导出为 JSON 文件保存；换设备时用「导入恢复」还原全部数据。</p>' +
+        '<div class="row">' +
+          '<button type="button" class="btn" data-act="export">导出备份</button>' +
+          '<button type="button" class="btn" data-act="import">导入恢复</button>' +
+        '</div></section>' +
+      versionCardHtml() +
+      '</div>';
 
     // 账号卡 → 精简同步卡 → 统计与备份。
     // 「数据存档」槽位卡已移除：本机旧记录不再作为可选数据源暴露，导入入口只在家长后台（家长密码可见）。
@@ -290,13 +290,11 @@ window.APP = window.APP || {};
       '<span class="card__side" id="assetsSide">' + (busy ? '下载中' : '读取中') + '</span></h2>' +
       '<div class="asset-bar"><div class="asset-bar__fill" id="assetsBar" style="width:0%"></div></div>' +
       '<ul class="list" id="assetsList"><li><span class="k">正在读取缓存进度…</span></li></ul>' +
-      '<div class="row">' +
-        '<button type="button" class="btn" data-act="dl-small">补图鉴小图</button>' +
-        '<button type="button" class="btn" data-act="dl-all">下载全部素材</button>' +
+      '<div class="row asset-actions">' +
+        '<button type="button" class="btn" data-act="dl-small">下载图鉴素材</button>' +
+        '<button type="button" class="btn" data-act="dl-all">下载其他素材</button>' +
+        '<button type="button" class="btn btn--sm" data-act="assets-refresh">刷新</button>' +
       '</div>' +
-      '<div class="row"><button type="button" class="btn btn--sm" data-act="assets-refresh">刷新进度</button></div>' +
-      '<p class="field__hint">小图只有几 KB，缺的图扫码般补齐；「全部素材」含大图与动图，约几十 MB，可慢速后台下载。' +
-      '下载在后台进行，不用盯着这一页。</p>' +
       '</section>';
   }
 
@@ -343,11 +341,9 @@ window.APP = window.APP || {};
     return '<section class="card"><h2>版本信息</h2>' +
       '<ul class="list">' +
         '<li><span class="k">页面版本</span><span class="v">' + esc(v) + '</span></li>' +
-        '<li><span class="k">离线缓存</span><span class="v">' + (('caches' in window) ? '已启用' : '不支持') + '</span></li>' +
       '</ul>' +
       '<div class="row"><button type="button" class="btn btn--sm" data-act="check-update">检查更新</button>' +
         '<span id="verState" style="align-self:center;color:#888;font-size:13px"></span></div>' +
-      '<p class="field__hint">看到新版本号，说明页面已刷新到最新版（更新一般会自动完成）。</p>' +
       '</section>';
   }
 

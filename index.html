@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- 由 build.js 从 index.src.html 自动生成，请勿直接编辑；改源码后运行 node build.js -->
-<script>window.APP_BUILD_VERSION="v96";</script>
+<script>window.APP_BUILD_VERSION="v97";</script>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -3933,6 +3933,31 @@ body.ink .lock-tip { color: #7A6A55; }
   background: var(--ok, #2e9e5b);
   border-radius: 6px;
   transition: width .25s ease;
+}
+/* 素材卡按钮行：两个下载按钮靠左，「刷新」推到最右，同一水平线 */
+.asset-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.asset-actions [data-act="assets-refresh"] {
+  margin-left: auto;
+}
+/* 数据备份 + 版本信息：同一行左右等宽等高；窄屏自动堆叠 */
+.card-duo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 12px;
+}
+.card-duo > .card {
+  margin: 0;
+  height: 100%;
+}
+@media (max-width: 560px) {
+  .card-duo { grid-template-columns: 1fr; }
 }
 
 
@@ -11954,16 +11979,16 @@ window.APP = window.APP || {};
     // ⑤ 素材资源（缓存进度 + 一键补齐）
     html += assetsCardHtml();
 
-    // ⑥ 数据备份（导出 / 导入）
-    html += '<section class="card"><h2>数据备份</h2>' +
-      '<p>导出为 JSON 文件保存；换设备时用「导入恢复」还原全部数据。</p>' +
-      '<div class="row">' +
-        '<button type="button" class="btn" data-act="export">导出备份</button>' +
-        '<button type="button" class="btn" data-act="import">导入恢复</button>' +
-      '</div></section>';
-
-    // ⑦ 版本信息（页面版本 + SW 更新检查）
-    html += versionCardHtml();
+    // ⑥⑦ 数据备份 + 版本信息：同一行左右等宽等高（窄屏自动堆叠）
+    html += '<div class="card-duo">' +
+      '<section class="card"><h2>数据备份</h2>' +
+        '<p>导出为 JSON 文件保存；换设备时用「导入恢复」还原全部数据。</p>' +
+        '<div class="row">' +
+          '<button type="button" class="btn" data-act="export">导出备份</button>' +
+          '<button type="button" class="btn" data-act="import">导入恢复</button>' +
+        '</div></section>' +
+      versionCardHtml() +
+      '</div>';
 
     // 账号卡 → 精简同步卡 → 统计与备份。
     // 「数据存档」槽位卡已移除：本机旧记录不再作为可选数据源暴露，导入入口只在家长后台（家长密码可见）。
@@ -11985,13 +12010,11 @@ window.APP = window.APP || {};
       '<span class="card__side" id="assetsSide">' + (busy ? '下载中' : '读取中') + '</span></h2>' +
       '<div class="asset-bar"><div class="asset-bar__fill" id="assetsBar" style="width:0%"></div></div>' +
       '<ul class="list" id="assetsList"><li><span class="k">正在读取缓存进度…</span></li></ul>' +
-      '<div class="row">' +
-        '<button type="button" class="btn" data-act="dl-small">补图鉴小图</button>' +
-        '<button type="button" class="btn" data-act="dl-all">下载全部素材</button>' +
+      '<div class="row asset-actions">' +
+        '<button type="button" class="btn" data-act="dl-small">下载图鉴素材</button>' +
+        '<button type="button" class="btn" data-act="dl-all">下载其他素材</button>' +
+        '<button type="button" class="btn btn--sm" data-act="assets-refresh">刷新</button>' +
       '</div>' +
-      '<div class="row"><button type="button" class="btn btn--sm" data-act="assets-refresh">刷新进度</button></div>' +
-      '<p class="field__hint">小图只有几 KB，缺的图扫码般补齐；「全部素材」含大图与动图，约几十 MB，可慢速后台下载。' +
-      '下载在后台进行，不用盯着这一页。</p>' +
       '</section>';
   }
 
@@ -12038,11 +12061,9 @@ window.APP = window.APP || {};
     return '<section class="card"><h2>版本信息</h2>' +
       '<ul class="list">' +
         '<li><span class="k">页面版本</span><span class="v">' + esc(v) + '</span></li>' +
-        '<li><span class="k">离线缓存</span><span class="v">' + (('caches' in window) ? '已启用' : '不支持') + '</span></li>' +
       '</ul>' +
       '<div class="row"><button type="button" class="btn btn--sm" data-act="check-update">检查更新</button>' +
         '<span id="verState" style="align-self:center;color:#888;font-size:13px"></span></div>' +
-      '<p class="field__hint">看到新版本号，说明页面已刷新到最新版（更新一般会自动完成）。</p>' +
       '</section>';
   }
 
@@ -18226,6 +18247,14 @@ window.APP = window.APP || {};
   var pendingCatch = null;   // 战斗中的捕捉上下文：打赢后要接着投球
   var sceneThemeKey = null;   // 本轮随机抽到的场景主题 key（供测试只读读取）
   var activeTab = 'catch';   // 当前出门页签：catch / battle / train
+  // 从别的页签切进探险页时，在「外出捕捉 / 外出战斗」间随机选一个开场，避免每次都固定同一个。
+  // 只在「进入」那一刻随机；本页内 APP.refresh() 重渲染不随机，否则玩着玩着页签会乱跳。
+  var wasOnCatch = /#\/catch/.test(window.location.hash || '');
+  var randomizeOnEnter = false;
+  function pickEntryTab() {
+    // 外出战斗有 Lv.7 门禁，没解锁就只能给捕捉，否则会被门禁打回、等于白随机
+    activeTab = (!subTabLocked('battle') && Math.random() < 0.5) ? 'battle' : 'catch';
+  }
   var seq = { busy: false, timers: [], bonus: 0, clicked: false, tTarget: 0, decay: null, iv: null, holding: false };
 
   function $(id) { return document.getElementById('b3-' + id); }
@@ -18598,13 +18627,16 @@ window.APP = window.APP || {};
     sync();
   }
 
-  // 捕捉结果弹窗的两个出口：「关闭」回乐园 tab；「继续探索」只换场景，等用户自己点躲藏点
+  // 捕捉结果弹窗的两个出口：「关闭」只关弹窗、留在当前探险场景；「继续探索」再换一个场景。
+  // 以前「关闭」会跳回乐园，用户反馈不对——结果弹窗属于探险流程，不该把人带走。
   function resultBtns() {
     return [
-      { text: '关闭', fn: function () { closeRound(); gotoRanch(); } },
+      { text: '关闭', fn: function () { hideDialogOnly(); } },
       { text: '继续探索', yes: true, fn: function () { closeRound(); } }
     ];
   }
+  // 只关掉结果弹窗，保留当前舞台状态（不 resetStage、不换场景、不跳页）
+  function hideDialogOnly() { hideDialog(); }
   function gotoRanch() {
     try { window.location.hash = '#/ranch'; } catch (e) {}
   }
@@ -19183,6 +19215,8 @@ window.APP = window.APP || {};
 
   function render(container) {
     if ((seq.busy || battleBusy()) && alive()) return; // 捕捉 / 战斗演出中不被 APP.refresh() 打断
+    // 从别的页签刚切进来：随机选捕捉 / 战斗开场，只这一次
+    if (randomizeOnEnter) { pickEntryTab(); randomizeOnEnter = false; }
     if (subTabLocked(activeTab)) activeTab = 'catch'; // 等级回退 / 存档异常时回到捕捉页签
     rootEl = container;
     container.innerHTML = pageHtml();
@@ -19205,17 +19239,21 @@ window.APP = window.APP || {};
   }
 
   window.addEventListener('hashchange', function () {
-    if (window.location.hash !== '#/catch') {
+    var on = window.location.hash === '#/catch';
+    // 从非探险页切进探险页 → 标记下次 render 随机开场；本页内 hash 不变则不触发
+    if (on && !wasOnCatch) randomizeOnEnter = true;
+    if (!on) {
       abort();
       if (APP.screens.battle) APP.screens.battle.abort();
     }
+    wasOnCatch = on;
   });
 
   // 供冒烟测试用的只读钩子（不参与页面逻辑）
   APP.screens.catch = {
     render: render,
     logic: {
-      state: function () { return { cur: cur, seq: seq, slotPick: slotPick, sceneTheme: sceneThemeKey }; },
+      state: function () { return { cur: cur, seq: seq, slotPick: slotPick, sceneTheme: sceneThemeKey, activeTab: activeTab }; },
       pickTier: pickTier,
       battleOdds: battleOdds,
       needBattle: needBattle,
@@ -20582,10 +20620,13 @@ window.APP = window.APP || {};
     return out;
   }
 
-  // 战斗页：9 张擂台背景
+  // 战斗页：9 张擂台背景 + 开场场景的路标/训练师头像。
+  // 后两张以前没预热，切到「外出战斗」才现下，夜景背景已缓存却卡在这两张上——一并备好。
   function battleList() {
     var out = [];
     for (var i = 1; i <= 9; i++) out.push('assets/pic/' + i + '.webp');
+    out.push('assets/env/forest/sign_next.png');
+    out.push('assets/npc-v6/npc-01-bust.png');
     return out;
   }
 
@@ -20653,7 +20694,7 @@ window.APP = window.APP || {};
     idle(next);
   }
 
-  // 图鉴名单里的全部编号（含进化形态与对战专用）——「补图鉴小图」就按这个清单来。
+  // 图鉴名单里的全部编号（含进化形态与对战专用）——「下载图鉴素材」就按这个清单来。
   // 只有名单内的编号才会出现在图鉴页，别按磁盘上的 001–386 全量下，白费流量。
   function allValidIds() {
     var out = [];
@@ -20767,14 +20808,15 @@ window.APP = window.APP || {};
     })['catch'](function () { cb(null); });
   }
 
-  // 下载清单：small=只补图鉴小图；all=小图+大图+动图+场景+擂台
+  // 下载清单：small=只补图鉴小图（下载图鉴素材）；other=大图+动图+场景+擂台（下载其他素材），
+  // 刻意排除图鉴小图 —— 两个按钮分工不重叠：一个管图鉴网格，一个管其余素材。
   function targetList(kind) {
     var g = groups()._all;
     var urls;
     if (kind === 'small') {
       urls = g.small.slice();
     } else {
-      urls = g.small.concat(g.large, g.wild, g.scene, g.battle);
+      urls = g.large.concat(g.wild, g.scene, g.battle);
     }
     var seen = Object.create(null), out = [];
     for (var i = 0; i < urls.length; i++) {
@@ -20871,7 +20913,7 @@ window.APP = window.APP || {};
   // 打开进度弹窗并发起下载。kind='small'|'all'
   function downloadWithModal(kind) {
     if (downloading) return;
-    var label = kind === 'small' ? '图鉴小图' : '全部素材';
+    var label = kind === 'small' ? '图鉴素材' : '其他素材';
     modalOpen = true;
     modalShell(
       '<h3 class="ui-modal__title">正在下载' + label + '</h3>' +
@@ -20882,7 +20924,7 @@ window.APP = window.APP || {};
         '<button type="button" class="btn btn--primary" data-dl="bg">后台下载</button>' +
         '<button type="button" class="btn" data-dl="cancel">关闭窗口</button>' +
       '</div>' +
-      '<p class="field__hint" style="text-align:center">下载完会自动补齐，下次图鉴再翻到就是秒开。</p>'
+      '<p class="field__hint" style="text-align:center">下载在后台进行，完成后这些图就是秒开。</p>'
     );
     var el = document.getElementById('uiOverlay');
     var cancelled = false;

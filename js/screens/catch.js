@@ -23,6 +23,14 @@
   var pendingCatch = null;   // 战斗中的捕捉上下文：打赢后要接着投球
   var sceneThemeKey = null;   // 本轮随机抽到的场景主题 key（供测试只读读取）
   var activeTab = 'catch';   // 当前出门页签：catch / battle / train
+  // 从别的页签切进探险页时，在「外出捕捉 / 外出战斗」间随机选一个开场，避免每次都固定同一个。
+  // 只在「进入」那一刻随机；本页内 APP.refresh() 重渲染不随机，否则玩着玩着页签会乱跳。
+  var wasOnCatch = /#\/catch/.test(window.location.hash || '');
+  var randomizeOnEnter = false;
+  function pickEntryTab() {
+    // 外出战斗有 Lv.7 门禁，没解锁就只能给捕捉，否则会被门禁打回、等于白随机
+    activeTab = (!subTabLocked('battle') && Math.random() < 0.5) ? 'battle' : 'catch';
+  }
   var seq = { busy: false, timers: [], bonus: 0, clicked: false, tTarget: 0, decay: null, iv: null, holding: false };
 
   function $(id) { return document.getElementById('b3-' + id); }
@@ -395,13 +403,16 @@
     sync();
   }
 
-  // 捕捉结果弹窗的两个出口：「关闭」回乐园 tab；「继续探索」只换场景，等用户自己点躲藏点
+  // 捕捉结果弹窗的两个出口：「关闭」只关弹窗、留在当前探险场景；「继续探索」再换一个场景。
+  // 以前「关闭」会跳回乐园，用户反馈不对——结果弹窗属于探险流程，不该把人带走。
   function resultBtns() {
     return [
-      { text: '关闭', fn: function () { closeRound(); gotoRanch(); } },
+      { text: '关闭', fn: function () { hideDialogOnly(); } },
       { text: '继续探索', yes: true, fn: function () { closeRound(); } }
     ];
   }
+  // 只关掉结果弹窗，保留当前舞台状态（不 resetStage、不换场景、不跳页）
+  function hideDialogOnly() { hideDialog(); }
   function gotoRanch() {
     try { window.location.hash = '#/ranch'; } catch (e) {}
   }
@@ -980,6 +991,8 @@
 
   function render(container) {
     if ((seq.busy || battleBusy()) && alive()) return; // 捕捉 / 战斗演出中不被 APP.refresh() 打断
+    // 从别的页签刚切进来：随机选捕捉 / 战斗开场，只这一次
+    if (randomizeOnEnter) { pickEntryTab(); randomizeOnEnter = false; }
     if (subTabLocked(activeTab)) activeTab = 'catch'; // 等级回退 / 存档异常时回到捕捉页签
     rootEl = container;
     container.innerHTML = pageHtml();
@@ -1002,17 +1015,21 @@
   }
 
   window.addEventListener('hashchange', function () {
-    if (window.location.hash !== '#/catch') {
+    var on = window.location.hash === '#/catch';
+    // 从非探险页切进探险页 → 标记下次 render 随机开场；本页内 hash 不变则不触发
+    if (on && !wasOnCatch) randomizeOnEnter = true;
+    if (!on) {
       abort();
       if (APP.screens.battle) APP.screens.battle.abort();
     }
+    wasOnCatch = on;
   });
 
   // 供冒烟测试用的只读钩子（不参与页面逻辑）
   APP.screens.catch = {
     render: render,
     logic: {
-      state: function () { return { cur: cur, seq: seq, slotPick: slotPick, sceneTheme: sceneThemeKey }; },
+      state: function () { return { cur: cur, seq: seq, slotPick: slotPick, sceneTheme: sceneThemeKey, activeTab: activeTab }; },
       pickTier: pickTier,
       battleOdds: battleOdds,
       needBattle: needBattle,

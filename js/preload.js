@@ -50,10 +50,13 @@ window.APP = window.APP || {};
     return out;
   }
 
-  // 战斗页：9 张擂台背景
+  // 战斗页：9 张擂台背景 + 开场场景的路标/训练师头像。
+  // 后两张以前没预热，切到「外出战斗」才现下，夜景背景已缓存却卡在这两张上——一并备好。
   function battleList() {
     var out = [];
     for (var i = 1; i <= 9; i++) out.push('assets/pic/' + i + '.webp');
+    out.push('assets/env/forest/sign_next.png');
+    out.push('assets/npc-v6/npc-01-bust.png');
     return out;
   }
 
@@ -121,7 +124,7 @@ window.APP = window.APP || {};
     idle(next);
   }
 
-  // 图鉴名单里的全部编号（含进化形态与对战专用）——「补图鉴小图」就按这个清单来。
+  // 图鉴名单里的全部编号（含进化形态与对战专用）——「下载图鉴素材」就按这个清单来。
   // 只有名单内的编号才会出现在图鉴页，别按磁盘上的 001–386 全量下，白费流量。
   function allValidIds() {
     var out = [];
