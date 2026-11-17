@@ -48,6 +48,34 @@ html = html.replace(/src="assets\/tiny\/(\d+)\.webp"/g, (all, id) => {
   return 'src="data:image/webp;base64,' + fs.readFileSync(abs(f)).toString('base64') + '"';
 });
 
+// ---- 3.5) 校验素材帧索引：磁盘上新加了 dex 但索引没更新会在这里拦下 ----
+// js/pmd-frame-index.js 是「乐园动画帧」精确清单（assets-manifest 读它统计/下载）。
+// 以后往 assets/pmd-sliced 或 -shiny 加了 dex，必须重跑 make 索引，否则统计会漏。
+(function checkFrameIndex() {
+  const idxFile = 'js/pmd-frame-index.js';
+  if (!exists(idxFile)) throw new Error('缺 ' + idxFile + '（乐园动画帧索引）');
+  function scan(dir) {
+    const out = {};
+    if (!exists(dir)) return out;
+    for (const d of fs.readdirSync(abs(dir))) {
+      if (!fs.statSync(abs(dir + '/' + d)).isDirectory()) continue;
+      out[d] = fs.readdirSync(abs(dir + '/' + d)).filter(f => /\.png$/.test(f)).length;
+    }
+    return out;
+  }
+  const diskPmd = Object.keys(scan('assets/pmd-sliced')).length;
+  const diskShiny = Object.keys(scan('assets/pmd-sliced-shiny')).length;
+  const txt = read(idxFile);
+  const mPmd = txt.match(/pmd:\s*"([^"]*)"/), mShiny = txt.match(/shiny:\s*"([^"]*)"/);
+  const idxPmd = mPmd ? mPmd[1].split(';').filter(Boolean).length : -1;
+  const idxShiny = mShiny ? mShiny[1].split(';').filter(Boolean).length : -1;
+  if (diskPmd !== idxPmd || diskShiny !== idxShiny) {
+    throw new Error('素材帧索引过期：磁盘 pmd=' + diskPmd + '/shiny=' + diskShiny +
+      '，索引 pmd=' + idxPmd + '/shiny=' + idxShiny + '。请重新生成 js/pmd-frame-index.js');
+  }
+  console.log('帧索引校验: pmd ' + diskPmd + ' dex / shiny ' + diskShiny + ' dex ✓');
+})();
+
 // ---- 4) 注入页面版本号（与 SW 缓存版本号同源，供「我的数据-版本信息」显示）----
 // 版本号唯一真相在 sw.js 的 var CACHE='pokedex-checkin-vNN'，这里读出来注入，
 // 免得页面里再写死一个数字、每次发版漏改。读不到就留空（页面显示 —）。

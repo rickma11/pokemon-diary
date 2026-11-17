@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- 由 build.js 从 index.src.html 自动生成，请勿直接编辑；改源码后运行 node build.js -->
-<script>window.APP_BUILD_VERSION="v98";</script>
+<script>window.APP_BUILD_VERSION="v99";</script>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -12039,8 +12039,11 @@ window.APP = window.APP || {};
       var html = '';
       for (var i = 0; i < r.groups.length; i++) {
         var g = r.groups[i];
-        html += '<li><span class="k">' + esc(g.name) + '</span><span class="v">' +
-          g.cached + ' / ' + g.total + '</span></li>';
+        var tip = g.tier === 'stat' ? '（不下）' : (g.tier === 'quiet' ? '（静默）' : '');
+        var cls = g.tier === 'stat' ? ' style="opacity:.6"' : '';
+        var done = g.total && g.cached >= g.total;
+        html += '<li' + cls + '><span class="k">' + esc(g.name) + tip + '</span><span class="v">' +
+          (done ? '✓ ' : '') + g.cached + ' / ' + g.total + '</span></li>';
       }
       html += '<li><span class="k">还差</span><span class="v">' +
         (r.total - r.cached) + ' 张</span></li>';
@@ -20585,6 +20588,163 @@ window.APP = window.APP || {};
 
 ;
 
+/* ===== js/pmd-frame-index.js ===== */
+window.PMD_FRAME_INDEX = { pmd: "1:acfhiw;2:acfhiw;3:acfhiw;4:acfhiw;5:acfhiw;6:acfhiw;7:acfhiw;8:acfhiw;9:acfhiw;10:acfhiw;11:acfhiw;12:acfhiw;13:acfhiw;14:acfhiw;15:acfhiw;16:acfhiw;17:acfhiw;18:acfhiw;19:acfhiw;20:acfhiw;21:acfhiw;22:acfhiw;23:acfhiw;24:acfhiw;25:acfhiw;26:acfhiw;27:acfhiw;28:acfhiw;29:acfhiw;30:acfhiw;31:acfhiw;32:acfhiw;33:acfhiw;34:acfhiw;35:acfhiw;36:acfhiw;37:acfhiw;38:acfhiw;39:acfhiw;40:acfhiw;41:acfhiw;42:acfhiw;43:acfhiw;44:acfhiw;45:acfhiw;46:acfhiw;47:acfhiw;48:acfhiw;49:acfhiw;50:acfhiw;51:acfhiw;52:acfhiw;53:acfhiw;54:acfhiw;55:acfhiw;56:acfhiw;57:acfhiw;58:acfhiw;59:acfhiw;60:acfhiw;61:acfhiw;62:acfhiw;63:acfhiw;64:acfhiw;65:acfhiw;66:acfhiw;67:acfhiw;68:acfhiw;69:acfhiw;70:acfhiw;71:acfhiw;72:acfhiw;73:acfhiw;74:acfhiw;75:acfhiw;76:acfhiw;77:acfhiw;78:acfhiw;79:acfhiw;80:acfhiw;81:acfhiw;82:acfhiw;83:acfhiw;84:acfhiw;85:acfhiw;86:acfhiw;87:acfhiw;88:acfhiw;89:acfhiw;90:acfhiw;91:acfhiw;92:acfhiw;93:acfhiw;94:acfhiw;95:acfhiw;96:acfhiw;97:acfhiw;98:acfhiw;99:acfhiw;100:acfhiw;101:acfhiw;102:acfhiw;103:acfhiw;104:acfhiw;105:acfhiw;106:acfhiw;107:acfhiw;108:acfhiw;109:acfhiw;110:acfhiw;111:acfhiw;112:acfhiw;113:acfhiw;114:acfhiw;115:acfhiw;116:acfhiw;117:acfhiw;118:acfhiw;119:acfhiw;120:acfhiw;121:acfhiw;122:acfhiw;123:acfhiw;124:acfhiw;125:acfhiw;126:acfhiw;127:acfhiw;128:acfhiw;129:acfhiw;130:acfhiw;131:acfhiw;132:acfhiw;133:acfhiw;134:acfhiw;135:acfhiw;136:acfhiw;137:acfhiw;138:acfhiw;139:acfhiw;140:acfhiw;141:acfhiw;142:acfhiw;143:acfhiw;144:acfhiw;145:acfhiw;146:acfhiw;147:acfhiw;148:acfhiw;149:acfhiw;150:acfhiw;151:acfhiw;152:acfhiw;153:acfhiw;154:acfhiw;155:acfhiw;156:acfhiw;157:acfhiw;158:acfhiw;159:acfhiw;160:acfhiw;161:acfhiw;162:acfhiw;163:acfhiw;164:acfhiw;165:acfhiw;166:acfhiw;167:acfhiw;168:acfhiw;169:acfhiw;170:acfhiw;171:acfhiw;172:acfhiw;173:acfhiw;174:acfhiw;175:acfhiw;176:acfhiw;177:acfhiw;178:acfhiw;179:acfhiw;180:acfhiw;181:acfhiw;182:acfhiw;183:acfhiw;184:acfhiw;185:acfhiw;186:acfhiw;187:acfhiw;188:acfhiw;189:acfhiw;190:acfhiw;191:acfhiw;192:acfhiw;193:acfhiw;194:acfhiw;195:acfhiw;196:acfhiw;197:acfhiw;198:acfhiw;199:acfhiw;200:acfhiw;201:acfhiw;202:acfhiw;203:acfhiw;204:acfhiw;205:acfhiw;206:acfhiw;207:acfhiw;208:acfhiw;209:acfhiw;210:acfhiw;211:acfhiw;212:acfhiw;213:acfhiw;214:acfhiw;215:acfhiw;216:acfhiw;217:acfhiw;218:acfhiw;219:acfhiw;220:acfhiw;221:acfhiw;222:acfhiw;223:acfhiw;224:acfhiw;225:acfhiw;226:acfhiw;227:acfhiw;228:acfhiw;229:acfhiw;230:acfhiw;231:acfhiw;232:acfhiw;233:acfhiw;234:acfhiw;235:acfhiw;236:acfhiw;237:acfhiw;238:acfhiw;239:acfhiw;240:acfhiw;241:acfhiw;242:acfhiw;243:acfhiw;244:acfhiw;245:acfhiw;246:acfhiw;247:acfhiw;248:acfhiw;249:acfhiw;250:acfhiw;251:acfhiw;252:acfhiw;253:acfhiw;254:acfhiw;255:acfhiw;256:acfhiw;257:acfhiw;258:acfhiw;259:acfhiw;260:acfhiw;261:acfhiw;262:acfhiw;263:acfhiw;264:acfhiw;265:acfhiw;266:acfhiw;267:acfhiw;268:acfhiw;269:acfhiw;270:acfhiw;271:acfhiw;272:acfhiw;273:acfhiw;274:acfhiw;275:acfhiw;276:acfhiw;277:acfhiw;278:acfhiw;279:acfhiw;280:acfhiw;281:acfhiw;282:acfhiw;283:acfhiw;284:acfhiw;285:acfhiw;286:acfhiw;287:acfhiw;288:acfhiw;289:acfhiw;290:acfhiw;291:acfhiw;292:acfhiw;293:acfhiw;294:acfhiw;295:acfhiw;296:acfhiw;297:acfhiw;298:acfhiw;299:acfhiw;300:acfhiw;301:acfhiw;302:acfhiw;303:acfhiw;304:acfhiw;305:acfhiw;306:acfhiw;307:acfhiw;308:acfhiw;309:acfhiw;310:acfhiw;311:acfhiw;312:acfhiw;313:acfhiw;314:acfhiw;315:acfhiw;316:acfhiw;317:acfhiw;318:acfhiw;319:acfhiw;320:acfhiw;321:acfhiw;322:acfhiw;323:acfhiw;324:acfhiw;325:acfhiw;326:acfhiw;327:acfhiw;328:acfhiw;329:acfhiw;330:acfhiw;331:acfhiw;332:acfhiw;333:acfhiw;334:acfhiw;335:acfhiw;336:acfhiw;337:acfhiw;338:acfhiw;339:acfhiw;340:acfhiw;341:acfhiw;342:acfhiw;343:acfhiw;344:acfhiw;345:acfhiw;346:acfhiw;347:acfhiw;348:acfhiw;349:acfhiw;350:acfhiw;351:acfhiw;352:acfhiw;353:acfhiw;354:acfhiw;355:acfhiw;356:acfhiw;357:acfhiw;358:acfhiw;359:acfhiw;360:acfhiw;361:acfhiw;362:acfhiw;363:acfhiw;364:acfhiw;365:acfhiw;366:acfhiw;367:acfhiw;368:acfhiw;369:acfhiw;370:acfhiw;371:acfhiw;372:acfhiw;373:acfhiw;374:acfhiw;375:acfhiw;376:acfhiw;377:acfhiw;378:acfhiw;379:acfhiw;380:acfhiw;381:acfhiw;382:acfhiw;383:acfhiw;384:acfhiw;385:acfhiw;386:acfhiw;387:acfhiw;388:acfhiw;389:acfhiw;390:acfhiw;391:acfhiw;392:acfhiw;393:acfhiw;394:acfhiw;395:acfhiw;396:acfhiw;397:acfhiw;398:acfhiw;399:acfhiw;400:acfhiw;401:acfhiw;402:acfhiw;403:acfhiw;404:acfhiw;405:acfhiw;406:acfhiw;407:acfhiw;408:acfhiw;409:acfhiw;410:acfhiw;411:acfhiw;412:acfhiw;413:acfhiw;414:acfhiw;415:acfhiw;416:acfhiw;417:acfhiw;418:acfhiw;419:acfhiw;420:acfhiw;421:acfhiw;422:acfhiw;423:acfhiw;424:acfhiw;425:acfhiw;426:acfhiw;427:acfhiw;428:acfhiw;429:acfhiw;430:acfhiw;431:acfhiw;432:acfhiw;433:acfhiw;434:acfhiw;435:acfhiw;436:acfhiw;437:acfhiw;438:acfhiw;439:acfhiw;440:acfhiw;441:acfhiw;442:acfhiw;443:acfhiw;444:acfhiw;445:acfhiw;446:acfhiw;447:acfhiw;448:acfhiw;449:acfhiw;450:acfhiw;451:acfhiw;452:acfhiw;453:acfhiw;454:acfhiw;455:acfhiw;456:acfhiw;457:acfhiw;458:acfhiw;459:acfhiw;460:acfhiw;461:acfhiw;462:acfhiw;463:acfhiw;464:acfhiw;465:acfhiw;466:acfhiw;467:acfhiw;468:acfhiw;469:acfhiw;470:acfhiw;471:acfhiw;472:acfhiw;473:acfhiw;474:acfhiw;475:acfhiw;476:acfhiw;477:acfhiw;478:acfhiw;479:acfhiw;480:acfhiw;481:acfhiw;482:acfhiw;483:acfhiw;484:acfhiw;485:acfhiw;486:acfhiw;487:acfhiw;488:acfhiw;489:acfhiw;490:acfhiw;491:acfhiw;492:acfhiw;493:acfhiw;494:acfhiw;495:acfhiw;496:acfhiw;497:acfhiw;498:acfhiw;499:acfhiw;500:acfhiw;501:acfhiw;502:acfhiw;503:acfhiw;504:acfhiw;505:acfhiw;506:acfhiw;507:acfhiw;508:acfhiw;509:acfhiw;510:acfhiw;511:acfhiw;512:acfhiw;513:acfhiw;515:acfhiw;517:acfhiw;518:acfhiw;519:acfhiw;521:acfhiw;524:acfhiw;525:acfhiw;526:acfhiw;527:acfhiw;528:acfhiw;529:acfhiw;530:acfhiw;531:acfhiw;532:acfhiw;533:acfhiw;534:acfhiw;535:acfhiw;536:acfhiw;537:acfhiw;539:acfhiw;540:acfhiw;541:acfhiw;542:acfhiw;543:acfhiw;544:acfhiw;545:acfhiw;546:acfhiw;547:acfhiw;548:acfhiw;549:acfhiw;550:acfhiw;551:acfhiw;552:acfhiw;553:acfhiw;554:acfhiw;555:acfhiw;556:acfhiw;557:acfhiw;559:acfhiw;560:acfhiw;561:acfhiw;562:acfhiw;563:acfhiw;566:acfhiw;567:acfhiw;568:acfhiw;569:acfhiw;570:acfhiw;571:acfhiw;572:acfhiw;573:acfhiw;574:acfhiw;575:acfhiw;576:acfhiw;577:acfhiw;578:acfhiw;579:acfhiw;580:acfhiw;581:acfhiw;582:acfhiw;583:acfhiw;584:acfhiw;585:acfhiw;586:acfhiw;587:acfhiw;588:acfhiw;589:acfhiw;590:acfhiw;593:afiw;594:acfhiw;595:acfhiw;596:acfhiw;597:acfhiw;598:acfhiw;599:acfhiw;600:acfhiw;601:acfhiw;602:acfhiw;603:acfhiw;604:acfhiw;605:acfhiw;606:acfhiw;607:acfhiw;608:acfhiw;609:acfhiw;610:acfhiw;611:acfhiw;612:acfhiw;613:acfhiw;614:acfhiw;615:acfhiw;617:acfhiw;619:acfhiw;620:acfhiw;621:acfhiw;622:acfhiw;623:acfhiw;624:acfhiw;625:acfhiw;627:acfhiw;628:acfhiw;629:acfhiw;630:acfhiw;631:acfhiw;632:acfhiw;633:acfhiw;634:acfhiw;635:acfhiw;636:acfhiw;637:acfhiw;638:acfhiw;639:acfhiw;640:acfhiw;641:acfhiw;642:acfhiw;643:acfhiw;644:acfhiw;645:acfhiw;646:acfhiw;647:acfhiw;648:acfhiw;649:acfhiw;650:acfhiw;651:acfhiw;652:acfhiw;653:acfhiw;654:acfhiw;655:acfhiw;656:acfhiw;657:acfhiw;658:acfhiw;659:acfhiw;660:acfhiw;661:acfhiw;662:acfhiw;663:acfhiw;664:acfhiw;665:acfhiw;666:acfhiw;667:acfhiw;669:acfhiw;670:acfhiw;671:acfhiw;672:acfhiw;673:acfhiw;674:acfhiw;675:acfhiw;676:acfhiw;677:acfhiw;678:acfhiw;679:acfhiw;680:acfhiw;681:acfhiw;682:acfhiw;684:acfhiw;685:acfhiw;686:acfhiw;687:acfhiw;688:acfhiw;689:acfhiw;690:acfhiw;691:acfhiw;692:acfhiw;693:acfhiw;694:acfhiw;695:acfhiw;696:acfhiw;697:acfhiw;698:acfhiw;699:acfhiw;700:acfhiw;701:acfhiw;702:acfhiw;703:acfhiw;704:acfhiw;705:acfhiw;706:acfhiw;707:acfhiw;708:acfhiw;709:acfhiw;710:acfhiw;711:acfhiw;712:acfhiw;713:acfhiw;714:acfhiw;715:acfhiw;716:acfhiw;717:acfhiw;718:acfhiw;719:acfhiw;720:acfhiw;721:acfhiw;722:acfhiw;723:acfhiw;724:acfhiw;725:acfhiw;726:acfhiw;727:acfhiw;728:acfhiw;729:acfhiw;730:acfhiw;731:acfhiw;734:acfhiw;736:acfhiw;737:acfhiw;738:acfhiw;739:acfhiw;740:acfhiw;741:acfhiw;742:acfhiw;743:acfhiw;744:acfhiw;745:acfhiw;746:acfhiw;747:acfhiw;748:acfhiw;749:acfhiw;750:acfhiw;751:acfhiw;752:acfhiw;753:acfhiw;754:acfhiw;755:acfhiw;757:acfhiw;758:acfhiw;759:acfhiw;760:acfhiw;761:acfhiw;762:acfhiw;763:acfhiw;764:acfhiw;766:acfhiw;767:acfhiw;768:acfhiw;769:acfhiw;770:acfhiw;771:acfhiw;772:acfhiw;773:acfhiw;774:acfhiw;775:acfhiw;776:acfhiw;777:acfhiw;778:acfhiw;779:acfhiw;780:acfhiw;781:acfhiw;782:acfhiw;783:acfhiw;784:acfhiw;785:acfhiw;786:acfhiw;787:acfhiw;788:acfhiw;789:acfhiw;790:acfhiw;791:acfhiw;792:acfhiw;793:acfhiw;794:acfhiw;795:acfhiw;796:acfhiw;797:acfhiw;798:acfhiw;799:acfhiw;800:acfhiw;801:acfhiw;802:acfhiw;803:acfhiw;804:acfhiw;805:acfhiw;806:acfhiw;807:acfhiw;808:acfhiw;809:acfhiw;810:acfhiw;811:acfhiw;812:acfhiw;813:acfhiw;814:acfhiw;815:acfhiw;816:acfhiw;817:acfhiw;818:acfhiw;819:acfhiw;820:acfhiw;821:acfhiw;822:acfhiw;823:acfhiw;824:acfhiw;825:acfhiw;826:acfhiw;827:acfhiw;828:acfhiw;829:acfhiw;830:acfhiw;831:acfhiw;832:acfhiw;833:acfhiw;834:acfhiw;835:acfhiw;836:acfhiw;840:acfhiw;841:acfhiw;842:acfhiw;843:acfhiw;844:acfhiw;845:acfhiw;846:acfhiw;847:acfhiw;848:acfhiw;849:acfhiw;850:acfhiw;851:acfhiw;852:acfhiw;853:acfhiw;854:acfhiw;855:acfhiw;856:acfhiw;857:acfhiw;858:acfhiw;859:acfhiw;860:acfhiw;861:acfhiw;862:acfhiw;863:acfhiw;864:acfhiw;865:aiw;867:acfhiw;868:afhiw;869:acfhiw;871:acfhiw;872:acfhiw;873:acfhiw;874:aiw;875:acfhiw;876:acfhiw;877:acfhiw;879:iw;880:acfhiw;881:acfhiw;882:acfhiw;883:aiw;884:acfhiw;885:acfhiw;886:acfhiw;887:acfhiw;888:acfhiw;889:acfhiw;890:acfhiw;891:acfhiw;892:acfhiw;894:acfhiw;895:acfhiw;896:acfhiw;897:acfhiw;898:acfhiw;899:acfhiw;900:acfhiw;901:acfhiw;902:acfhiw;903:acfhiw;904:acfhiw;905:acfhiw;906:acfhiw;907:acfhiw;908:acfhiw;909:acfhiw;910:acfhiw;911:acfhiw;912:acfhiw;913:acfhiw;914:acfhiw;915:acfhiw;916:acfhiw;917:afhiw;918:acfhiw;919:acfhiw;920:acfhiw;921:acfhiw;922:acfhiw;923:acfhiw;924:acfhiw;925:acfhiw;926:acfhiw;927:acfhiw;928:acfhiw;930:acfhiw;932:acfhiw;933:acfhiw;934:acfhiw;935:acfhiw;936:acfhiw;937:acfhiw;938:acfhiw;939:acfhiw;940:acfhiw;941:acfhiw;946:acfhiw;948:afiw;951:acfhiw;952:acfhiw;953:acfhiw;955:acfhiw;957:acfhiw;958:acfhiw;959:acfhiw;960:acfhiw;961:acfhiw;963:acfhiw;964:acfhiw;965:acfhiw;966:acfhiw;967:acfhiw;968:acfiw;969:acfhiw;970:acfhiw;971:acfhiw;972:acfhiw;974:acfhiw;975:acfhiw;976:acfhiw;977:acfhiw;978:acfhiw;979:acfhiw;980:acfhiw;981:acfhiw;982:acfhiw;983:acfhiw;984:acfhiw;985:acfhiw;987:acfhiw;988:acfhiw;989:acfhiw;991:acfhiw;992:acfhiw;994:acfhiw;995:acfhiw;996:acfhiw;997:acfhiw;998:acfhiw;1000:acfhiw;1004:acfhiw;1005:acfhiw;1006:acfhiw;1007:acfhiw;1009:acfhiw;1010:acfhiw;1011:acfhiw;1012:acfhiw;1013:acfhiw;1015:acfhiw;1016:acfhiw;1017:acfhiw;1018:acfhiw;1019:acfhiw;1024:acfhiw;1025:acfhiw", shiny: "1:acfhiw;2:acfhiw;3:acfhiw;4:acfhiw;5:acfhiw;6:acfhiw;7:acfhiw;8:acfhiw;9:acfhiw;10:acfhiw;11:acfhiw;12:acfhiw;13:acfhiw;14:acfhiw;15:acfhiw;16:acfhiw;17:acfhiw;18:acfhiw;19:acfhiw;20:acfhiw;21:acfhiw;22:acfhiw;23:acfhiw;24:acfhiw;25:acfhiw;26:acfhiw;27:acfhiw;28:acfhiw;29:acfhiw;30:acfhiw;31:acfhiw;32:acfhiw;33:acfhiw;34:acfhiw;35:acfhiw;36:acfhiw;37:acfhiw;38:acfhiw;39:acfhiw;40:acfhiw;41:acfhiw;42:acfhiw;43:acfhiw;44:acfhiw;45:acfhiw;46:acfhiw;47:acfhiw;48:acfhiw;49:acfhiw;50:acfhiw;51:acfhiw;52:acfhiw;53:acfhiw;54:acfhiw;55:acfhiw;56:acfhiw;57:acfhiw;58:acfhiw;59:acfhiw;60:acfhiw;61:acfhiw;62:acfhiw;63:acfhiw;64:acfhiw;65:acfhiw;66:acfhiw;67:acfhiw;68:acfhiw;69:acfhiw;70:acfhiw;71:acfhiw;72:acfhiw;73:acfhiw;74:acfhiw;75:acfhiw;76:acfhiw;77:acfhiw;78:acfhiw;79:acfhiw;80:acfhiw;81:acfhiw;82:acfhiw;83:acfhiw;84:acfhiw;85:acfhiw;86:acfhiw;87:acfhiw;88:acfhiw;89:acfhiw;90:acfhiw;91:acfhiw;92:acfhiw;93:acfhiw;94:acfhiw;95:acfhiw;96:acfhiw;97:acfhiw;98:acfhiw;99:acfhiw;100:acfhiw;101:acfhiw;102:acfhiw;103:acfhiw;104:acfhiw;105:acfhiw;106:acfhiw;107:acfhiw;108:acfhiw;109:acfhiw;110:acfhiw;111:acfhiw;112:acfhiw;113:acfhiw;114:acfhiw;115:acfhiw;116:acfhiw;117:acfhiw;118:acfhiw;119:acfhiw;120:acfhiw;121:acfhiw;122:acfhiw;123:acfhiw;124:acfhiw;125:acfhiw;126:acfhiw;127:acfhiw;128:acfhiw;129:acfhiw;130:acfhiw;131:acfhiw;132:acfhiw;133:acfhiw;134:acfhiw;135:acfhiw;136:acfhiw;137:acfhiw;138:acfhiw;139:acfhiw;140:acfhiw;141:acfhiw;142:acfhiw;143:acfhiw;144:acfhiw;145:acfhiw;146:acfhiw;147:acfhiw;148:acfhiw;149:acfhiw;150:acfhiw;151:acfhiw" };
+
+;
+
+/* ===== js/assets-manifest.js ===== */
+window.APP = window.APP || {};
+
+(function (APP) {
+  'use strict';
+
+  // ===== 统一素材清单（唯一来源）=====
+  // 背景：以前「统计口径」「下载清单」「后台预加载」各写各的，
+  // 加新素材漏掉一份，就出现「显示 99% 但乐园/探险一堆图首次现下」。
+  // 这里把全部素材目录列成一份清单，三处都读它，以后绝不对不上。
+  //
+  // tier 三档：
+  //   core  —— 图片/动画，体验直接用到；点「下载图鉴/其他素材」立即下
+  //   quiet —— 叫声/徽章，体验影响小；core 下完后空闲静默下
+  //   stat  —— 仅统计不下：386 张 PNG 兜底大图（50MB，老浏览器才用，现代设备用 WebP）
+  //
+  // button 归口：
+  //   dex  —— 「下载图鉴素材」按钮（图鉴小图）
+  //   other—— 「下载其他素材」按钮（其余 core + quiet）
+  //   none —— 只在统计里显示，不归任何下载按钮
+
+  // 乐园/探险里一只宝可梦的动画帧。用构建时扫描磁盘生成的精确索引
+  // （js/pmd-frame-index.js），而不是「dex × 6 动作」硬推 —— 因为部分 dex 缺动作，
+  // 硬推会多报数百张并制造一串 404。索引里每个 dex 实际有哪些动作都记好了。
+  var ACT_NAME = { w: 'walk', i: 'idle', a: 'attack', h: 'hurt', f: 'faint', c: 'charge' };
+  function pmdFrames(which) {
+    var idx = window.PMD_FRAME_INDEX || {};
+    var str = which === 'shiny' ? idx.shiny : idx.pmd;
+    if (!str) return [];
+    var base = which === 'shiny' ? 'assets/pmd-sliced-shiny/' : 'assets/pmd-sliced/';
+    var out = [], entries = str.split(';'), i, j;
+    for (i = 0; i < entries.length; i++) {
+      var colon = entries[i].indexOf(':');
+      if (colon < 0) continue;
+      var dex = entries[i].slice(0, colon), acts = entries[i].slice(colon + 1);
+      for (j = 0; j < acts.length; j++) {
+        var nm = ACT_NAME[acts[j]];
+        if (nm) out.push(base + dex + '/' + nm + '.png');
+      }
+    }
+    return out;
+  }
+
+  var ELEMS = ['berry_bush', 'flower_white', 'grass_tall_A', 'grass_tall_B', 'hay',
+    'mushroom_red', 'rock_cluster', 'stump', 'sunflower_A', 'sunflower_B', 'sunflower_C',
+    'tree_big_A', 'tree_big_B', 'tree_big_C', 'tree_small_A', 'tree_small_B'];
+  var NPCS = ['hero-1', 'hero-2', 'hero-3', 'hero-4',
+    'npc-01', 'npc-02', 'npc-03', 'npc-04', 'npc-05', 'npc-06', 'npc-07', 'npc-08', 'npc-09', 'npc-10'];
+  var BADGES = ['01-rock', '02-water', '03-electric', '04-fire', '04-grass',
+    '05-psychic', '06-ground', '07-dragon'];
+
+  function pad3(n) { return APP.pad3 ? APP.pad3(n) : ('00' + n).slice(-3); }
+  function ids386() {
+    var out = [];
+    for (var i = 1; i <= 386; i++) out.push(i);
+    return out;
+  }
+  function mapIds(fn) {
+    return ids386().map(fn);
+  }
+
+  // 场景 / 躲藏点：从 catchData 主题里取实际引用的 .webp（避免统计到不用的 PNG 兜底）
+  function sceneUrls() {
+    var out = [], themes = (APP.catchData && APP.catchData.THEMES) || [];
+    for (var i = 0; i < themes.length; i++) {
+      out.push(themes[i].scene);
+      var hides = themes[i].hides || [];
+      for (var j = 0; j < hides.length; j++) out.push(hides[j]);
+    }
+    return dedupe(out);
+  }
+
+  function battleUrls() {
+    var out = [];
+    for (var i = 1; i <= 9; i++) out.push('assets/pic/' + i + '.webp');
+    return out;
+  }
+
+  function dedupe(urls) {
+    var seen = Object.create(null), out = [];
+    for (var i = 0; i < urls.length; i++) {
+      if (!seen[urls[i]]) { seen[urls[i]] = 1; out.push(urls[i]); }
+    }
+    return out;
+  }
+
+  // 清单项延迟生成（PMD_MANIFEST / catchData 是 defer 脚本，模块加载时未必就绪，
+  // 所以 urls 存函数，真正统计/下载时才调用）。
+  var GROUPS = [
+    { key: 'sm', name: '图鉴小图', tier: 'core', button: 'dex', urls: function () { return mapIds(function (n) { return 'assets/pokemon/sm/' + pad3(n) + '.png'; }); } },
+    { key: 'lg', name: '大图立绘', tier: 'core', button: 'other', urls: function () { return mapIds(function (n) { return 'assets/pokemon/' + pad3(n) + '.webp'; }); } },
+    { key: 'gif', name: '出场动图', tier: 'core', button: 'other', urls: function () { return mapIds(function (n) { return 'assets/pokemon/animated/' + pad3(n) + '.gif'; }); } },
+    { key: 'gifBack', name: '背面动图', tier: 'core', button: 'other', urls: function () { return mapIds(function (n) { return 'assets/pokemon/animated/back/' + pad3(n) + '.gif'; }); } },
+    { key: 'scene', name: '场景与躲藏点', tier: 'core', button: 'other', urls: sceneUrls },
+    { key: 'battle', name: '战斗背景', tier: 'core', button: 'other', urls: battleUrls },
+    { key: 'elems', name: '乐园装饰', tier: 'core', button: 'other', urls: function () { return ELEMS.map(function (e) { return 'assets/env/ranch/elems/' + e + '.png'; }); } },
+    { key: 'pmd', name: '乐园动画帧', tier: 'core', button: 'other', urls: function () { return pmdFrames('pmd'); } },
+    { key: 'shiny', name: '闪光动画帧', tier: 'core', button: 'other', urls: function () { return pmdFrames('shiny'); } },
+    { key: 'npc', name: 'NPC 与训练师', tier: 'core', button: 'other', urls: function () { return NPCS.map(function (n) { return ['assets/npc-v6/' + n + '-bust.png', 'assets/npc-v6/' + n + '-full.png']; }).reduce(function (a, b) { return a.concat(b); }, []); } },
+    { key: 'cries', name: '宝可梦叫声', tier: 'quiet', button: 'other', urls: function () { return mapIds(function (n) { return 'assets/cries/' + pad3(n) + '.ogg'; }); } },
+    { key: 'badges', name: '徽章', tier: 'quiet', button: 'other', urls: function () { return BADGES.map(function (b) { return 'assets/hzicon/' + b + '-badge.png'; }); } },
+    { key: 'lgPng', name: '大图兜底(仅统计)', tier: 'stat', button: 'none', urls: function () { return mapIds(function (n) { return 'assets/pokemon/' + pad3(n) + '.png'; }); } }
+  ];
+
+  var cache = {};
+  function urlsOf(g) {
+    if (!cache[g.key]) {
+      try { cache[g.key] = dedupe(g.urls() || []); } catch (e) { cache[g.key] = []; }
+    }
+    return cache[g.key];
+  }
+
+  function all() { return GROUPS; }
+  function byKey(k) {
+    for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].key === k) return GROUPS[i];
+    return null;
+  }
+
+  // 按按钮/tier 汇总 URL（去重）。
+  // download('small') → dex 档；download('other') → core 的 other + quiet 档。
+  function urlsForScope(scope) {
+    var out = [];
+    for (var i = 0; i < GROUPS.length; i++) {
+      var g = GROUPS[i];
+      var take = false;
+      if (scope === 'small') take = (g.button === 'dex');
+      else if (scope === 'other') take = (g.button === 'other');
+      else if (scope === 'quiet') take = (g.tier === 'quiet');
+      else if (scope === 'core') take = (g.tier === 'core');
+      if (take) out = out.concat(urlsOf(g));
+    }
+    return dedupe(out);
+  }
+
+  // 供「我的数据」页统计：返回每组的 {key,name,tier,urls}（urls 已展开）
+  function statGroups() {
+    return GROUPS.map(function (g) {
+      return { key: g.key, name: g.name, tier: g.tier, urls: urlsOf(g) };
+    });
+  }
+
+  APP.assetsManifest = {
+    all: all,
+    byKey: byKey,
+    urlsOf: urlsOf,
+    urlsForScope: urlsForScope,
+    statGroups: statGroups
+  };
+})(window.APP);
+
+;
+
 /* ===== js/preload.js ===== */
 window.APP = window.APP || {};
 
@@ -20750,15 +20910,22 @@ window.APP = window.APP || {};
 
   APP.preload = {
     maybeStart: maybeStart,
-    // 给「我的数据」页的素材统计/一键下载复用，保证两边清单口径完全一致
+    // 给「我的数据」页的素材统计/一键下载复用，保证两边清单口径完全一致。
+    // 底层统一读 assets-manifest（唯一来源）；这里保留同名入口兼容旧代码，
+    // 并额外提供 core / all 清单，供预加载覆盖乐园动画帧等以前遗漏的素材。
     lists: {
       smallAll: smallAllList,
       largeAll: largeAllList,
       scene: sceneList,
       wildGif: wildGifList,
-      battle: battleList
+      battle: battleList,
+      core: function () { return M('core'); }
     }
   };
+
+  function M(scope) {
+    return (APP.assetsManifest && APP.assetsManifest.urlsForScope(scope)) || [];
+  }
 })(window.APP);
 
 ;
@@ -20792,21 +20959,11 @@ window.APP = window.APP || {};
     try { return new URL(u, location.href).href; } catch (e) { return u; }
   }
 
-  // 统计用的三组（与原型图一致）。大图立绘并入「图鉴立绘」按需统计，
-  // 但「下载其他素材」会把大图也一起补上。
+  // 统计/下载口径统一从 assets-manifest 读 —— 不再各写各的清单。
+  // statGroups() 返回全部 13 类（每类 {key,name,tier,urls}），这就是「完整盘点」的全部素材。
   function groups() {
-    var L = (APP.preload && APP.preload.lists) || {};
-    var small = L.smallAll ? L.smallAll() : [];
-    var large = L.largeAll ? L.largeAll() : [];
-    var wild = L.wildGif ? L.wildGif() : [];
-    var scene = L.scene ? L.scene() : [];
-    var battle = L.battle ? L.battle() : [];
-    return {
-      small: { name: '图鉴立绘', urls: small },
-      wild: { name: '出场动图', urls: wild },
-      scene: { name: '场景与擂台', urls: scene.concat(battle) },
-      _all: { small: small, large: large, wild: wild, scene: scene, battle: battle }
-    };
+    if (APP.assetsManifest && APP.assetsManifest.statGroups) return { list: APP.assetsManifest.statGroups() };
+    return { list: [] };
   }
 
   function haveSet(reqs) {
@@ -20820,37 +20977,32 @@ window.APP = window.APP || {};
     return caches.open(ASSETS).then(function (cache) { return cache.keys(); });
   }
 
-  // 统计：异步，回调 { groups:[{key,name,cached,total}], cached, total }，失败回调 null
+  // 统计：异步。groups 列出全部 13 类真实进度（含 tier=stat 的仅统计类）；
+  // cached/total 是「可下载档」(core+quiet) 合计，用于顶部进度条 —— 不含从不下载的
+  // PNG 兜底图，否则进度条永远到不了 100%。
   function stat(cb) {
-    var gs = groups();
+    var list = groups().list;
     openKeys().then(function (reqs) {
       var have = haveSet(reqs);
       var out = [], tc = 0, tt = 0;
-      ['small', 'wild', 'scene'].forEach(function (k) {
-        var g = gs[k], c = 0;
+      for (var k = 0; k < list.length; k++) {
+        var g = list[k], c = 0;
         for (var j = 0; j < g.urls.length; j++) if (have[norm(g.urls[j])]) c++;
-        out.push({ key: k, name: g.name, cached: c, total: g.urls.length });
-        tc += c; tt += g.urls.length;
-      });
+        out.push({ key: g.key, name: g.name, tier: g.tier, cached: c, total: g.urls.length });
+        if (g.tier !== 'stat') { tc += c; tt += g.urls.length; }
+      }
       cb({ groups: out, cached: tc, total: tt });
     })['catch'](function () { cb(null); });
   }
 
-  // 下载清单：small=只补图鉴小图（下载图鉴素材）；other=大图+动图+场景+擂台（下载其他素材），
-  // 刻意排除图鉴小图 —— 两个按钮分工不重叠：一个管图鉴网格，一个管其余素材。
+  // 下载清单：small=图鉴小图（下载图鉴素材）；other=其余 core 图片动画 + quiet 叫声徽章。
+  // quiet 档排在清单末尾 → 自然「最后静默下」。tier=stat 的兜底图从不进下载。
+  // 全部由 assets-manifest 统一给出，两个按钮分工不重叠。
   function targetList(kind) {
-    var g = groups()._all;
-    var urls;
-    if (kind === 'small') {
-      urls = g.small.slice();
-    } else {
-      urls = g.large.concat(g.wild, g.scene, g.battle);
+    if (APP.assetsManifest && APP.assetsManifest.urlsForScope) {
+      return APP.assetsManifest.urlsForScope(kind === 'small' ? 'small' : 'other');
     }
-    var seen = Object.create(null), out = [];
-    for (var i = 0; i < urls.length; i++) {
-      if (!seen[urls[i]]) { seen[urls[i]] = 1; out.push(urls[i]); }
-    }
-    return out;
+    return [];
   }
 
   // 下载一张，并**由页面自己写进素材池**。
@@ -21586,6 +21738,8 @@ window.APP = window.APP || {};
 })();
 
 </script>
+
+
 
 
 

@@ -162,13 +162,20 @@ window.APP = window.APP || {};
 
   APP.preload = {
     maybeStart: maybeStart,
-    // 给「我的数据」页的素材统计/一键下载复用，保证两边清单口径完全一致
+    // 给「我的数据」页的素材统计/一键下载复用，保证两边清单口径完全一致。
+    // 底层统一读 assets-manifest（唯一来源）；这里保留同名入口兼容旧代码，
+    // 并额外提供 core / all 清单，供预加载覆盖乐园动画帧等以前遗漏的素材。
     lists: {
       smallAll: smallAllList,
       largeAll: largeAllList,
       scene: sceneList,
       wildGif: wildGifList,
-      battle: battleList
+      battle: battleList,
+      core: function () { return M('core'); }
     }
   };
+
+  function M(scope) {
+    return (APP.assetsManifest && APP.assetsManifest.urlsForScope(scope)) || [];
+  }
 })(window.APP);

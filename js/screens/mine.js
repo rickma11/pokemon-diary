@@ -319,8 +319,11 @@ window.APP = window.APP || {};
       var html = '';
       for (var i = 0; i < r.groups.length; i++) {
         var g = r.groups[i];
-        html += '<li><span class="k">' + esc(g.name) + '</span><span class="v">' +
-          g.cached + ' / ' + g.total + '</span></li>';
+        var tip = g.tier === 'stat' ? '（不下）' : (g.tier === 'quiet' ? '（静默）' : '');
+        var cls = g.tier === 'stat' ? ' style="opacity:.6"' : '';
+        var done = g.total && g.cached >= g.total;
+        html += '<li' + cls + '><span class="k">' + esc(g.name) + tip + '</span><span class="v">' +
+          (done ? '✓ ' : '') + g.cached + ' / ' + g.total + '</span></li>';
       }
       html += '<li><span class="k">还差</span><span class="v">' +
         (r.total - r.cached) + ' 张</span></li>';

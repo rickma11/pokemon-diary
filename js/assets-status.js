@@ -26,21 +26,11 @@ window.APP = window.APP || {};
     try { return new URL(u, location.href).href; } catch (e) { return u; }
   }
 
-  // 统计用的三组（与原型图一致）。大图立绘并入「图鉴立绘」按需统计，
-  // 但「下载其他素材」会把大图也一起补上。
+  // 统计/下载口径统一从 assets-manifest 读 —— 不再各写各的清单。
+  // statGroups() 返回全部 13 类（每类 {key,name,tier,urls}），这就是「完整盘点」的全部素材。
   function groups() {
-    var L = (APP.preload && APP.preload.lists) || {};
-    var small = L.smallAll ? L.smallAll() : [];
-    var large = L.largeAll ? L.largeAll() : [];
-    var wild = L.wildGif ? L.wildGif() : [];
-    var scene = L.scene ? L.scene() : [];
-    var battle = L.battle ? L.battle() : [];
-    return {
-      small: { name: '图鉴立绘', urls: small },
-      wild: { name: '出场动图', urls: wild },
-      scene: { name: '场景与擂台', urls: scene.concat(battle) },
-      _all: { small: small, large: large, wild: wild, scene: scene, battle: battle }
-    };
+    if (APP.assetsManifest && APP.assetsManifest.statGroups) return { list: APP.assetsManifest.statGroups() };
+    return { list: [] };
   }
 
   function haveSet(reqs) {
@@ -54,37 +44,32 @@ window.APP = window.APP || {};
     return caches.open(ASSETS).then(function (cache) { return cache.keys(); });
   }
 
-  // 统计：异步，回调 { groups:[{key,name,cached,total}], cached, total }，失败回调 null
+  // 统计：异步。groups 列出全部 13 类真实进度（含 tier=stat 的仅统计类）；
+  // cached/total 是「可下载档」(core+quiet) 合计，用于顶部进度条 —— 不含从不下载的
+  // PNG 兜底图，否则进度条永远到不了 100%。
   function stat(cb) {
-    var gs = groups();
+    var list = groups().list;
     openKeys().then(function (reqs) {
       var have = haveSet(reqs);
       var out = [], tc = 0, tt = 0;
-      ['small', 'wild', 'scene'].forEach(function (k) {
-        var g = gs[k], c = 0;
+      for (var k = 0; k < list.length; k++) {
+        var g = list[k], c = 0;
         for (var j = 0; j < g.urls.length; j++) if (have[norm(g.urls[j])]) c++;
-        out.push({ key: k, name: g.name, cached: c, total: g.urls.length });
-        tc += c; tt += g.urls.length;
-      });
+        out.push({ key: g.key, name: g.name, tier: g.tier, cached: c, total: g.urls.length });
+        if (g.tier !== 'stat') { tc += c; tt += g.urls.length; }
+      }
       cb({ groups: out, cached: tc, total: tt });
     })['catch'](function () { cb(null); });
   }
 
-  // 下载清单：small=只补图鉴小图（下载图鉴素材）；other=大图+动图+场景+擂台（下载其他素材），
-  // 刻意排除图鉴小图 —— 两个按钮分工不重叠：一个管图鉴网格，一个管其余素材。
+  // 下载清单：small=图鉴小图（下载图鉴素材）；other=其余 core 图片动画 + quiet 叫声徽章。
+  // quiet 档排在清单末尾 → 自然「最后静默下」。tier=stat 的兜底图从不进下载。
+  // 全部由 assets-manifest 统一给出，两个按钮分工不重叠。
   function targetList(kind) {
-    var g = groups()._all;
-    var urls;
-    if (kind === 'small') {
-      urls = g.small.slice();
-    } else {
-      urls = g.large.concat(g.wild, g.scene, g.battle);
+    if (APP.assetsManifest && APP.assetsManifest.urlsForScope) {
+      return APP.assetsManifest.urlsForScope(kind === 'small' ? 'small' : 'other');
     }
-    var seen = Object.create(null), out = [];
-    for (var i = 0; i < urls.length; i++) {
-      if (!seen[urls[i]]) { seen[urls[i]] = 1; out.push(urls[i]); }
-    }
-    return out;
+    return [];
   }
 
   // 下载一张，并**由页面自己写进素材池**。
