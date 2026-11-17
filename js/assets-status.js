@@ -45,8 +45,21 @@ window.APP = window.APP || {};
   }
 
   // 统计：异步。groups 列出全部 13 类真实进度（含 tier=stat 的仅统计类）；
-  // cached/total 是「可下载档」(core+quiet) 合计，用于顶部进度条 —— 不含从不下载的
+  // buckets 是按「必要 / 额外」两档的汇总，供卡片顶部两条进度条。
+  // cached/total 是「可下载档」(core+quiet) 合计，用于兼容旧调用 —— 不含从不下载的
   // PNG 兜底图，否则进度条永远到不了 100%。
+  function bucketStat(have) {
+    var defs = (APP.assetsManifest && APP.assetsManifest.statBuckets)
+      ? APP.assetsManifest.statBuckets() : [];
+    var out = [];
+    for (var b = 0; b < defs.length; b++) {
+      var c = 0, urls = defs[b].urls;
+      for (var j = 0; j < urls.length; j++) if (have[norm(urls[j])]) c++;
+      out.push({ key: defs[b].key, name: defs[b].name, cached: c, total: urls.length });
+    }
+    return out;
+  }
+
   function stat(cb) {
     var list = groups().list;
     openKeys().then(function (reqs) {
@@ -55,19 +68,24 @@ window.APP = window.APP || {};
       for (var k = 0; k < list.length; k++) {
         var g = list[k], c = 0;
         for (var j = 0; j < g.urls.length; j++) if (have[norm(g.urls[j])]) c++;
-        out.push({ key: g.key, name: g.name, tier: g.tier, cached: c, total: g.urls.length });
+        out.push({ key: g.key, name: g.name, tier: g.tier, bucket: g.bucket, cached: c, total: g.urls.length });
         if (g.tier !== 'stat') { tc += c; tt += g.urls.length; }
       }
-      cb({ groups: out, cached: tc, total: tt });
+      cb({ groups: out, buckets: bucketStat(have), cached: tc, total: tt });
     })['catch'](function () { cb(null); });
   }
 
-  // 下载清单：small=图鉴小图（下载图鉴素材）；other=其余 core 图片动画 + quiet 叫声徽章。
-  // quiet 档排在清单末尾 → 自然「最后静默下」。tier=stat 的兜底图从不进下载。
-  // 全部由 assets-manifest 统一给出，两个按钮分工不重叠。
+  // 下载清单：
+  //   necessary —— 必要资源，只有图鉴小图，前期够用，先下这一档就能正常玩。
+  //   extra     —— 额外资源，大图/动图/场景/战斗/乐园帧等，后期解锁的功能才用。
+  //   small / other —— 旧入口，保留给历史调用（测试、外部脚本），分别等价上面两档。
+  // quiet 档（叫声/徽章）排在 extra 末尾 → 自然「最后静默下」。tier=stat 兜底图从不进下载。
   function targetList(kind) {
-    if (APP.assetsManifest && APP.assetsManifest.urlsForScope) {
-      return APP.assetsManifest.urlsForScope(kind === 'small' ? 'small' : 'other');
+    if (kind === 'necessary' || kind === 'small' || kind === 'dex') {
+      return APP.assetsManifest.urlsForBucket('necessary');
+    }
+    if (APP.assetsManifest && APP.assetsManifest.urlsForBucket) {
+      return APP.assetsManifest.urlsForBucket('extra');
     }
     return [];
   }
@@ -200,7 +218,10 @@ window.APP = window.APP || {};
     return el;
   }
 
-  function labelOf(kind) { return kind === 'small' ? '图鉴素材' : '其他素材'; }
+  function labelOf(kind) {
+    if (kind === 'necessary' || kind === 'small') return '必要资源';
+    return '额外资源';
+  }
 
   function progressHtml(j) {
     var pct = j.total ? Math.round((j.done + j.failed) / j.total * 100) : 0;

@@ -131,10 +131,33 @@ window.APP = window.APP || {};
     return dedupe(out);
   }
 
+  // 下载档位（bucket）：复用 button 字段做归类，不另建一套配置。
+  //   necessary 必要资源 —— button=dex，只有图鉴小图（386 张 / 3.2M）。
+  //     状态栏头像、选宠、养成页、家人卡全靠它；前期 1-3 天靠这一档就够用。
+  //   extra     额外资源 —— button=other，大图/出场动图/场景/战斗/乐园动画帧/叫声等。
+  //     捕捉(Lv5)、战斗(Lv7)、乐园(打卡7次)、道馆(Lv10) 都是几天后才陆续开放，
+  //     没必要首次下载就全下 —— 用到时再下，或按需由 preload 预热。
+  //   stat      仅统计   —— button=none，PNG 兜底大图，永不下载。
+  function bucketOf(g) {
+    return g.button === 'dex' ? 'necessary' : (g.button === 'none' ? 'stat' : 'extra');
+  }
+  function urlsForBucket(bucket) {
+    if (bucket === 'necessary') return urlsForScope('small');
+    if (bucket === 'extra') return urlsForScope('other');
+    return []; // stat 与未知档位一律不下
+  }
+  // 供「我的数据」页按档显示两条进度：只统计可下载档，不含 stat。
+  function statBuckets() {
+    return [
+      { key: 'necessary', name: '必要资源', urls: urlsForBucket('necessary') },
+      { key: 'extra', name: '额外资源', urls: urlsForBucket('extra') }
+    ];
+  }
+
   // 供「我的数据」页统计：返回每组的 {key,name,tier,urls}（urls 已展开）
   function statGroups() {
     return GROUPS.map(function (g) {
-      return { key: g.key, name: g.name, tier: g.tier, urls: urlsOf(g) };
+      return { key: g.key, name: g.name, tier: g.tier, bucket: bucketOf(g), urls: urlsOf(g) };
     });
   }
 
@@ -143,6 +166,9 @@ window.APP = window.APP || {};
     byKey: byKey,
     urlsOf: urlsOf,
     urlsForScope: urlsForScope,
-    statGroups: statGroups
+    statGroups: statGroups,
+    bucketOf: bucketOf,
+    urlsForBucket: urlsForBucket,
+    statBuckets: statBuckets
   };
 })(window.APP);

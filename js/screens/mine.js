@@ -278,55 +278,96 @@ window.APP = window.APP || {};
       container.addEventListener('click', onClick);
       bound = true;
     }
+    var detailToggle = document.getElementById('assetsDetailToggle');
+    if (detailToggle) {
+      detailToggle.onclick = function () {
+        var list = document.getElementById('assetsList');
+        if (!list) return;
+        var show = list.style.display === 'none';
+        list.style.display = show ? '' : 'none';
+        detailToggle.textContent = show ? '分类明细（点此收起）' : '分类明细（点开查看）';
+      };
+    }
 
     // 统计要读 Cache API，异步结果出来后再填进度条
     refreshAssetsStat();
   }
 
   // ===== 素材资源卡 =====
+  // 两档下载：必要（图鉴小图，前期够用）/ 额外（大图动图场景等，后期功能才用）。
+  // data-act 沿用 dl-small / dl-all 旧值，避免外部脚本与测试的选择器失效。
+  function bucketRow(key, name, hint) {
+    return '<li><span class="k"><b>' + name + '</b> <i class="bucket-hint">' + hint + '</i></span>' +
+      '<span class="v" id="assetsBucket' + key + '">读取中</span></li>' +
+      '<li><div class="asset-bar" style="margin:2px 0 10px"><div class="asset-bar__fill" id="assetsBar' + key + '" style="width:0%"></div></div></li>';
+  }
   function assetsCardHtml() {
     var busy = (APP.assetsStatus && APP.assetsStatus.isDownloading && APP.assetsStatus.isDownloading());
     return '<section class="card" id="assetsCard"><h2>素材资源' +
       '<span class="card__side" id="assetsSide">' + (busy ? '下载中' : '读取中') + '</span></h2>' +
-      '<div class="asset-bar"><div class="asset-bar__fill" id="assetsBar" style="width:0%"></div></div>' +
-      '<ul class="list" id="assetsList"><li><span class="k">正在读取缓存进度…</span></li></ul>' +
+      '<ul class="list" id="assetsBuckets">' +
+        bucketRow('Necessary', '必要资源', '前期够用，先下这个') +
+        bucketRow('Extra', '额外资源', '后期功能用到，可稍后再下') +
+      '</ul>' +
       '<div class="row asset-actions">' +
-        '<button type="button" class="btn" data-act="dl-small">下载图鉴素材</button>' +
-        '<button type="button" class="btn" data-act="dl-all">下载其他素材</button>' +
+        '<button type="button" class="btn btn--primary" data-act="dl-small">下载必要资源</button>' +
+        '<button type="button" class="btn" data-act="dl-all">下载额外资源</button>' +
         '<button type="button" class="btn btn--sm" data-act="assets-refresh">刷新</button>' +
       '</div>' +
+      '<p class="field__hint" id="assetsDetailToggle" style="cursor:pointer;margin-top:10px">分类明细（点开查看）</p>' +
+      '<ul class="list" id="assetsList" style="display:none"></ul>' +
       '</section>';
   }
 
-  // 异步统计后填充进度条与明细
+  // 异步统计后填充两档进度条与明细
+  function paintBucket(key, b) {
+    var txt = document.getElementById('assetsBucket' + key);
+    var bar = document.getElementById('assetsBar' + key);
+    if (!txt || !bar || !b) return;
+    var pct = b.total ? Math.round(b.cached / b.total * 100) : 0;
+    txt.textContent = b.cached + ' / ' + b.total + ' 张 · ' + pct + '%';
+    bar.style.width = pct + '%';
+  }
   function refreshAssetsStat() {
     if (!APP.assetsStatus || !APP.assetsStatus.stat) return;
     var side = document.getElementById('assetsSide');
     if (side) side.textContent = '读取中';
     APP.assetsStatus.stat(function (r) {
       var side = document.getElementById('assetsSide');
-      var bar = document.getElementById('assetsBar');
       var list = document.getElementById('assetsList');
-      if (!side || !bar || !list) return; // 页面已切走
+      if (!side || !list) return; // 页面已切走（两档节点可能在旧 DOM）
       if (!r) {
         side.textContent = '不可用';
+        list.style.display = '';
         list.innerHTML = '<li><span class="k">当前环境不支持读取缓存（请用在线地址打开）</span></li>';
         return;
       }
-      var pct = r.total ? Math.round(r.cached / r.total * 100) : 0;
-      side.textContent = '已缓存 ' + pct + '%';
-      bar.style.width = pct + '%';
-      var html = '';
+      var buckets = r.buckets || [];
+      for (var x = 0; x < buckets.length; x++) {
+        var cap = buckets[x].key.charAt(0).toUpperCase() + buckets[x].key.slice(1);
+        paintBucket(cap, buckets[x]);
+      }
+      var allDone = true;
+      for (var q = 0; q < buckets.length; q++) if (buckets[q].cached < buckets[q].total) allDone = false;
+      side.textContent = allDone ? '已缓存' : '按档缓存';
+
+      // 明细按 bucket 分组，仍显示完整 13 类（不丢「完整盘点」）
+      var html = '', lastBucket = '';
       for (var i = 0; i < r.groups.length; i++) {
         var g = r.groups[i];
+        var bk = g.bucket || (g.tier === 'stat' ? 'stat' : 'extra');
+        if (bk !== lastBucket) {
+          html += '<li class="bucket-sep"><span class="k">' +
+            (bk === 'necessary' ? '— 必要资源 —' : bk === 'stat' ? '— 仅统计（不下）—' : '— 额外资源 —') +
+            '</span></li>';
+          lastBucket = bk;
+        }
         var tip = g.tier === 'stat' ? '（不下）' : (g.tier === 'quiet' ? '（静默）' : '');
         var cls = g.tier === 'stat' ? ' style="opacity:.6"' : '';
         var done = g.total && g.cached >= g.total;
         html += '<li' + cls + '><span class="k">' + esc(g.name) + tip + '</span><span class="v">' +
           (done ? '✓ ' : '') + g.cached + ' / ' + g.total + '</span></li>';
       }
-      html += '<li><span class="k">还差</span><span class="v">' +
-        (r.total - r.cached) + ' 张</span></li>';
       list.innerHTML = html;
     });
   }
@@ -334,19 +375,22 @@ window.APP = window.APP || {};
   // 下载进度实时回填卡片（关掉弹窗也看得到后台在跑多少）
   APP.assetsCardProgress = function (j) {
     var side = document.getElementById('assetsSide');
-    var bar = document.getElementById('assetsBar');
-    var list = document.getElementById('assetsList');
-    if (!side || !bar || !list) return; // 页面已切走
+    if (!side) return; // 页面已切走
     if (!j) { // 下载结束 → 重新统计真实缓存数
       refreshAssetsStat();
       return;
     }
     var pct = j.total ? Math.round((j.done + j.failed) / j.total * 100) : 0;
-    side.textContent = '下载中 ' + pct + '%';
-    bar.style.width = pct + '%';
-    var t = '已下载 ' + j.done + ' / ' + j.total + ' 张';
-    if (j.failed) t += '，失败 ' + j.failed + ' 张';
-    list.innerHTML = '<li><span class="k">' + esc(t) + '</span></li>' +
+    side.textContent = (j.kind === 'necessary' || j.kind === 'small' ? '下载必要' : '下载额外') + ' ' + pct + '%';
+    var key = (j.kind === 'necessary' || j.kind === 'small') ? 'Necessary' : 'Extra';
+    var txt = document.getElementById('assetsBucket' + key);
+    var bar = document.getElementById('assetsBar' + key);
+    if (txt) txt.textContent = '已下 ' + j.done + ' / ' + j.total + ' 张' + (j.failed ? '（失败 ' + j.failed + '）' : '');
+    if (bar) bar.style.width = pct + '%';
+    var list = document.getElementById('assetsList');
+    if (list) list.innerHTML = '<li><span class="k">' +
+      '下载中：' + (j.kind === 'necessary' || j.kind === 'small' ? '必要资源' : '额外资源') +
+      ' ' + j.done + ' / ' + j.total + ' 张</span></li>' +
       '<li><span class="k">完成后会自动刷新缓存统计</span></li>';
   };
 
@@ -419,8 +463,9 @@ window.APP = window.APP || {};
     var act = btn.getAttribute('data-act');
     if (act === 'reselect-char') { if (APP.onboarding && APP.onboarding.reselect) APP.onboarding.reselect(); return; }
     if (act === 'add-to-home') { if (APP.pwaInstall && APP.pwaInstall.open) APP.pwaInstall.open(); return; }
-    if (act === 'dl-small') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('small'); return; }
-    if (act === 'dl-all') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('all'); return; }
+    // data-act 保留旧值以兼容外部选择器，实际传 bucket 新 kind
+    if (act === 'dl-small') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('necessary'); return; }
+    if (act === 'dl-all') { if (APP.assetsStatus && APP.assetsStatus.downloadWithModal) APP.assetsStatus.downloadWithModal('extra'); return; }
     if (act === 'assets-refresh') {
       // 给个可见反馈：点了要能看出在读，读完再显示最终数字
       var side = document.getElementById('assetsSide');

@@ -3920,6 +3920,21 @@ body.ink .lock-tip { color: #7A6A55; }
 .asset-actions [data-act="assets-refresh"] {
   margin-left: auto;
 }
+/* 素材两档：档位小字 + 明细分组标题 */
+.bucket-hint {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--muted, #666d80);
+  font-weight: 400;
+  margin-left: 4px;
+}
+.list li.bucket-sep {
+  justify-content: flex-start;
+  color: var(--muted, #666d80);
+  font-size: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line-soft, #e6eaf3);
+}
 /* 数据备份 + 版本信息：同一行左右等宽等高；窄屏自动堆叠 */
 .card-duo {
   display: grid;
