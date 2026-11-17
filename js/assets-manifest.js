@@ -58,11 +58,15 @@ window.APP = window.APP || {};
     return ids386().map(fn);
   }
 
+  var ESSENTIAL_SCENE = 'assets/catch/scenes/marsh.webp'; // 外出捕捉默认场景
+  var ESSENTIAL_BATTLE = 'assets/pic/1.webp';             // 外出战斗默认擂台
+
   // 场景 / 躲藏点：从 catchData 主题里取实际引用的 .webp（避免统计到不用的 PNG 兜底）
+  // 默认场景 marsh 归到 essentials（必要档），这里排除掉避免两档重复统计。
   function sceneUrls() {
     var out = [], themes = (APP.catchData && APP.catchData.THEMES) || [];
     for (var i = 0; i < themes.length; i++) {
-      out.push(themes[i].scene);
+      if (themes[i].scene !== ESSENTIAL_SCENE) out.push(themes[i].scene);
       var hides = themes[i].hides || [];
       for (var j = 0; j < hides.length; j++) out.push(hides[j]);
     }
@@ -71,7 +75,10 @@ window.APP = window.APP || {};
 
   function battleUrls() {
     var out = [];
-    for (var i = 1; i <= 9; i++) out.push('assets/pic/' + i + '.webp');
+    for (var i = 1; i <= 9; i++) {
+      var u = 'assets/pic/' + i + '.webp';
+      if (u !== ESSENTIAL_BATTLE) out.push(u); // 默认擂台归 essentials
+    }
     return out;
   }
 
@@ -87,6 +94,9 @@ window.APP = window.APP || {};
   // 所以 urls 存函数，真正统计/下载时才调用）。
   var GROUPS = [
     { key: 'sm', name: '图鉴小图', tier: 'core', button: 'dex', urls: function () { return mapIds(function (n) { return 'assets/pokemon/sm/' + pad3(n) + '.png'; }); } },
+    // 功能解锁时保证有图：乐园背景 + 外出捕捉默认场景 + 外出战斗默认擂台，
+    // 三张并入「必要资源」，开局就下好，避免 Lv5/Lv7/打卡7次解锁后第一次进页面现下卡顿。
+    { key: 'essentials', name: '功能默认背景', tier: 'core', button: 'dex', urls: function () { return ['assets/env/ranch/bg.jpg', ESSENTIAL_SCENE, ESSENTIAL_BATTLE]; } },
     { key: 'lg', name: '大图立绘', tier: 'core', button: 'other', urls: function () { return mapIds(function (n) { return 'assets/pokemon/' + pad3(n) + '.webp'; }); } },
     { key: 'gif', name: '出场动图', tier: 'core', button: 'other', urls: function () { return mapIds(function (n) { return 'assets/pokemon/animated/' + pad3(n) + '.gif'; }); } },
     { key: 'gifBack', name: '背面动图', tier: 'core', button: 'other', urls: function () { return mapIds(function (n) { return 'assets/pokemon/animated/back/' + pad3(n) + '.gif'; }); } },

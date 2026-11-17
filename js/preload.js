@@ -155,8 +155,14 @@ window.APP = window.APP || {};
     if (!p) return; // 还没选宝可梦：新手流程没走完，先不预热
     started = true;
     setTimeout(function () {
-      // 主力宝可梦 → 自己的立绘 → 捕捉场景 → 野外 GIF → 战斗背景
-      drain(mainList().concat(ownedList(), sceneList(), wildGifList(), battleList()));
+      // 主力宝可梦 → 自己的立绘 → 功能默认背景 → 捕捉场景 → 野外 GIF → 战斗背景
+      // 乐园背景 bg.jpg 以前没预热（它是 CSS background-image，首次进乐园会现下卡顿），
+      // 现在和捕捉 marsh / 战斗 pic1 一起放进 essentials，开局静默备好。
+      // 只预热三张「功能默认背景」（乐园 bg / 捕捉 marsh / 战斗 pic1），
+      // 不碰 386 张小图——那是「必要资源」按钮手动下的，别一开机就发 386 个请求。
+      var g = APP.assetsManifest && APP.assetsManifest.byKey && APP.assetsManifest.byKey('essentials');
+      var essentialBg = (g && APP.assetsManifest.urlsOf) ? APP.assetsManifest.urlsOf(g) : [];
+      drain(mainList().concat(ownedList(), essentialBg, sceneList(), wildGifList(), battleList()));
     }, 1500);
   }
 

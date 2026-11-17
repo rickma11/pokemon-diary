@@ -20,6 +20,9 @@ window.APP = window.APP || {};
     '#docOverlay .doc-line + .doc-line{border-top:1px dashed rgba(90,70,50,.16);margin-top:2px}' +
     '#docOverlay .doc-line:first-child{font-weight:700;color:#3a2c1c;font-size:13px}' +
     '#docOverlay .doc-reward{display:inline-block;margin-top:10px;background:#FFF3D6;border:1px solid #E5C77A;color:#8A5A12;border-radius:10px;padding:5px 10px;font-size:12px;font-weight:700}' +
+    '#docOverlay .doc-dl{display:flex;align-items:center;gap:8px;margin-top:10px;background:#F1EFE8;border:1px solid rgba(90,70,50,.14);border-radius:10px;padding:8px 10px;cursor:pointer}' +
+    '#docOverlay .doc-dl span{flex:1;font-size:12px;color:#444441;line-height:1.5}' +
+    '#docOverlay .doc-dl b{flex:none;font-size:12px;font-weight:700;color:#185FA5;white-space:nowrap}' +
     '#docOverlay .doc-actions{display:flex;gap:8px;margin-top:14px}' +
     '#docOverlay .doc-go{flex:1;min-width:0;background:#e0542f;color:#fff;border:none;border-radius:12px;padding:11px 8px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}' +
     '#docOverlay .doc-ok{flex:none;background:#f1e8d8;color:#5a4632;border:none;border-radius:12px;padding:11px 12px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}' +
@@ -253,15 +256,19 @@ window.APP = window.APP || {};
       go: '#/care', goLabel: '去训练' };
     if (id === 'ranch') return { f: '宝可梦乐园开放啦！',
       t: [openLine('ranch', '乐园'), '可以给伙伴安排帮手，也能陪它一起玩。', '每天还会结算一次羁绊值呢。'],
+      dl: '乐园动画和装饰素材较多，想要更流畅可去下载。',
       go: '#/ranch', goLabel: '去乐园看看' };
     if (id === 'exchange') return { f: '兑换中心开放啦！',
       t: [openLine('exchange', '兑换中心'), '攒下的碎片能换精灵球和战斗券。', '每天完成日程任务就能慢慢攒起来。'],
       go: '#/exchange', goLabel: '去兑换中心' };
+    // 捕捉与图鉴同档播报（dex 一并 seen.catch），默认场景已进必要档静默备好。
     if (id === 'dex') return { f: '图鉴和野外探险开放啦！',
       t: ['主力升到 Lv.5 了，图鉴和野外捕捉都开放了。', '先去图鉴认识更多宝可梦吧。', '再出发去野外收服新伙伴。'],
+      dl: '默认场景已备好，想看更多场景和出场动画可去下载。',
       go: '#/dex', goLabel: '去看看图鉴' };
     if (id === 'battle') return { f: '外出战斗开放啦！',
       t: ['主力升到 Lv.7 了，可以带伙伴去和别的训练师对战了。', '在探险页切到「外出战斗」就能找到。', '赢了能拿奖励和经验呢。'],
+      dl: '默认擂台已备好，想看更多战斗背景可去下载。',
       go: '#/catch', goLabel: '去外出战斗' };
     if (id === 'gym') return { f: '道馆挑战开放啦！',
       t: ['主力突破 Lv.10 了，道馆在等你挑战。', '在探险页切到「道馆挑战」就能找到。', '赢了可以拿徽章，还能攒心愿星。'],
@@ -290,6 +297,11 @@ window.APP = window.APP || {};
     var img = APP.DOCTOR_ART || 'assets/doctor-full.png';
     var go = o.go || '';
     var goLabel = o.goLabel || '去看看';
+    // 素材提示条：默认背景已静默保底，这里只是"想看更多可去下载"的软引导，
+    // 不是"没图了快下载"的强制拦截。只在这几档解锁讲解里带 dl 字段时出现。
+    var dlTip = o.dl
+      ? '<div class="doc-dl" data-doc-dl="1"><span>' + esc(o.dl) + '</span><b>去下载 →</b></div>'
+      : '';
     el.innerHTML =
       '<div class="doc-bg" data-doc-close="1"></div>' +
       '<div class="doc-sheet">' +
@@ -298,6 +310,7 @@ window.APP = window.APP || {};
           (o.f ? '<div class="doc-f">' + esc(o.f) + '</div>' : '') +
           '<div class="doc-t">' + docBody(o.t) + '</div>' +
           (o.reward ? '<div class="doc-reward">🎁 解锁奖励：' + esc(o.reward) + ' 已到账</div>' : '') +
+          dlTip +
           '<div class="doc-actions">' +
             (go ? '<button type="button" class="doc-go" data-doc-go="1">' + esc(goLabel) + ' →</button>' : '') +
             '<button type="button" class="doc-ok" data-doc-ok="1">知道了</button>' +
@@ -310,6 +323,14 @@ window.APP = window.APP || {};
     el.classList.add('is-in');
     el.onclick = function (e) {
       var t = e.target;
+      // 提示条内部是 <span>/<b>，点它们时 e.target 是子元素 → 用 closest 命中整条
+      var dlNode = (t && t.closest) ? t.closest('[data-doc-dl]') : null;
+      if (dlNode) {
+        closeDoc();
+        window.location.hash = '#/mine'; // 直达「我的数据」下载素材
+        setTimeout(pumpDoc, 240);        // 推进队列：同一刻解锁多档时后面的讲解照播
+        return;
+      }
       if (t.getAttribute && t.getAttribute('data-doc-go')) {
         closeDoc();
         if (go) window.location.hash = go;

@@ -77,10 +77,13 @@ html = html.replace(/src="assets\/tiny\/(\d+)\.webp"/g, (all, id) => {
 })();
 
 // ---- 4) 注入页面版本号（与 SW 缓存版本号同源，供「我的数据-版本信息」显示）----
-// 版本号唯一真相在 sw.js 的 var CACHE='pokedex-checkin-vNN'，这里读出来注入，
-// 免得页面里再写死一个数字、每次发版漏改。读不到就留空（页面显示 —）。
+// 版本号唯一真相在 sw.js 的 var CACHE='pokedex-checkin-<版本号>'，这里读出来注入，
+// 免得页面里再写死一个数字、每次发版漏改。兼容两种格式：
+//   旧：pokedex-checkin-v100
+//   新：pokedex-checkin-20261117.01（当天日期 + 累计编号）
+// 读不到就留空（页面显示 —）。
 const swText = read('sw.js');
-const m = swText.match(/pokedex-checkin-(v\d+)/);
+const m = swText.match(/pokedex-checkin-(v\d+|\d{8}\.\d+)/);
 const buildVer = m ? m[1] : '';
 html = html.replace('<!DOCTYPE html>', () =>
   '<!DOCTYPE html>\n<!-- 由 build.js 从 index.src.html 自动生成，请勿直接编辑；改源码后运行 node build.js -->' +
