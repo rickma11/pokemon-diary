@@ -400,13 +400,39 @@ window.APP = window.APP || {};
   function initRanchSprites(container) {
     ranchTimers.forEach(clearInterval); ranchTimers = [];
     var M = window.PMD_MANIFEST; if (!M) return;
+    var SHEETS = window.PMD_SHEET_INDEX || {};
     var order = ['walk', 'idle', 'attack', 'charge'];
     container.querySelectorAll('.ranch-pm__spr').forEach(function (spr) {
       var pm = spr.parentNode, dex = pm.getAttribute('data-dex'), meta = M[dex];
       if (!meta) return;
+      // 图集：一只一张竖排图，切动作只改 background-position-y；x 帧动画照旧。
+      var sheet = SHEETS.pmd && SHEETS.pmd[dex];
+      function applyAct(a, animate) {
+        var d = meta[a]; if (!d) return;
+        spr.style.width = d.fw + 'px'; spr.style.height = d.fh + 'px';
+        spr.style.setProperty('--fr', d.n);
+        spr.style.setProperty('--dist', '-' + (d.fw * d.n) + 'px');
+        spr.style.setProperty('--dur', (a === 'idle' ? 0.9 : (a === 'attack' ? 0.5 : 0.7)) + 's');
+        if (sheet && sheet.acts[a]) {
+          // 换动作时重启 x 动画，避免沿用上一动作的帧进度；y 用负值把对应行上移到视窗
+          if (animate) { spr.style.animation = 'none'; void spr.offsetWidth; spr.style.animation = ''; }
+          spr.style.backgroundImage = "url('assets/pmd-sheets/" + dex + ".png')";
+          spr.style.backgroundPositionY = -(sheet.acts[a].y) + 'px';
+        } else {
+          // 回退：图集缺该动作时用旧单图（兼容未生成的 dex）
+          if (animate) { spr.style.animation = 'none'; void spr.offsetWidth; spr.style.animation = ''; }
+          spr.style.backgroundPositionY = '0px';
+          spr.style.backgroundImage = "url('assets/pmd-sliced/" + dex + "/" + a + ".png')";
+        }
+      }
       if (pm.classList.contains('is-rest')) {
         var hh = meta.hurt || meta.idle;
-        spr.style.backgroundImage = "url('assets/pmd-sliced/" + dex + "/hurt.png')";
+        if (sheet && sheet.acts.hurt) {
+          spr.style.backgroundImage = "url('assets/pmd-sheets/" + dex + ".png')";
+          spr.style.backgroundPositionY = -(sheet.acts.hurt.y) + 'px';
+        } else {
+          spr.style.backgroundImage = "url('assets/pmd-sliced/" + dex + "/hurt.png')";
+        }
         spr.style.width = hh.fw + 'px'; spr.style.height = hh.fh + 'px';
         spr.style.setProperty('--fr', hh.n);
         spr.style.setProperty('--dist', '-' + (hh.fw * hh.n) + 'px');
@@ -414,16 +440,8 @@ window.APP = window.APP || {};
         spr.classList.add('is-hungry');
         return;
       }
-      var acts = {};
-      order.forEach(function (a) {
-        if (meta[a]) acts[a] = { url: 'assets/pmd-sliced/' + dex + '/' + a + '.png', fw: meta[a].fw, fh: meta[a].fh, n: meta[a].n };
-      });
-      var w0 = acts.walk;
-      spr.style.backgroundImage = "url('" + w0.url + "')";
-      spr.style.width = w0.fw + 'px'; spr.style.height = w0.fh + 'px';
-      spr.style.setProperty('--fr', w0.n);
-      spr.style.setProperty('--dist', '-' + (w0.fw * w0.n) + 'px');
-      spr.style.setProperty('--dur', '0.7s');
+      // 用 walk 起手
+      applyAct('walk', false);
       spr.style.filter = buildOutline(RANCH_VIS.ol);
       // 个性化动作序列：加权池洗牌（散步/发呆多、攻击/蓄力少）+ 每只随机切换节奏，
       // 打破之前全体按同一顺序循环的高重复感
@@ -437,12 +455,7 @@ window.APP = window.APP || {};
       var seqIdx = 0;
       var t = setInterval(function () {
         seqIdx = (seqIdx + 1) % seq.length;
-        var a = seq[seqIdx], d = acts[a]; if (!d) return;
-        spr.style.backgroundImage = "url('" + d.url + "')";
-        spr.style.width = d.fw + 'px'; spr.style.height = d.fh + 'px';
-        spr.style.setProperty('--fr', d.n);
-        spr.style.setProperty('--dist', '-' + (d.fw * d.n) + 'px');
-        spr.style.setProperty('--dur', (a === 'idle' ? 0.9 : (a === 'attack' ? 0.5 : 0.7)) + 's');
+        applyAct(seq[seqIdx], true);
       }, 2200 + Math.floor(Math.random() * 1200));
       ranchTimers.push(t);
     });

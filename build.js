@@ -76,6 +76,38 @@ html = html.replace(/src="assets\/tiny\/(\d+)\.webp"/g, (all, id) => {
   console.log('帧索引校验: pmd ' + diskPmd + ' dex / shiny ' + diskShiny + ' dex ✓');
 })();
 
+// ---- 3.6) 校验图集索引：拼图后图集数与磁盘一致，且数=原帧 dex 数 ----
+(function checkSheetIndex() {
+  const idxFile = 'js/pmd-sheet-index.js';
+  if (!exists(idxFile)) throw new Error('缺 ' + idxFile + '（乐园动画图集索引）');
+  const txt = read(idxFile);
+  const json = txt.replace(/^window\.PMD_SHEET_INDEX\s*=\s*/, '').replace(/;\s*$/, '');
+  let idx;
+  try { idx = JSON.parse(json); } catch (e) { throw new Error('图集索引 JSON 解析失败: ' + e.message); }
+  function count(dir) {
+    if (!exists(dir)) return 0;
+    return fs.readdirSync(abs(dir)).filter(f => /\.png$/.test(f)).length;
+  }
+  function countDirs(dir) {
+    if (!exists(dir)) return 0;
+    return fs.readdirSync(abs(dir)).filter(function (f) {
+      return fs.statSync(abs(dir + '/' + f)).isDirectory();
+    }).length;
+  }
+  const pairs = [
+    ['pmd', count('assets/pmd-sheets'), countDirs('assets/pmd-sliced')],
+    ['shiny', count('assets/pmd-sheets-shiny'), countDirs('assets/pmd-sliced-shiny')]
+  ];
+  for (const [key, sheetFiles, srcDex] of pairs) {
+    const n = idx[key] ? Object.keys(idx[key]).length : -1;
+    if (n !== sheetFiles || n !== srcDex) {
+      throw new Error('图集索引过期：' + key + ' 索引=' + n + ' 图集文件=' + sheetFiles +
+        ' 原帧dex=' + srcDex + '。请重跑 tools/sprite-sheet-proto/build-all-sheets.js');
+    }
+  }
+  console.log('图集索引校验: pmd ' + pairs[0][1] + ' / shiny ' + pairs[1][1] + ' 张 ✓');
+})();
+
 // ---- 4) 注入页面版本号（与 SW 缓存版本号同源，供「我的数据-版本信息」显示）----
 // 版本号唯一真相在 sw.js 的 var CACHE='pokedex-checkin-<版本号>'，这里读出来注入，
 // 免得页面里再写死一个数字、每次发版漏改。兼容两种格式：

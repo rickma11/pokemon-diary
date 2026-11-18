@@ -18,25 +18,17 @@ window.APP = window.APP || {};
   //   other—— 「下载其他素材」按钮（其余 core + quiet）
   //   none —— 只在统计里显示，不归任何下载按钮
 
-  // 乐园/探险里一只宝可梦的动画帧。用构建时扫描磁盘生成的精确索引
-  // （js/pmd-frame-index.js），而不是「dex × 6 动作」硬推 —— 因为部分 dex 缺动作，
-  // 硬推会多报数百张并制造一串 404。索引里每个 dex 实际有哪些动作都记好了。
-  var ACT_NAME = { w: 'walk', i: 'idle', a: 'attack', h: 'hurt', f: 'faint', c: 'charge' };
-  function pmdFrames(which) {
-    var idx = window.PMD_FRAME_INDEX || {};
-    var str = which === 'shiny' ? idx.shiny : idx.pmd;
-    if (!str) return [];
-    var base = which === 'shiny' ? 'assets/pmd-sliced-shiny/' : 'assets/pmd-sliced/';
-    var out = [], entries = str.split(';'), i, j;
-    for (i = 0; i < entries.length; i++) {
-      var colon = entries[i].indexOf(':');
-      if (colon < 0) continue;
-      var dex = entries[i].slice(0, colon), acts = entries[i].slice(colon + 1);
-      for (j = 0; j < acts.length; j++) {
-        var nm = ACT_NAME[acts[j]];
-        if (nm) out.push(base + dex + '/' + nm + '.png');
-      }
-    }
+  // 乐园/探险里一只宝可梦的动画帧。
+  // 新版：每只 6 个动作帧条已竖排合并成 1 张图集（构建时生成），统计/下载都按图集算，
+  // 请求数从 6712 张降到 1122 张。索引 js/pmd-sheet-index.js 是磁盘精确清单。
+  // 旧索引 pmdFramesLegacy 保留仅作兼容回退，不再进统计/下载。
+  function pmdSheets(which) {
+    var idx = window.PMD_SHEET_INDEX || {};
+    var set = which === 'shiny' ? idx.shiny : idx.pmd;
+    if (!set) return [];
+    var base = which === 'shiny' ? 'assets/pmd-sheets-shiny/' : 'assets/pmd-sheets/';
+    var out = [];
+    for (var dex in set) if (Object.prototype.hasOwnProperty.call(set, dex)) out.push(base + dex + '.png');
     return out;
   }
 
@@ -103,8 +95,8 @@ window.APP = window.APP || {};
     { key: 'scene', name: '场景与躲藏点', tier: 'core', button: 'other', urls: sceneUrls },
     { key: 'battle', name: '战斗背景', tier: 'core', button: 'other', urls: battleUrls },
     { key: 'elems', name: '乐园装饰', tier: 'core', button: 'other', urls: function () { return ELEMS.map(function (e) { return 'assets/env/ranch/elems/' + e + '.png'; }); } },
-    { key: 'pmd', name: '乐园动画帧', tier: 'core', button: 'other', urls: function () { return pmdFrames('pmd'); } },
-    { key: 'shiny', name: '闪光动画帧', tier: 'core', button: 'other', urls: function () { return pmdFrames('shiny'); } },
+    { key: 'pmd', name: '乐园动画图集', tier: 'core', button: 'other', urls: function () { return pmdSheets('pmd'); } },
+    { key: 'shiny', name: '闪光动画图集', tier: 'core', button: 'other', urls: function () { return pmdSheets('shiny'); } },
     { key: 'npc', name: 'NPC 与训练师', tier: 'core', button: 'other', urls: function () { return NPCS.map(function (n) { return ['assets/npc-v6/' + n + '-bust.png', 'assets/npc-v6/' + n + '-full.png']; }).reduce(function (a, b) { return a.concat(b); }, []); } },
     { key: 'cries', name: '宝可梦叫声', tier: 'quiet', button: 'other', urls: function () { return mapIds(function (n) { return 'assets/cries/' + pad3(n) + '.ogg'; }); } },
     { key: 'badges', name: '徽章', tier: 'quiet', button: 'other', urls: function () { return BADGES.map(function (b) { return 'assets/hzicon/' + b + '-badge.png'; }); } },
