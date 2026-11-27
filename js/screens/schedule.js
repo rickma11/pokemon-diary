@@ -40,11 +40,29 @@ window.APP = window.APP || {};
     if (!card) return;
     var y = window.pageYOffset || document.documentElement.scrollTop || 0;
     var want = compactOn ? (y > 24) : (y > 72);
-    if (force || want !== compactOn) {
-      compactOn = want;
-      if (want) card.classList.add('is-compact');
-      else card.classList.remove('is-compact');
+    if (!force && want === compactOn) return;
+
+    compactOn = want;
+    if (want) card.classList.add('is-compact');
+    else card.classList.remove('is-compact');
+
+    // 卡片折叠时高度骤降（约 316px→69px），浏览器「滚动锚定」会把 scrollTop 往回拉
+    // （实测 y=120 被拉到 0），被拉回后又触发 scroll 事件把卡片重新展开——表现为下拉时
+    // 闪一下就失效。这里在切换后主动把滚动位置钉回原值：同步一次 + 随后几帧兜底。
+    // 不能只靠 CSS overflow-anchor：iOS Safari / 旧 WebView 支持不完善，真机仍会回弹。
+    var pinY = y;
+    function pin() {
+      var cur = window.pageYOffset || document.documentElement.scrollTop || 0;
+      if (Math.abs(cur - pinY) > 1) {
+        try { window.scrollTo(0, pinY); } catch (e) {}
+      }
     }
+    pin();
+    var frames = 4;
+    (function next() {
+      if (frames-- <= 0) return;
+      if (window.requestAnimationFrame) window.requestAnimationFrame(function () { pin(); next(); });
+    })();
   }
   function bindScroll() {
     if (scrollBound || !window.addEventListener) return;

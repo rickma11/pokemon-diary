@@ -25,6 +25,9 @@
 html, body {
   margin: 0;
   padding: 0;
+  /* 日程进度卡折叠时高度骤减，关闭滚动锚定避免 scrollTop 被拉回。
+     html 才是真正的滚动容器，两处都关；JS applyCompact 里另有钉住 scrollTop 的兜底。 */
+  overflow-anchor: none;
 }
 
 body {
@@ -34,8 +37,6 @@ body {
   font-size: 16px;
   line-height: 1.6;
   padding-bottom: calc(140px + env(safe-area-inset-bottom));
-  /* 日程进度卡下拉折叠时高度骤减，关闭滚动锚定，避免浏览器把 scrollTop 拉回导致折叠闪一下就失效 */
-  overflow-anchor: none;
 }
 
 /* 状态栏分档：mini 档高度约减半，none 档整条隐藏，底部留白跟着收 */
