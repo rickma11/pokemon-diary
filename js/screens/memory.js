@@ -150,7 +150,7 @@ window.APP = window.APP || {};
         faceA = w.h; kindA = 'zh'; faceB = w.p; kindB = 'py';
       }
       var hint = (def.cfg.hint && w.i) ? String(w.i) : '';
-      cards.push({ id: j * 2, w: w, face: faceA, kind: kindA, hint: '', matched: false });
+      cards.push({ id: j * 2, w: w, face: faceA, kind: kindA, hint: hint, matched: false });
       cards.push({ id: j * 2 + 1, w: w, face: faceB, kind: kindB, hint: (kindB === 'cn' ? hint : ''), matched: false });
     }
     // Fisher–Yates 洗牌
@@ -236,6 +236,7 @@ window.APP = window.APP || {};
           session.turnsLeft + ' / ' + session.totalTurns + '</b></div>' +
         '<div class="mem-bar"><i id="memBar" style="width:100%"></i></div>' +
       '</section>' +
+      '<div class="mem-feedback" id="memFeedback" aria-live="polite"></div>' +
       '<section class="card mem-board" id="memBoard" style="--cols:' + def.cols + '">' +
         (function () { var s = ''; for (var i = 0; i < session.cards.length; i++) s += cardHtml(session.cards[i], i); return s; })() +
       '</section>';
@@ -269,11 +270,15 @@ window.APP = window.APP || {};
       session.busy = true;
       var a = session.shown[0], b = i;
       var ca = session.cards[a], cb = session.cards[b];
-      if (ca.w === cb.w) {
-        // 配对成功
-        ca.matched = cb.matched = true;
-        session.done++;
-        setTimeout(function () {
+      var ok = ca.w === cb.w;
+      // 翻开第二张后：先停留 2 秒并把对/错和两张卡的内容显示出来，方便小朋友记住单词
+      showFeedback(ok, ca, cb);
+      setTimeout(function () {
+        clearFeedback();
+        if (ok) {
+          // 配对成功
+          ca.matched = cb.matched = true;
+          session.done++;
           markMatchedPair(a, b);
           var d = document.getElementById('memDone');
           if (d) d.textContent = session.done;
@@ -283,10 +288,8 @@ window.APP = window.APP || {};
           grantBonusIfAny();
           if (session.done >= session.def.pairs) settle();
           else if (session.turnsLeft <= 0) settle();
-        }, 380);
-      } else {
-        // 翻错，稍后翻回；次数已经扣掉
-        setTimeout(function () {
+        } else {
+          // 翻错，停留结束后再翻回；次数已经扣掉
           session.shown.forEach(function (idx) {
             var el = cardElOf(idx);
             if (el) el.classList.remove('is-flipped');
@@ -295,8 +298,8 @@ window.APP = window.APP || {};
           session.busy = false;
           session.flipped = 0; session.shown = [];
           if (session.turnsLeft <= 0) settle();
-        }, 900);
-      }
+        }
+      }, 2000);
     } else {
       session.shown.push(i);
       // 最后 1 次只够翻一张：让玩家看到这张牌，再结算
@@ -311,6 +314,26 @@ window.APP = window.APP || {};
     var board = document.getElementById('memBoard');
     if (!board) return null;
     return board.querySelector('.mem-card[data-i="' + i + '"]');
+  }
+  // 翻两张后的对错反馈：亮 2 秒，把两张卡的内容写出来方便记忆（不遮挡卡片）。
+  // 英语包按「单词 = 中文」展示，拼音包按「汉字 ↔ 拼音」展示；顺序跟随实际翻开顺序。
+  function showFeedback(ok, ca, cb) {
+    var el = document.getElementById('memFeedback');
+    if (!el) return;
+    var word = ca.kind === 'en' ? ca.face : (cb.kind === 'en' ? cb.face : '');
+    var mean = ca.kind === 'cn' ? ca.face : (cb.kind === 'cn' ? cb.face : '');
+    var pair = word && mean
+      ? word + ' ↔ ' + mean
+      : ca.face + ' ↔ ' + cb.face;
+    el.className = 'mem-feedback is-on ' + (ok ? 'is-ok' : 'is-no');
+    el.innerHTML = (ok ? '✅ 答对啦！' : '❌ 不一样哦，再想想～') +
+      ' <b>' + esc(pair) + '</b>';
+  }
+  function clearFeedback() {
+    var el = document.getElementById('memFeedback');
+    if (!el) return;
+    el.className = 'mem-feedback';
+    el.innerHTML = '';
   }
   function markMatchedPair(a, b) {
     var ea = cardElOf(a), eb = cardElOf(b);
@@ -377,9 +400,9 @@ window.APP = window.APP || {};
       '<div class="mem-rules__li"><b>翻牌次数</b>：次数 = 卡数 × 2 · 翻一张扣 1 次。' +
         '拼音 ' + (6 * 2) + ' 张 / ' + turnsFor(6) + ' 次，英语 ' + (8 * 2) + ' 张 / ' + turnsFor(8) + ' 次。<br>' +
         '<b>配对返还</b>：每成功配对 2 对，额外返还 1 次翻牌机会（拼音最多 +3，英语最多 +4）。</div>' +
-      '<div class="mem-rules__li"><b>配对方式</b>：翻开两张同一个词的两面（汉字↔拼音 / 单词↔中文）即可配对，翻错会扣次数但牌会翻回去。</div>' +
+      '<div class="mem-rules__li"><b>配对方式</b>：翻开两张同一个词的两面（汉字↔拼音 / 单词↔中文）即可配对。翻第二张后会停留 2 秒并告诉你对不对、两张牌分别是什么，方便记住；之后配对成功的变灰、翻错的会翻回去，翻错会扣次数。</div>' +
       '<div class="mem-rules__li"><b>英语难度</b>：进局前选简单 / 中等 / 困难，三档都是 8 对 16 张 / 32 次，只按词库星级 1~5 的占比换词。' +
-        '<div class="mem-rules__tier">简单：★1 60% · ★2 30% · ★3 10%（中文卡带图提示）→ 全配对 +3 经验 · +1 果实 · 25% 碎片</div>' +
+        '<div class="mem-rules__tier">简单：★1 60% · ★2 30% · ★3 10%（两张卡都带图提示）→ 全配对 +3 经验 · +1 果实 · 25% 碎片</div>' +
         '<div class="mem-rules__tier">中等：★2 60% · ★3 30% · ★4 10% → +5 经验 · +1 果实 · 45% 碎片</div>' +
         '<div class="mem-rules__tier">困难：★3 60% · ★4 30% · ★5 10% → +8 经验 · +2 果实 · 65% 碎片</div>' +
         '<div class="mem-rules__tier">某星级词不够时自动从相邻星级补齐；想加难词可在家长后台上传自定义题库（难度 4~5）。</div>' +
@@ -429,7 +452,7 @@ window.APP = window.APP || {};
         '<span class="mem-level__ico mem-level__ico--' + c.key + '">' + c.name.charAt(0) + '</span>' +
         '<span class="mem-level__txt">' +
           '<span class="mem-level__t">' + c.name + (c.def ? ' <em>默认</em>' : '') + '</span>' +
-          '<span class="mem-level__s">' + c.desc + (c.hint ? ' · 中文卡带图提示' : '') + '</span>' +
+          '<span class="mem-level__s">' + c.desc + (c.hint ? ' · 两张卡带图提示' : '') + '</span>' +
           '<span class="mem-level__r">全配对 ' + c.reward + '</span>' +
         '</span>' +
         '<span class="mem-level__go">点我开始 →</span>' +

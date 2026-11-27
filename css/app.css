@@ -34,6 +34,8 @@ body {
   font-size: 16px;
   line-height: 1.6;
   padding-bottom: calc(140px + env(safe-area-inset-bottom));
+  /* 日程进度卡下拉折叠时高度骤减，关闭滚动锚定，避免浏览器把 scrollTop 拉回导致折叠闪一下就失效 */
+  overflow-anchor: none;
 }
 
 /* 状态栏分档：mini 档高度约减半，none 档整条隐藏，底部留白跟着收 */
@@ -2178,6 +2180,12 @@ body.ink .care-creature-wrap { animation: none !important; }
 .mem-turns__row b { color: #A32D2D; font-size: 15px; }
 .mem-bonus { display: inline-block; margin-left: 4px; font-size: 11px; font-weight: 800; font-style: normal; color: #3B6D11; opacity: 0; transition: opacity .2s; }
 .mem-bonus.is-on { opacity: 1; }
+/* 翻第二张后停留 2 秒的对错反馈条：不遮挡卡片，绿=对 / 橙=错 */
+.mem-feedback { display: none; margin: 0 0 9px; padding: 7px 11px; border-radius: 10px; font-size: 12.5px; font-weight: 700; line-height: 1.45; text-align: center; }
+.mem-feedback.is-on { display: block; }
+.mem-feedback.is-ok { background: #EAF3DE; border: 2px solid #639922; color: #27500A; }
+.mem-feedback.is-no { background: #FAECE7; border: 2px solid #D85A30; color: #712B13; }
+.mem-feedback b { font-weight: 900; }
 .mem-bar { height: 8px; border-radius: 5px; background: #EDE3CB; margin-top: 6px; overflow: hidden; }
 .mem-bar i { display: block; height: 100%; background: linear-gradient(90deg,#E8B93C,#D85A30); transition: width .2s ease; }
 
